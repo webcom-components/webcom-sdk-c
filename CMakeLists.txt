@@ -37,6 +37,13 @@ target_link_libraries(
 	${JSONC_LIBRARIES}
 )
 
+#### documentation
+
+add_custom_target(
+	doc ALL
+	COMMAND doxygen doxygen.conf
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
 
 #### tests
 
