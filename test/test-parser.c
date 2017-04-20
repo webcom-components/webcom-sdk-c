@@ -3,11 +3,13 @@
 #include "stfu.h"
 
 int main(void) {
-	wc_msg_t msg1, msg2, msg3;
+	wc_msg_t msg1, msg2, msg3, msg4, msg5;
 
 	char *str1 = "Good morning, that's a nice tnetennba";
 	char *str2 = "{\"t\":\"c\",\"d\":{\"t\":\"h\",\"d\":{\"ts\":1492191239182,\"h\":\"\\/test\\/foo?bar=baz\",\"v\":\"5\"}}}";
 	char *str3 = "{\"t\":\"c\",\"d\":{\"t\":\"s\",\"d\":\"the truth is out there\"}}";
+	char *str4 = "{\"t\":\"d\",\"d\":{\"r\":3,\"a\":\"p\",\"b\":{\"p\":\"/brick/23-32\",\"d\":{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}";
+	wc_parser_t *parser;
 
 	STFU_INIT();
 
@@ -16,6 +18,13 @@ int main(void) {
 	STFU_STR_EQ	("Handshake server path string", msg2.u.ctrl.u.handshake.server, "/test/foo?bar=baz");
 	STFU_TRUE	("Parse valid shutdown message", wc_parse_msg(str3, &msg3) == 1);
 	STFU_STR_EQ	("Shutdown reason string", msg3.u.ctrl.u.shutdown_reason, "the truth is out there");
+	STFU_TRUE	("Parse valid put action", wc_parse_msg(str4, &msg4) == 1);
+	STFU_STR_EQ	("Put action path", msg4.u.data.u.action.u.put.path, "/brick/23-32");
+	STFU_STR_EQ	(
+			"Put action data",
+			json_object_to_json_string_ext(msg4.u.data.u.action.u.put.data, JSON_C_TO_STRING_PLAIN),
+			"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
+	);
 
 	STFU_SUMMARY();
 

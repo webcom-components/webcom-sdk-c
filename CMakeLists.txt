@@ -66,6 +66,7 @@ target_include_directories(
 target_link_libraries(
 	webcom-test-parser
 	${CMAKE_BINARY_DIR}/libwebcom-c.so
+	${JSONC_LIBRARIES}
 )
 
 add_test(
