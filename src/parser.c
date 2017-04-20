@@ -18,10 +18,8 @@
 #define WCPM_CALL_DATA_CHILD_PARSER(child_parser_name, child_res) \
 	WCPM_CALL_CHILD_PARSER("d", child_parser_name, child_res)
 
-#define WCPM_GET_STRING(key, dest) \
-	WCPM_GET_STRING_BEGIN(key, dest) \
-	WCPM_GET_STRING_END
-
+#define WCPM_CALL_BODY_CHILD_PARSER(child_parser_name, child_res) \
+	WCPM_CALL_CHILD_PARSER("b", child_parser_name, child_res)
 
 typedef struct wc_parser {
 	json_tokener* jtok;
@@ -83,7 +81,132 @@ static int wc_parse_ctrl_msg(json_object *jroot, wc_ctrl_msg_t *res) {
 	return 0;
 }
 
+static int wc_parse_action_put(json_object *jroot, wc_action_put_t *res) {
+	if (!_wc_hlp_get_string(jroot, "h", &res->hash))
+	{
+		res->hash = NULL;
+	}
+	if (!json_object_object_get_ex(jroot, "d", &res->data))
+	{
+		return 0;
+	}
+	json_object_get(res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action_merge(json_object *jroot, wc_action_merge_t *res) {
+	if (!json_object_object_get_ex(jroot, "d", &res->data))
+	{
+		return 0;
+	}
+	json_object_get(res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action_listen(json_object *jroot, wc_action_listen_t *res) {
+	res->query_ids = NULL;
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action_unlisten(json_object *jroot, wc_action_unlisten_t *res) {
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action_auth(json_object *jroot, wc_action_auth_t *res) {
+	return _wc_hlp_get_string(jroot, "cred", &res->cred);
+}
+
+static int wc_parse_action_on_disc_put(json_object *jroot, wc_action_on_disc_put_t *res) {
+	if (!json_object_object_get_ex(jroot, "d", &res->data))
+	{
+		return 0;
+	}
+	json_object_get(res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action_on_disc_merge(json_object *jroot, wc_action_on_disc_merge_t *res) {
+	if (!json_object_object_get_ex(jroot, "d", &res->data))
+	{
+		return 0;
+	}
+	json_object_get(res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action_on_disc_cancel(json_object *jroot, wc_action_on_disc_cancel_t *res) {
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_action(json_object *jroot, wc_action_t *res) {
+	const char *s;
+	json_object *jtmp;
+
+	if (!_wc_hlp_get_long(jroot, "r", &res->r)) {
+		return 0;
+	}
+
+	if (json_object_object_get_ex(jroot, "a", &jtmp)) {
+		if (json_object_get_type(jtmp) == json_type_string) {
+			s = json_object_get_string(jtmp);
+			if (strcmp("p", s) == 0) {
+				res->type = WC_ACTION_PUT;
+				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_action_put, &res->u.put);
+			} else if (strcmp("m", s) == 0) {
+				res->type = WC_ACTION_MERGE;
+				return wc_parse_action_merge(jroot, &res->u.merge);
+			} else if (strcmp("l", s) == 0) {
+				res->type = WC_ACTION_LISTEN;
+				return wc_parse_action_listen(jroot, &res->u.listen);
+			} else if (strcmp("u", s) == 0) {
+				res->type = WC_ACTION_UNLISTEN;
+				return wc_parse_action_unlisten(jroot, &res->u.unlisten);
+			} else if (strcmp("auth", s) == 0) {
+				res->type = WC_ACTION_AUTHENTICATE;
+				return wc_parse_action_auth(jroot, &res->u.auth);
+			} else if (strcmp("unauth", s) == 0) {
+				res->type = WC_ACTION_UNAUTHENTICATE;
+				return 1;
+			} else if (strcmp("o", s) == 0) {
+				res->type = WC_ACTION_ON_DISCONNECT_PUT;
+				return wc_parse_action_on_disc_put(jroot, &res->u.on_disc_put);
+			} else if (strcmp("om", s) == 0) {
+				res->type = WC_ACTION_ON_DISCONNECT_MERGE;
+				return wc_parse_action_on_disc_merge(jroot, &res->u.on_disc_merge);
+			} else if (strcmp("oc", s) == 0) {
+				res->type = WC_ACTION_ON_DISCONNECT_CANCEL;
+				return wc_parse_action_on_disc_cancel(jroot, &res->u.on_disc_cancel);
+			}
+		}
+	}
+
+	return 0;
+}
+
+static int wc_parse_response(json_object *jroot, wc_response_t *res) {
+	return 0;
+}
+
+static int wc_parse_push(json_object *jroot, wc_push_t *res) {
+	return 0;
+}
+
 static int wc_parse_data_msg(json_object *jroot, wc_data_msg_t *res) {
+	const char *s;
+	json_object *jtmp;
+	if (json_object_object_get_ex(jroot, "a", &jtmp)
+			&& json_object_object_get_ex(jroot, "r", &jtmp)
+			&& json_object_object_get_ex(jroot, "b", &jtmp)) {
+		res->type = WC_DATA_MSG_ACTION;
+		return wc_parse_action(jroot, &res->u.action);
+	} else if (!json_object_object_get_ex(jroot, "a", &jtmp)
+			&& json_object_object_get_ex(jroot, "r", &jtmp)) {
+		res->type = WC_DATA_MSG_RESPONSE;
+		return wc_parse_response(jroot, &res->u.response);
+	} else if (json_object_object_get_ex(jroot, "a", &jtmp)
+			&& !json_object_object_get_ex(jroot, "r", &jtmp)) {
+		return wc_parse_push(jroot, &res->u.push);
+	}
 	return 0;
 }
 
@@ -169,7 +292,6 @@ wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, w
 	}
 }
 
-
 int wc_parse_msg(char *str, wc_msg_t *res) {
 	wc_parser_t *parser;
 	int ret;
@@ -180,3 +302,5 @@ int wc_parse_msg(char *str, wc_msg_t *res) {
 
 	return ret == WC_PARSER_OK;
 }
+
+/* void wc_msg_free(wc_msg_t *res); TODO */
