@@ -40,7 +40,7 @@ target_link_libraries(
 #### documentation
 
 add_custom_target(
-	doc ALL
+	doc
 	COMMAND doxygen doxygen.conf
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )

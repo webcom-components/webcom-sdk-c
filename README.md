@@ -1,11 +1,11 @@
 # Webcom C SDK
 
-## Prerequisites
+## Build prerequisites
 
 On a debian-family platform:
 
 ```
-# apt-get install cmake libjson-c-dev libwebsockets-dev
+# apt-get install cmake libjson-c-dev libwebsockets-dev doxygen
 ```
 
 ## Build
@@ -19,6 +19,16 @@ $ make all
 ```
 
 It will produce **libwebcom-c.so** in the current directory
+
+## Documentation
+
+The documentation is produced by doxygen:
+
+```
+[still in the build/ folder]
+$ make doc
+(...)
+```
 
 ## Test
 
