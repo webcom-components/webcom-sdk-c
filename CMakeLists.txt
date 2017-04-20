@@ -14,6 +14,8 @@ if(NOT ${JSONC_FOUND})
 	message(FATAL_ERROR "could not find prerequisite: libjson-c")
 endif(NOT ${JSONC_FOUND})
 
+set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
+
 #### libwebcom-c.so
 
 add_library(
