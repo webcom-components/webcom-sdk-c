@@ -10,5 +10,6 @@
 
 #include "webcom-msg.h"
 #include "webcom-parser.h"
+#include "webcom-cnx.h"
 
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_H_ */

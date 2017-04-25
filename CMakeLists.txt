@@ -16,6 +16,11 @@ endif(NOT ${JSONC_FOUND})
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
+link_directories(
+    ${WEBSOCKETS_LIBRARY_DIRS}
+    ${JSONC_LIBRARY_DIRS}
+)
+
 #### libwebcom-c.so
 
 add_library(
@@ -23,6 +28,7 @@ add_library(
 	SHARED
 	src/parser.c
 	src/message.c
+	src/connection.c
 )
 
 target_include_directories(
