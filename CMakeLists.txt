@@ -81,3 +81,26 @@ add_test(
 	COMMAND webcom-test-parser
 )
 
+## connection
+
+add_executable(
+    webcom-test-cnx
+    test/test-cnx.c
+)
+
+target_include_directories(
+    webcom-test-cnx
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+)
+
+target_link_libraries(
+    webcom-test-cnx
+    ${CMAKE_BINARY_DIR}/libwebcom-c.so
+    ${JSONC_LIBRARIES}
+)
+
+add_test(
+    NAME cnx
+    COMMAND webcom-test-cnx
+)
