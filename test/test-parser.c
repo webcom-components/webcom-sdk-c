@@ -23,8 +23,6 @@ int main(void) {
 	wc_parser_t *parser;
 	int i;
 
-	STFU_INIT();
-
 	wc_msg_init(&msg1);
 	wc_msg_init(&msg2);
 	wc_msg_init(&msg3);

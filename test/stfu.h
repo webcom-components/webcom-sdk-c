@@ -8,15 +8,23 @@
 #include <stdio.h>
 #include <string.h>
 
-#define STFU_INIT() unsigned int npass = 0, nfail = 0;
+inline unsigned int _stfu_npass_incr(unsigned int increment) {
+	static unsigned int n = 0;
+	return (n += increment);
+}
+
+inline unsigned int _stfu_nfail_incr(unsigned int increment) {
+	static unsigned int n = 0;
+	return (n += increment);
+}
 
 #define STFU_TRUE(message, test) \
 	do { \
 		printf("[....] Testing \"%s\"", (message)); \
 		if ((test)) { \
-			npass++; printf("\r[" "\033[32m" "PASS" "\033[0m" "\n"); \
+			_stfu_npass_incr(1); printf("\r[" "\033[32m" "PASS" "\033[0m" "\n"); \
 		} else { \
-			nfail++; printf("\r[" "\033[31m" "FAIL" "\033[0m" "\n\t%s\n", #test); \
+			_stfu_nfail_incr(1); printf("\r[" "\033[31m" "FAIL" "\033[0m" "\n\t%s\n", #test); \
 		} \
 	} while (0)
 
@@ -25,9 +33,9 @@
 
 #define STFU_SUMMARY() \
 	do { \
-		printf("\n" "\033[1m" "TOTAL: %u tests, %u passed, %u failed" "\033[0m" "\n", npass + nfail, npass, nfail); \
+		printf("\n" "\033[1m" "TOTAL: %u tests, %u passed, %u failed" "\033[0m" "\n", _stfu_npass_incr(0) + _stfu_nfail_incr(0), _stfu_npass_incr(0), _stfu_nfail_incr(0)); \
 	} while(0)
 
-#define STFU_NUMBER_FAILED (nfail)
+#define STFU_NUMBER_FAILED (_stfu_nfail_incr(0))
 
 #endif /* TEST_STFU_H_ */
