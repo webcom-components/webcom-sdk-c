@@ -4,7 +4,7 @@
 #include "stfu.h"
 
 int main(void) {
-	wc_msg_t msg1, msg2, msg3, msg4, msg5;
+	wc_msg_t msg1, msg2, msg3, msg4, msg5, msg6, msg7;
 
 	char *str1 = "Good morning, that's a nice tnetennba";
 	char *str2 = "{\"t\":\"c\",\"d\":{\"t\":\"h\",\"d\":{\"ts\":1492191239182,\"h\":\"\\/test\\/foo?bar=baz\",\"v\":\"5\"}}}";
@@ -16,6 +16,8 @@ int main(void) {
 			"\"/brick/13-37\",\"d\":{\"color\":\"whi",
 			"te\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}",
 	};
+	char *str6 = "{\"t\":\"d\",\"d\":{\"r\":3,\"b\":{\"s\":\"ok\",\"d\":\"ok\"}}}";
+	char *str7 = "{\"t\":\"d\",\"d\":{\"a\":\"d\",\"b\":{\"p\":\"/brick/23-32\",\"d\":{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}";
 
 	wc_parser_t *parser;
 	int i;
@@ -46,6 +48,23 @@ int main(void) {
 	STFU_STR_EQ	("Put action path", msg5.u.data.u.action.u.put.path, "/brick/13-37");
 
 	wc_parser_free(parser);
+
+	STFU_TRUE	("Parse valid put response", wc_parse_msg(str6, &msg6) == 1);
+	STFU_TRUE	("Check put response message type is data", msg6.type == WC_MSG_DATA);
+	STFU_TRUE	("Check put response data msg is response", msg6.u.data.type == WC_DATA_MSG_RESPONSE);
+	STFU_TRUE	("Check put response id is 3", msg6.u.data.u.response.r == 3L);
+	STFU_STR_EQ ("Check put response status is 'ok'", msg6.u.data.u.response.status, "ok");
+	STFU_STR_EQ	(
+				"Check put response data",
+				json_object_to_json_string_ext(msg6.u.data.u.response.data, JSON_C_TO_STRING_PLAIN),
+				"\"ok\""
+	);
+	STFU_TRUE	("Parse valid update put push", wc_parse_msg(str7, &msg7) == 1);
+	STFU_STR_EQ	(
+					"Check put update put push data",
+					json_object_to_json_string_ext(msg7.u.data.u.push.u.update_put.data, JSON_C_TO_STRING_PLAIN),
+					"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
+	);
 
 	STFU_SUMMARY();
 

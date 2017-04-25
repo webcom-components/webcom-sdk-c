@@ -184,15 +184,73 @@ static int wc_parse_action(json_object *jroot, wc_action_t *res) {
 }
 
 static int wc_parse_response(json_object *jroot, wc_response_t *res) {
+	json_object *jtmp;
+	if (_wc_hlp_get_long(jroot, "r", &res->r)) {
+		if (json_object_object_get_ex(jroot, "b", &jtmp)) {
+			if (!json_object_object_get_ex(jtmp, "d", &res->data))
+			{
+				return 0;
+			}
+			json_object_get(res->data);
+			return _wc_hlp_get_string(jtmp, "s", &res->status);
+		}
+	}
 	return 0;
 }
 
+static int wc_parse_push_auth_revoked(json_object *jroot, wc_push_auth_revoked_t *res) {
+	return _wc_hlp_get_string(jroot, "s", &res->status)
+			&& _wc_hlp_get_string(jroot, "d", &res->reason);
+}
+
+static int wc_parse_push_listen_revoked(json_object *jroot, wc_push_listen_revoked_t *res) {
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_push_update_put(json_object *jroot, wc_push_data_update_put_t *res) {
+	if (!json_object_object_get_ex(jroot, "d", &res->data))
+	{
+		return 0;
+	}
+	json_object_get(res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
+static int wc_parse_push_update_merge(json_object *jroot, wc_push_data_update_merge_t *res) {
+	if (!json_object_object_get_ex(jroot, "d", &res->data))
+	{
+		return 0;
+	}
+	json_object_get(res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path);
+}
+
 static int wc_parse_push(json_object *jroot, wc_push_t *res) {
+	const char *s;
+	json_object *jtmp;
+
+	if (json_object_object_get_ex(jroot, "a", &jtmp)) {
+		if (json_object_get_type(jtmp) == json_type_string) {
+			s = json_object_get_string(jtmp);
+			if (strcmp("ac", s) == 0) {
+				res->type = WC_PUSH_AUTH_REVOKED;
+				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_auth_revoked, &res->u.auth_revoked);
+			} else if (strcmp("c", s) == 0) {
+				res->type = WC_PUSH_LISTEN_REVOKED;
+				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_listen_revoked, &res->u.listen_revoked);
+			} else if (strcmp("d", s) == 0) {
+				res->type = WC_PUSH_DATA_UPDATE_PUT;
+				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_update_put, &res->u.update_put);
+			} else if (strcmp("ac", s) == 0) {
+				res->type = WC_PUSH_DATA_UPDATE_MERGE;
+				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_update_merge, &res->u.update_merge);
+			}
+		}
+	}
 	return 0;
 }
 
 static int wc_parse_data_msg(json_object *jroot, wc_data_msg_t *res) {
-	const char *s;
 	json_object *jtmp;
 	if (json_object_object_get_ex(jroot, "a", &jtmp)
 			&& json_object_object_get_ex(jroot, "r", &jtmp)
@@ -273,6 +331,7 @@ wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, w
 
 	switch (jte) {
 	case json_tokener_success:
+		memset(res, 0, sizeof(wc_msg_t));
 		ret = wc_parse_msg_json(jroot, res);
 		json_object_put(jroot);
 		if (ret) {

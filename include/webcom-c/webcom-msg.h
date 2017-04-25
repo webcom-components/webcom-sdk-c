@@ -25,10 +25,10 @@ typedef enum {
 } wc_action_type_t;
 
 typedef enum {
-	WC_ACTION_AUTH_REVOKED,
-	WC_ACTION_LISTEN_REVOKED,
-	WC_ACTION_DATA_UPDATE_PUT,
-	WC_ACTION_DATA_UPDATE_MERGE
+	WC_PUSH_AUTH_REVOKED,
+	WC_PUSH_LISTEN_REVOKED,
+	WC_PUSH_DATA_UPDATE_PUT,
+	WC_PUSH_DATA_UPDATE_MERGE
 } wc_push_type_t;
 
 typedef struct {
@@ -85,14 +85,39 @@ typedef struct {
 } wc_action_t;
 
 typedef struct {
-	wc_push_type_t type;
 	int64_t r;
-	void *data; /* TODO */
+	char *status;
+	json_object *data;
 } wc_response_t;
 
 typedef struct {
 	char *status;
-	void *data; /* TODO */
+	char *reason;
+} wc_push_auth_revoked_t;
+
+typedef struct {
+	char *path;
+} wc_push_listen_revoked_t;
+
+typedef struct {
+	char *path;
+	json_object *data;
+} wc_push_data_update_put_t;
+
+typedef struct {
+	char *path;
+	json_object *data;
+} wc_push_data_update_merge_t;
+
+typedef struct {
+	wc_push_type_t type;
+	char *status;
+	union {
+		wc_push_auth_revoked_t auth_revoked;
+		wc_push_listen_revoked_t listen_revoked;
+		wc_push_data_update_put_t update_put;
+		wc_push_data_update_merge_t update_merge;
+	} u;
 } wc_push_t;
 
 typedef struct {
