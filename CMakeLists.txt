@@ -22,6 +22,7 @@ add_library(
 	webcom-c
 	SHARED
 	src/parser.c
+	src/message.c
 )
 
 target_include_directories(

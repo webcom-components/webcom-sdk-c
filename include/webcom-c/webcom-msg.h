@@ -7,13 +7,13 @@
 /* Data message data types */
 
 typedef enum {
-	WC_DATA_MSG_ACTION,
+	WC_DATA_MSG_ACTION = 1,
 	WC_DATA_MSG_PUSH,
 	WC_DATA_MSG_RESPONSE
 } wc_data_msg_type_t;
 
 typedef enum {
-	WC_ACTION_PUT,
+	WC_ACTION_PUT = 1,
 	WC_ACTION_MERGE,
 	WC_ACTION_LISTEN,
 	WC_ACTION_UNLISTEN,
@@ -25,7 +25,7 @@ typedef enum {
 } wc_action_type_t;
 
 typedef enum {
-	WC_PUSH_AUTH_REVOKED,
+	WC_PUSH_AUTH_REVOKED = 1,
 	WC_PUSH_LISTEN_REVOKED,
 	WC_PUSH_DATA_UPDATE_PUT,
 	WC_PUSH_DATA_UPDATE_MERGE
@@ -132,7 +132,7 @@ typedef struct {
 /* Control message data types */
 
 typedef enum {
-	WC_CTRL_MSG_HANDSHAKE,
+	WC_CTRL_MSG_HANDSHAKE = 1,
 	WC_CTRL_MSG_CONNECTION_SHUTDOWN
 } wc_ctrl_msg_type_t;
 
@@ -153,7 +153,7 @@ typedef struct {
 /* Level 1 data types */
 
 typedef enum {
-	WC_MSG_CTRL,
+	WC_MSG_CTRL = 1,
 	WC_MSG_DATA
 } wc_msg_type_t;
 
@@ -165,5 +165,22 @@ typedef struct {
 	} u;
 } wc_msg_t;
 
+/**
+ * does the internal initialization of a message structure
+ *
+ */
+void wc_msg_init(wc_msg_t *msg);
+
+/**
+ * frees the memory allocated for a message structure
+ *
+ * This function frees every chunk of memory used by this message (strings,
+ * JSON fragments, ...). Note: this does not free the space used by the
+ * wc_msg_t structure itself, you have to manually free() it after using
+ * this function if if was malloc()'ed.
+ *
+ * @param msg the message structure to be freed
+ */
+void wc_msg_free(wc_msg_t *msg);
 
 #endif /* WEBCOM_MSG_H_ */

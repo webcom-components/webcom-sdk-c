@@ -4,7 +4,7 @@
 #include "stfu.h"
 
 int main(void) {
-	wc_msg_t msg1, msg2, msg3, msg4, msg5, msg6, msg7;
+	wc_msg_t msg1, msg2, msg3, msg4, msg5, msg6, msg7, msg8;
 
 	char *str1 = "Good morning, that's a nice tnetennba";
 	char *str2 = "{\"t\":\"c\",\"d\":{\"t\":\"h\",\"d\":{\"ts\":1492191239182,\"h\":\"\\/test\\/foo?bar=baz\",\"v\":\"5\"}}}";
@@ -18,13 +18,30 @@ int main(void) {
 	};
 	char *str6 = "{\"t\":\"d\",\"d\":{\"r\":3,\"b\":{\"s\":\"ok\",\"d\":\"ok\"}}}";
 	char *str7 = "{\"t\":\"d\",\"d\":{\"a\":\"d\",\"b\":{\"p\":\"/brick/23-32\",\"d\":{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}";
+	char *str8 = "{\"t\":\"x\",\"d\":{\"r\":3,\"b\":{\"s\":\"ok\",\"d\":\"ok\"}}}";
 
 	wc_parser_t *parser;
 	int i;
 
 	STFU_INIT();
 
+	wc_msg_init(&msg1);
+	wc_msg_init(&msg2);
+	wc_msg_init(&msg3);
+	wc_msg_init(&msg4);
+	wc_msg_init(&msg5);
+	wc_msg_init(&msg6);
+	wc_msg_init(&msg7);
+	wc_msg_init(&msg8);
+
 	STFU_TRUE	("Parse non JSON", wc_parse_msg(str1, &msg1) == 0);
+
+	parser = wc_parser_new();
+	wc_parse_msg_ex(parser, str1, strlen(str1), &msg1);
+	STFU_TRUE	("Parser error string", wc_parser_get_error(parser) != NULL);
+	printf("\t%s\n", wc_parser_get_error(parser));
+	wc_parser_free(parser);
+
 	STFU_TRUE	("Parse valid handshake", wc_parse_msg(str2, &msg2) == 1);
 	STFU_STR_EQ	("Handshake server path string", msg2.u.ctrl.u.handshake.server, "/test/foo?bar=baz");
 	STFU_TRUE	("Parse valid shutdown message", wc_parse_msg(str3, &msg3) == 1);
@@ -65,6 +82,22 @@ int main(void) {
 					json_object_to_json_string_ext(msg7.u.data.u.push.u.update_put.data, JSON_C_TO_STRING_PLAIN),
 					"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
 	);
+
+	parser = wc_parser_new();
+	wc_parse_msg_ex(parser, str1, strlen(str8), &msg8);
+	STFU_TRUE	("Parse valid JSON invalid webcom message", wc_parse_msg_ex(parser, str8, strlen(str8), &msg8));
+	STFU_STR_EQ	("Valid JSON invalid webcom message error string", wc_parser_get_error(parser), "not a valid webcom message");
+	printf("\t%s\n", wc_parser_get_error(parser));
+	wc_parser_free(parser);
+
+	wc_msg_free(&msg1);
+	wc_msg_free(&msg2);
+	wc_msg_free(&msg3);
+	wc_msg_free(&msg4);
+	wc_msg_free(&msg5);
+	wc_msg_free(&msg6);
+	wc_msg_free(&msg7);
+	wc_msg_free(&msg8);
 
 	STFU_SUMMARY();
 

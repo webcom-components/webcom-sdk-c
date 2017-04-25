@@ -26,7 +26,8 @@ typedef struct wc_parser {
 	const char *error;
 } wc_parser_t;
 
-static const char *wc_parse_err_str = "Not a valid webcom message";
+const char *wc_parse_err_not_wc = "not a valid webcom message";
+const char *wc_parse_err_parser_null = "parser is NULL";
 
 __attribute__((always_inline))
 static inline int _wc_hlp_get_string(json_object *j, char *key, char **s) {
@@ -263,6 +264,7 @@ static int wc_parse_data_msg(json_object *jroot, wc_data_msg_t *res) {
 		return wc_parse_response(jroot, &res->u.response);
 	} else if (json_object_object_get_ex(jroot, "a", &jtmp)
 			&& !json_object_object_get_ex(jroot, "r", &jtmp)) {
+		res->type = WC_DATA_MSG_PUSH;
 		return wc_parse_push(jroot, &res->u.push);
 	}
 	return 0;
@@ -288,7 +290,7 @@ static int wc_parse_msg_json(json_object *jroot, wc_msg_t *res) {
 }
 
 const char *wc_parser_get_error(wc_parser_t *parser) {
-	return parser ? parser->error : NULL;
+	return parser ? parser->error : wc_parse_err_parser_null;
 }
 
 wc_parser_t *wc_parser_new() {
@@ -331,13 +333,12 @@ wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, w
 
 	switch (jte) {
 	case json_tokener_success:
-		memset(res, 0, sizeof(wc_msg_t));
 		ret = wc_parse_msg_json(jroot, res);
 		json_object_put(jroot);
 		if (ret) {
 			return WC_PARSER_OK;
 		} else {
-			parser->error = wc_parse_err_str;
+			parser->error = wc_parse_err_not_wc;
 			return WC_PARSER_ERROR;
 		}
 		break;
