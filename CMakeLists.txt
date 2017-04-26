@@ -5,6 +5,8 @@ find_package(PkgConfig)
 
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
+find_library(EV ev)
+pkg_search_module(EVENT REQUIRED libevent)
 
 if(NOT ${WEBSOCKETS_FOUND})
 	message(FATAL_ERROR "could not find prerequisite: libwebsockets")
@@ -14,11 +16,15 @@ if(NOT ${JSONC_FOUND})
 	message(FATAL_ERROR "could not find prerequisite: libjson-c")
 endif(NOT ${JSONC_FOUND})
 
+if(${EV-NOTFOUND})
+	message(FATAL_ERROR "could not find prerequisite: libev")
+endif(${EV-NOTFOUND})
+
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 link_directories(
-    ${WEBSOCKETS_LIBRARY_DIRS}
-    ${JSONC_LIBRARY_DIRS}
+	${WEBSOCKETS_LIBRARY_DIRS}
+	${JSONC_LIBRARY_DIRS}
 )
 
 #### libwebcom-c.so
@@ -44,6 +50,7 @@ target_link_libraries(
 	webcom-c
 	${WEBSOCKETS_LIBRARIES}
 	${JSONC_LIBRARIES}
+	${EV}
 )
 
 #### documentation
@@ -68,6 +75,7 @@ target_include_directories(
 	webcom-test-parser
 	PUBLIC
 	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
 )
 
 target_link_libraries(
@@ -84,23 +92,25 @@ add_test(
 ## connection
 
 add_executable(
-    webcom-test-cnx
-    test/test-cnx.c
+	webcom-test-cnx
+	test/test-cnx.c
 )
 
 target_include_directories(
-    webcom-test-cnx
-    PUBLIC
-    ${CMAKE_SOURCE_DIR}/include
+	webcom-test-cnx
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
 )
 
 target_link_libraries(
-    webcom-test-cnx
-    ${CMAKE_BINARY_DIR}/libwebcom-c.so
-    ${JSONC_LIBRARIES}
+	webcom-test-cnx
+	${CMAKE_BINARY_DIR}/libwebcom-c.so
+	${JSONC_LIBRARIES}
+    ${EV}
 )
 
 add_test(
-    NAME cnx
-    COMMAND webcom-test-cnx
+	NAME cnx
+	COMMAND webcom-test-cnx
 )

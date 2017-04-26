@@ -1,5 +1,7 @@
 #include <stdlib.h>
+
 #include <libwebsockets.h>
+
 
 #include "webcom-c/webcom-cnx.h"
 #include "webcom-c/webcom-parser.h"
@@ -11,6 +13,7 @@ typedef struct wc_cnx {
 	wc_on_event_cb_t callback;
 	struct lws *web_socket;
 	void *user;
+	int fd;
 } wc_cnx_t;
 
 #define WC_RX_BUFFER_BYTES	4096
@@ -20,15 +23,15 @@ static int _wc_lws_callback(struct lws *wsi, enum lws_callback_reasons reason, v
 	wc_cnx_t *cnx = (wc_cnx_t *) user;
 	wc_msg_t *msg;
 	wc_parser_t *parser;
+	struct lws_pollargs* pa;
 
 	switch(reason)
 	{
 		case LWS_CALLBACK_CLIENT_ESTABLISHED:
-			lws_callback_on_writable( wsi );
+			cnx->callback(WC_EVENT_ON_CNX_ESTABLISHED, cnx, NULL, 0, cnx->user);
 			break;
 
 		case LWS_CALLBACK_CLIENT_RECEIVE:
-			lwsl_notice("received %.*s\n", (int)len, (char*)in);
 
 			msg = malloc(sizeof(wc_msg_t));
 			wc_msg_init(msg);
@@ -44,18 +47,16 @@ static int _wc_lws_callback(struct lws *wsi, enum lws_callback_reasons reason, v
 			free(msg);
 
 			break;
-
 		case LWS_CALLBACK_CLIENT_WRITEABLE:
-		{
-
 			break;
-		}
-
 		case LWS_CALLBACK_CLOSED:
 		case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 			cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
 			break;
-
+		case LWS_CALLBACK_ADD_POLL_FD:
+			pa = (struct lws_pollargs*) in;
+			cnx->fd = pa->fd;
+			break;
 		default:
 			break;
 	}
@@ -63,15 +64,20 @@ static int _wc_lws_callback(struct lws *wsi, enum lws_callback_reasons reason, v
 }
 
 void wc_cnx_connect(wc_cnx_t *cnx) {
-	cnx->web_socket = lws_client_connect_via_info(&cnx->cnxnfo);
+	cnx->web_socket = lws_client_connect_via_info2(&cnx->cnxnfo);
 }
 
 int wc_cnx_close(wc_cnx_t *cnx) {
 	lws_context_destroy(cnx->context);
 	return 1;
 }
+
 void wc_service(wc_cnx_t *cnx) {
-	lws_service(cnx->context, 250);
+	lws_service(cnx->context, 0);
+}
+
+int wc_cnx_get_fd(wc_cnx_t *cnx) {
+	return cnx->fd;
 }
 
 static struct lws_protocols protocols[] =
@@ -88,7 +94,7 @@ static struct lws_protocols protocols[] =
 	{ NULL, NULL, 0, 0, 0, 0, 0}
 };
 
-wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, wc_on_event_cb_t callback, void *user) {
+wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, struct ev_loop *loop, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
 
 	res = calloc(1, sizeof(wc_cnx_t));
@@ -116,6 +122,8 @@ wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, wc_on_event_cb_t call
 	res->user = user;
 	res->callback = callback;
 
+	lws_ev_initloop(res->context, loop, 0);
+	lws_service(res->context, 0);
 end:
 	return res;
 }

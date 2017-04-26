@@ -2,6 +2,7 @@
 #define INCLUDE_WEBCOM_C_WEBCOM_CNX_H_
 
 #include <stddef.h>
+#include <ev.h>
 
 #include "webcom-msg.h"
 
@@ -14,7 +15,7 @@ typedef enum {
 
 typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user);
 
-wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, wc_on_event_cb_t callback, void *user);
+wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, struct ev_loop *loop, wc_on_event_cb_t callback, void *user);
 
 void wc_cnx_free(wc_cnx_t *cnx);
 
