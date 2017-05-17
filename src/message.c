@@ -120,6 +120,16 @@ static inline json_object* _wc_put_msg_to_json(wc_action_put_t *put) {
 
 	return jroot;
 }
+
+static inline json_object* _wc_listen_msg_to_json(wc_action_listen_t *listen) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(listen->path));
+
+	return jroot;
+}
+
 static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 	json_object *jroot;
 	static int64_t ref_cnt = 1;
@@ -134,6 +144,9 @@ static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 			json_object_object_add(jroot, "a", json_object_new_string("p"));
 			json_object_object_add(jroot, "b", _wc_put_msg_to_json(&data->u.action.u.put));
 			break;
+		case WC_ACTION_LISTEN:
+			json_object_object_add(jroot, "a", json_object_new_string("l"));
+			json_object_object_add(jroot, "b", _wc_listen_msg_to_json(&data->u.action.u.listen));
 		}
 		break;
 	case WC_DATA_MSG_PUSH:

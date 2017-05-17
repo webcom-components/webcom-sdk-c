@@ -10,6 +10,7 @@ static void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data, size_
 	wc_msg_t *msg = (wc_msg_t*) data;
 	switch (event) {
 		case WC_EVENT_ON_CNX_ESTABLISHED:
+			wc_listen(cnx, "/brick");
 			printf("\"X Y COLOR\" (1:white, 0:black)> ");
 			fflush(stdout);
 			break;
