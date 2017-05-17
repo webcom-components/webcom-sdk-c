@@ -34,6 +34,7 @@ add_library(
 	src/parser.c
 	src/message.c
 	src/connection.c
+	src/webcom.c
 )
 
 target_include_directories(
@@ -79,6 +80,7 @@ target_link_libraries(
     legorange
     webcom-c
     ${JSONC_LIBRARIES}
+    ${EV}
 )
 
 #### tests

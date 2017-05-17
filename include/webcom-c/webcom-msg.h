@@ -33,7 +33,7 @@ typedef enum {
 
 typedef struct {
 	char *path;
-	json_object *data;
+	char *data;
 	char *hash;
 } wc_action_put_t;
 

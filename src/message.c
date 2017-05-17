@@ -32,7 +32,7 @@ static inline void _wc_free_action(wc_action_t *msg) {
 	case WC_ACTION_PUT:
 		IF_NOT_NULL_DO(free, msg->u.put.path);
 		IF_NOT_NULL_DO(free, msg->u.put.hash);
-		IF_NOT_NULL_DO(json_object_put, msg->u.put.data);
+		IF_NOT_NULL_DO(free, msg->u.put.data);
 		break;
 	case WC_ACTION_UNAUTHENTICATE:
 		break;
@@ -113,7 +113,7 @@ static inline json_object* _wc_put_msg_to_json(wc_action_put_t *put) {
 
 	jroot = json_object_new_object();
 	json_object_object_add(jroot, "p", json_object_new_string(put->path));
-	json_object_object_add(jroot, "d", put->data);
+	json_object_object_add(jroot, "d", json_tokener_parse(put->data));
 	if (put->hash) {
 		json_object_object_add(jroot, "h", json_object_new_string(put->hash));
 	}

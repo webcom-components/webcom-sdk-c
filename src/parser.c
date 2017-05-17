@@ -87,12 +87,7 @@ static int wc_parse_action_put(json_object *jroot, wc_action_put_t *res) {
 	{
 		res->hash = NULL;
 	}
-	if (!json_object_object_get_ex(jroot, "d", &res->data))
-	{
-		return 0;
-	}
-	json_object_get(res->data);
-	return _wc_hlp_get_string(jroot, "p", &res->path);
+	return _wc_hlp_get_string(jroot, "p", &res->path) && _wc_hlp_get_string(jroot, "d", &res->data);
 }
 
 static int wc_parse_action_merge(json_object *jroot, wc_action_merge_t *res) {
