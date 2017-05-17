@@ -15,15 +15,19 @@ typedef enum {
 
 typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user);
 
-wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, struct ev_loop *loop, wc_on_event_cb_t callback, void *user);
+wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, wc_on_event_cb_t callback, void *user);
 
 void wc_cnx_free(wc_cnx_t *cnx);
 
 void wc_cnx_connect(wc_cnx_t *cnx);
 
+int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg);
+
 int wc_cnx_get_fd(wc_cnx_t *cnx);
 
-int wc_cnx_close(wc_cnx_t *cnx);
+int wc_cnx_on_readable(wc_cnx_t *cnx);
+
+void wc_cnx_close(wc_cnx_t *cnx);
 
 void wc_service(wc_cnx_t *cnx);
 

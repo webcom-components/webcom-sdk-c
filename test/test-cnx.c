@@ -6,8 +6,6 @@
 
 #include "stfu.h"
 
-int stop1 = 0;
-int stop2 = 0;
 
 
 void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user) {
@@ -21,58 +19,73 @@ void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user
 			STFU_TRUE	("Receive handshake", msg->type == WC_MSG_CTRL && msg->u.ctrl.type == WC_CTRL_MSG_HANDSHAKE);
 			STFU_TRUE	("Handshake path exists", msg->u.ctrl.u.handshake.server != NULL);
 			printf("\t%s\n", msg->u.ctrl.u.handshake.server);
-
-			stop1 = 1;
 			break;
 		case WC_EVENT_ON_CNX_CLOSED:
-			puts("CNX CLOSED");
-			stop2 = 1;
+			puts("\tCNX CLOSED");
+			wc_cnx_free(cnx);
 			break;
 		default:
 			break;
 	}
 }
 
-ev_io stdin_watcher;
-ev_timer timeout_watcher;
+static void readable_cb (EV_P_ ev_io *w, int revents) {
+	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	printf ("\tfd %d, ev %08x, erv %08x\n", w->fd, w->events, revents);
+	if (wc_cnx_on_readable(cnx)) {
+		ev_io_stop(loop, w);
+	}
+}
 
-// all watcher callbacks have a similar signature
-// this callback is called when data is readable on stdin
-static void
-stdin_cb (EV_P_ ev_io *w, int revents)
-{
-  puts ("stdin ready");
-  __fpurge(stdin);
-  // for one-shot events, one must manually stop the watcher
-  // with its corresponding stop function.
-  ev_io_stop (EV_A_ w);
+static void send_cb(EV_P_ ev_timer *w, int revents) {
+	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 
-  // this causes all nested ev_run's to stop iterating
-  //ev_break (EV_A_ EVBREAK_ALL);
+	wc_msg_t msg1;
+
+	puts("\tSENDING...");
+
+	msg1.type = WC_MSG_DATA;
+	msg1.u.data.type = WC_DATA_MSG_ACTION;
+	msg1.u.data.u.action.type = WC_ACTION_PUT;
+	msg1.u.data.u.action.r = 0;
+	msg1.u.data.u.action.u.put.path = strdup("/brick/12-12");
+	msg1.u.data.u.action.u.put.data = json_tokener_parse("{\"color\":\"green\",\"uid\":\"anonymous\",\"x\":12,\"y\":12}");
+
+	STFU_TRUE	("Data was sent", wc_cnx_send_msg(cnx, &msg1) > 0);
+
+	wc_msg_free(&msg1);
+	ev_timer_stop(loop, w);
+}
+
+static void close_cb(EV_P_ ev_timer *w, int revents) {
+	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	puts("\tCLOSE");
+	wc_cnx_close(cnx);
+	ev_timer_stop(loop, w);
 }
 
 int main(void) {
 	struct ev_loop *loop = EV_DEFAULT;
 	wc_cnx_t *cnx1;
+	ev_io ev_wc_readable;
+	ev_timer ev_close, ev_send;
 
-	STFU_TRUE	("Create new wc_cnx_t object", (cnx1 = wc_cnx_new("io.datasync.orange.com", 443, "/_wss/.ws?v=5&ns=legorange", loop, test_cb, (void *)0xDEADBEEF)) != NULL);
-    //ev_io_init (&stdin_watcher, stdin_cb, /*STDIN_FILENO*/ 0, EV_READ);
-    ev_init (&stdin_watcher, stdin_cb);
-       ev_io_set (&stdin_watcher, 0, EV_READ);
-    ev_io_start (loop, &stdin_watcher);
 
-	wc_cnx_connect(cnx1);
-	do {
-		ev_run (loop, EVRUN_NOWAIT);
-	} while (!stop1);
 
-	wc_cnx_close(cnx1);
+	STFU_TRUE	("Create new wc_cnx_t object", (cnx1 = wc_cnx_new("io.datasync.orange.com", 443, "/_wss/.ws?v=5&ns=legorange", test_cb, (void *)0xDEADBEEF)) != NULL);
 
-	do {
-		ev_run (loop, 250);
-	} while (!stop2);
+	ev_io_init(&ev_wc_readable, readable_cb, wc_cnx_get_fd(cnx1), EV_READ);
+	ev_wc_readable.data = (void *)cnx1;
+	ev_io_start(loop, &ev_wc_readable);
+	ev_timer_init(&ev_send, send_cb, 1, 0);
+	ev_send.data = (void *)cnx1;
+	ev_timer_start(loop, &ev_send);
+	ev_timer_init(&ev_close, close_cb, 4, 0);
+	ev_close.data = (void *)cnx1;
+	ev_timer_start(loop, &ev_close);
 
-	wc_cnx_free(cnx1);
+	ev_run(loop, 0);
+
 
 	STFU_SUMMARY();
 

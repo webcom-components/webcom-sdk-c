@@ -1,136 +1,115 @@
 #include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
 
-#include <libwebsockets.h>
-
+#include <nopoll.h>
 
 #include "webcom-c/webcom-cnx.h"
 #include "webcom-c/webcom-parser.h"
 
+typedef enum {
+	WC_CNX_STATE_INIT = 0,
+	WC_CNX_STATE_CREATED,
+	WC_CNX_STATE_READY,
+	WC_CNX_STATE_CLOSED,
+} wc_cnx_state_t;
+
+#define WC_RX_BUF_LEN	(1 << 12)
+
 typedef struct wc_cnx {
-	struct lws_context_creation_info ctxnfo;
-	struct lws_context *context;
-	struct lws_client_connect_info cnxnfo;
+	noPollCtx *np_ctx;
+	noPollConn *np_conn;
 	wc_on_event_cb_t callback;
-	struct lws *web_socket;
 	void *user;
 	int fd;
+	wc_cnx_state_t state;
+	char rxbuf[WC_RX_BUF_LEN];
 } wc_cnx_t;
 
-#define WC_RX_BUFFER_BYTES	4096
+int wc_cnx_on_readable(wc_cnx_t *cnx) {
+	int n, ret = 0;
+	wc_parser_t *parser = wc_parser_new();
+	wc_msg_t msg;
+	n = nopoll_conn_read(cnx->np_conn, cnx->rxbuf, WC_RX_BUF_LEN, nopoll_false, 0);
+	if (n > 0) {
+		if (wc_parse_msg_ex(parser, cnx->rxbuf, (size_t)n, &msg) == WC_PARSER_OK) {
+			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
+			ret = 1;
+		}
+	} else if (n == 0 && cnx->state == WC_CNX_STATE_CREATED) {
 
-
-static int _wc_lws_callback(struct lws *wsi, enum lws_callback_reasons reason, void *user, void *in, size_t len) {
-	wc_cnx_t *cnx = (wc_cnx_t *) user;
-	wc_msg_t *msg;
-	wc_parser_t *parser;
-	struct lws_pollargs* pa;
-
-	switch(reason)
-	{
-		case LWS_CALLBACK_CLIENT_ESTABLISHED:
-			cnx->callback(WC_EVENT_ON_CNX_ESTABLISHED, cnx, NULL, 0, cnx->user);
-			break;
-
-		case LWS_CALLBACK_CLIENT_RECEIVE:
-
-			msg = malloc(sizeof(wc_msg_t));
-			wc_msg_init(msg);
-
-			parser = wc_parser_new();
-
-			wc_parse_msg_ex(parser, (char*)in, len, msg);
-
-			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, msg, sizeof(wc_msg_t), cnx->user);
-
-			wc_parser_free(parser);
-			wc_msg_free(msg);
-			free(msg);
-
-			break;
-		case LWS_CALLBACK_CLIENT_WRITEABLE:
-			break;
-		case LWS_CALLBACK_CLOSED:
-		case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-			cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
-			break;
-		case LWS_CALLBACK_ADD_POLL_FD:
-			pa = (struct lws_pollargs*) in;
-			cnx->fd = pa->fd;
-			break;
-		default:
-			break;
 	}
-	return 0;
+	wc_parser_free(parser);
+	return ret;
 }
 
-void wc_cnx_connect(wc_cnx_t *cnx) {
-	cnx->web_socket = lws_client_connect_via_info2(&cnx->cnxnfo);
+int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
+	char *jsonstr;
+	long len;
+	int sent;
+
+	if (cnx->state != WC_CNX_STATE_READY) {
+		printf("status: %d != %d\n",cnx->state, WC_CNX_STATE_READY);
+		return -1;
+	}
+
+	jsonstr = wc_msg_to_json_str(msg);
+	len = strlen(jsonstr);
+
+	sent = nopoll_conn_send_text(cnx->np_conn, jsonstr, len);
+	nopoll_conn_flush_writes(cnx->np_conn, 2000, 0);
+
+	return sent;
 }
 
-int wc_cnx_close(wc_cnx_t *cnx) {
-	lws_context_destroy(cnx->context);
-	return 1;
-}
-
-void wc_service(wc_cnx_t *cnx) {
-	lws_service(cnx->context, 0);
+void wc_cnx_close(wc_cnx_t *cnx) {
+	nopoll_conn_close(cnx->np_conn);
+	cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
 }
 
 int wc_cnx_get_fd(wc_cnx_t *cnx) {
 	return cnx->fd;
 }
 
-static struct lws_protocols protocols[] =
-{
-	{
-		"webcom-protocol",
-		_wc_lws_callback,
-		0,
-		WC_RX_BUFFER_BYTES,
-		0,
-		0,
-		0
-	},
-	{ NULL, NULL, 0, 0, 0, 0, 0}
-};
-
-wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, struct ev_loop *loop, wc_on_event_cb_t callback, void *user) {
+wc_cnx_t *wc_cnx_new(char *endpoint, int port, char *path, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
+	char sport[6];
 
 	res = calloc(1, sizeof(wc_cnx_t));
 
-	if (res == NULL) goto end;
+	if (res == NULL) {
+		goto error1;
+	}
 
-	res->ctxnfo.port = CONTEXT_PORT_NO_LISTEN;
-	res->ctxnfo.protocols = protocols;
-	res->ctxnfo.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
-	res->ctxnfo.gid = -1;
-	res->ctxnfo.uid = -1;
+	res->np_ctx = nopoll_ctx_new();
 
-	res->context = lws_create_context(&res->ctxnfo);
+	snprintf(sport, 6, "%hu", port);
 
-	res->cnxnfo.context = res->context;
-	res->cnxnfo.address = strdup(endpoint);
-	res->cnxnfo.port = port;
-	/* FIXME: DO NOT ACCEPT BOGUS SSL BY DEFAULT!! */
-	res->cnxnfo.ssl_connection = LCCSCF_USE_SSL | LCCSCF_ALLOW_EXPIRED | LCCSCF_ALLOW_SELFSIGNED | LCCSCF_SKIP_SERVER_CERT_HOSTNAME_CHECK;
-	res->cnxnfo.path = strdup(path);
-	res->cnxnfo.host = lws_canonical_hostname(res->context);
-	res->cnxnfo.protocol = protocols[0].name;
-	res->cnxnfo.ietf_version_or_minus_one = -1;
-	res->cnxnfo.userdata = (void *)res;
-	res->user = user;
-	res->callback = callback;
+	sport[5] = '\0';
 
-	lws_ev_initloop(res->context, loop, 0);
-	lws_service(res->context, 0);
-end:
+	res->np_conn = nopoll_conn_tls_new(res->np_ctx, 0, endpoint, sport, NULL, path, NULL, NULL);
+
+	if (nopoll_conn_is_ok(res->np_conn)) {
+		res->state = WC_CNX_STATE_CREATED;
+		res->user = user;
+		res->callback = callback;
+		res->fd = nopoll_conn_socket(res->np_conn);
+		nopoll_conn_wait_until_connection_ready(res->np_conn, 2);
+		res->state = WC_CNX_STATE_READY;
+		callback(WC_EVENT_ON_CNX_ESTABLISHED, res->np_conn, NULL, 0, user);
+	} else {
+		goto error2;
+	}
+
 	return res;
+
+error2:
+	free(res);
+error1:
+	return NULL;
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {
-	free((char*)cnx->cnxnfo.address);
-	free((char*)cnx->cnxnfo.path);
-	lws_context_destroy(cnx->context);
+	nopoll_ctx_unref(cnx->np_ctx);
 	free(cnx);
 }

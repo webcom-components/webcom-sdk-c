@@ -3,27 +3,26 @@ project("webcom-sdk-c")
 
 find_package(PkgConfig)
 
-pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
+pkg_search_module(NOPOLL REQUIRED nopoll)
 pkg_search_module(JSONC REQUIRED json-c)
 find_library(EV ev)
-pkg_search_module(EVENT REQUIRED libevent)
-
-if(NOT ${WEBSOCKETS_FOUND})
-	message(FATAL_ERROR "could not find prerequisite: libwebsockets")
-endif(NOT ${WEBSOCKETS_FOUND})
 
 if(NOT ${JSONC_FOUND})
 	message(FATAL_ERROR "could not find prerequisite: libjson-c")
 endif(NOT ${JSONC_FOUND})
 
+if(NOT ${NOPOLL_FOUND})
+    message(FATAL_ERROR "could not find prerequisite: libnopoll")
+endif(NOT ${NOPOLL_FOUND})
+
 if(${EV-NOTFOUND})
-	message(FATAL_ERROR "could not find prerequisite: libev")
+    message(FATAL_ERROR "could not find prerequisite: libev")
 endif(${EV-NOTFOUND})
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 link_directories(
-	${WEBSOCKETS_LIBRARY_DIRS}
+	${NOPOLL_LIBRARY_DIRS}
 	${JSONC_LIBRARY_DIRS}
 )
 
@@ -40,17 +39,16 @@ add_library(
 target_include_directories(
 	webcom-c
 	INTERFACE
-	${WEBSOCKETS_INCLUDE_DIRS}
 	${JSONC_INCLUDE_DIRS}
 	PUBLIC
+	${NOPOLL_INCLUDE_DIRS}
 	${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
 	webcom-c
-	${WEBSOCKETS_LIBRARIES}
+	${NOPOLL_LIBRARIES}
 	${JSONC_LIBRARIES}
-	${EV}
 )
 
 #### documentation
@@ -80,7 +78,7 @@ target_include_directories(
 
 target_link_libraries(
 	webcom-test-parser
-	${CMAKE_BINARY_DIR}/libwebcom-c.so
+	webcom-c
 	${JSONC_LIBRARIES}
 )
 
@@ -129,7 +127,7 @@ target_include_directories(
 
 target_link_libraries(
 	webcom-test-cnx
-	${CMAKE_BINARY_DIR}/libwebcom-c.so
+	webcom-c
 	${JSONC_LIBRARIES}
     ${EV}
 )
