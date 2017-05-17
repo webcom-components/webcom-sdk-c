@@ -111,3 +111,13 @@ void wc_cnx_free(wc_cnx_t *cnx) {
 	nopoll_ctx_unref(cnx->np_ctx);
 	free(cnx);
 }
+
+int wc_cnx_keepalive(wc_cnx_t *cnx) {
+	int sent = 0;
+	static char keepalive = '0';
+
+	sent = nopoll_conn_send_text(cnx->np_conn, &keepalive, 1);
+	nopoll_conn_flush_writes(cnx->np_conn, 2000, 0);
+
+	return sent;
+}

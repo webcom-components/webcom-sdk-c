@@ -31,4 +31,6 @@ void wc_cnx_close(wc_cnx_t *cnx);
 
 void wc_service(wc_cnx_t *cnx);
 
+int wc_cnx_keepalive(wc_cnx_t *cnx);
+
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_CNX_H_ */
