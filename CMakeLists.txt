@@ -59,6 +59,28 @@ add_custom_target(
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
 
+#### examples
+
+## legorange
+
+add_executable(
+    legorange
+    examples/legorange.c
+)
+
+target_include_directories(
+    legorange
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${JSONC_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+    legorange
+    webcom-c
+    ${JSONC_LIBRARIES}
+)
+
 #### tests
 
 enable_testing()
