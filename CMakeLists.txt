@@ -89,6 +89,30 @@ add_test(
 	COMMAND webcom-test-parser
 )
 
+## message builder
+add_executable(
+    webcom-test-msg
+    test/test-msg.c
+)
+
+target_include_directories(
+    webcom-test-msg
+    PUBLIC
+    ${CMAKE_SOURCE_DIR}/include
+    ${JSONC_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+    webcom-test-msg
+    webcom-c
+    ${JSONC_LIBRARIES}
+)
+
+add_test(
+    NAME msg
+    COMMAND webcom-test-msg 
+)
+
 ## connection
 
 add_executable(

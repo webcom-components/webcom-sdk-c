@@ -107,3 +107,72 @@ void wc_msg_free(wc_msg_t *msg) {
 void wc_msg_init(wc_msg_t *msg) {
 	memset(msg, 0, sizeof(wc_msg_t));
 }
+
+static inline json_object* _wc_put_msg_to_json(wc_action_put_t *put) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(put->path));
+	json_object_object_add(jroot, "d", put->data);
+	if (put->hash) {
+		json_object_object_add(jroot, "h", json_object_new_string(put->hash));
+	}
+
+	return jroot;
+}
+static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
+	json_object *jroot;
+	static int64_t ref_cnt = 1;
+
+	jroot = json_object_new_object();
+
+	switch (data->type) {
+	case WC_DATA_MSG_ACTION:
+		json_object_object_add(jroot, "r", json_object_new_int64(data->u.action.r ? data->u.action.r : ref_cnt++));
+		switch (data->u.action.type) {
+		case WC_ACTION_PUT:
+			json_object_object_add(jroot, "a", json_object_new_string("p"));
+			json_object_object_add(jroot, "b", _wc_put_msg_to_json(&data->u.action.u.put));
+			break;
+		}
+		break;
+	case WC_DATA_MSG_PUSH:
+		break;
+	case WC_DATA_MSG_RESPONSE:
+		break;
+	}
+
+	return jroot;
+}
+
+static json_object* _wc_msg_to_json(wc_msg_t *msg) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+
+	switch (msg->type) {
+	case WC_MSG_DATA:
+		json_object_object_add(jroot, "t", json_object_new_string("d"));
+		json_object_object_add(jroot, "d", _wc_data_msg_to_json(&msg->u.data));
+		break;
+	case WC_MSG_CTRL:
+		json_object_object_add(jroot, "t", json_object_new_string("c"));
+		//json_object_object_add(jroot, "d", _wc_ctrl_msg_to_json(&msg->u.ctrl));
+		break;
+	}
+
+	return jroot;
+}
+
+char *wc_msg_to_json_str(wc_msg_t *msg) {
+	json_object *jroot;
+	char *res;
+
+	jroot = _wc_msg_to_json(msg);
+
+	res = strdup(json_object_to_json_string_ext(jroot, JSON_C_TO_STRING_PLAIN));
+
+	json_object_put(jroot);
+
+	return res;
+}

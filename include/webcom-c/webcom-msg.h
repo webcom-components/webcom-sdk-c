@@ -168,6 +168,7 @@ typedef struct {
 /**
  * does the internal initialization of a message structure
  *
+ * @param msg pointer to the message to initialize
  */
 void wc_msg_init(wc_msg_t *msg);
 
@@ -182,5 +183,15 @@ void wc_msg_init(wc_msg_t *msg);
  * @param msg the message structure to be freed
  */
 void wc_msg_free(wc_msg_t *msg);
+
+
+/**
+ * makes a JSON string representation of a Webcom message
+ *
+ * @param msg the webcom message
+ *
+ * @return a newly malloc'd JSON string (must be manually free'd after use);
+ */
+char *wc_msg_to_json_str(wc_msg_t *msg);
 
 #endif /* WEBCOM_MSG_H_ */
