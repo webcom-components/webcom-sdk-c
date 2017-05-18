@@ -47,6 +47,7 @@ static void stdin_cb (EV_P_ ev_io *w, int revents) {
 
 
 			if (wc_push_json_data(cnx, path, data) > 0) {
+			if (wc_put_json_data(cnx, path, data) > 0) {
 				puts("OK");
 			} else {
 				puts("ERROR");

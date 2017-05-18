@@ -1,6 +1,6 @@
 #include "webcom-c/webcom.h"
 
-int wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
+int wc_put_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	wc_msg_t msg;
 
 	wc_msg_init(&msg);
