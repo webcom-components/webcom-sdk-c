@@ -23,23 +23,39 @@ typedef struct wc_cnx {
 	void *user;
 	int fd;
 	wc_cnx_state_t state;
+	wc_parser_t *parser;
 	char rxbuf[WC_RX_BUF_LEN];
 } wc_cnx_t;
 
 int wc_cnx_on_readable(wc_cnx_t *cnx) {
 	int n, ret = 0;
-	wc_parser_t *parser = wc_parser_new();
 	wc_msg_t msg;
+
 	n = nopoll_conn_read(cnx->np_conn, cnx->rxbuf, WC_RX_BUF_LEN, nopoll_false, 0);
+
 	if (n > 0) {
-		if (wc_parse_msg_ex(parser, cnx->rxbuf, (size_t)n, &msg) == WC_PARSER_OK) {
+		if (cnx->parser == NULL) {
+			cnx->parser = wc_parser_new();
+		}
+		switch (wc_parse_msg_ex(cnx->parser, cnx->rxbuf, (size_t)n, &msg)) {
+		case WC_PARSER_OK:
 			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
 			ret = 1;
+			wc_parser_free(cnx->parser);
+			cnx->parser = NULL;
+			break;
+		case WC_PARSER_CONTINUE:
+			ret = 2;
+			break;
+		case WC_PARSER_ERROR:
+			wc_parser_free(cnx->parser);
+			cnx->parser = NULL;
+			break;
+		}
 		}
 	} else if (n == 0 && cnx->state == WC_CNX_STATE_CREATED) {
 
 	}
-	wc_parser_free(parser);
 	return ret;
 }
 
