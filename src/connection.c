@@ -52,9 +52,11 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 			cnx->parser = NULL;
 			break;
 		}
+	} else if (n == -1) {
+		if (nopoll_conn_is_ok(cnx->np_conn) == nopoll_false) {
+			cnx->state = WC_CNX_STATE_CLOSED;
+			cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
 		}
-	} else if (n == 0 && cnx->state == WC_CNX_STATE_CREATED) {
-
 	}
 	return ret;
 }
@@ -79,6 +81,7 @@ int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
 }
 
 void wc_cnx_close(wc_cnx_t *cnx) {
+	cnx->state = WC_CNX_STATE_CLOSED;
 	nopoll_conn_close(cnx->np_conn);
 	cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
 }
