@@ -11,7 +11,7 @@ static inline void clear_screen() {
 }
 
 void draw_brick(unsigned x, unsigned y, char color) {
-	printf("\033[%u;%uf\033[%dm%s\033[0m", y, 2*x, (int) color, color ? " ●" : "  ");
+	printf("\033[%u;%uf\033[%dm%s\033[0m", y + 1, 2*x + 1, (int) color, color ? " ●" : "  ");
 	fflush(stdout);
 }
 
