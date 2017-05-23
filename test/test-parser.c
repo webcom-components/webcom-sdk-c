@@ -9,7 +9,7 @@ int main(void) {
 	char *str1 = "Good morning, that's a nice tnetennba";
 	char *str2 = "{\"t\":\"c\",\"d\":{\"t\":\"h\",\"d\":{\"ts\":1492191239182,\"h\":\"\\/test\\/foo?bar=baz\",\"v\":\"5\"}}}";
 	char *str3 = "{\"t\":\"c\",\"d\":{\"t\":\"s\",\"d\":\"the truth is out there\"}}";
-	char *str4 = "{\"t\":\"d\",\"d\":{\"r\":3,\"a\":\"p\",\"b\":{\"p\":\"/brick/23-32\",\"d\":{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}";
+	char *str4 = "{\"t\":\"d\",\"d\":{\"r\":3,\"a\":\"p\",\"b\":{\"p\":\"\\/brick\\/23-32\",\"d\":{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}";
 	char *chunked_str5[] = {
 			"{\"t\":\"d\",\"d\":{\"r\":2,\"a\":\"p",
 			"\",\"b\":{\"p\":",

@@ -43,6 +43,17 @@ static inline int _wc_hlp_get_string(json_object *j, char *key, char **s) {
 }
 
 __attribute__((always_inline))
+static inline int _wc_hlp_get_json_str(json_object *j, char *key, char **s) {
+	json_object *jtmp;
+
+	if (json_object_object_get_ex(j, key, &jtmp)) {
+		*s = strdup(json_object_to_json_string_ext(jtmp, JSON_C_TO_STRING_PLAIN));
+		return 1;
+	}
+	return 0;
+}
+
+__attribute__((always_inline))
 static inline int _wc_hlp_get_long(json_object *j, const char *key, int64_t *l) {
 	json_object *jtmp;
 
@@ -87,7 +98,7 @@ static int wc_parse_action_put(json_object *jroot, wc_action_put_t *res) {
 	{
 		res->hash = NULL;
 	}
-	return _wc_hlp_get_string(jroot, "p", &res->path) && _wc_hlp_get_string(jroot, "d", &res->data);
+	return _wc_hlp_get_string(jroot, "p", &res->path) && _wc_hlp_get_json_str(jroot, "d", &res->data);
 }
 
 static int wc_parse_action_merge(json_object *jroot, wc_action_merge_t *res) {

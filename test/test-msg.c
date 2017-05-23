@@ -17,7 +17,7 @@ int main(void) {
 	msg1.u.data.u.action.type = WC_ACTION_PUT;
 	msg1.u.data.u.action.r = 3;
 	msg1.u.data.u.action.u.put.path = strdup("/brick/23-32");
-	msg1.u.data.u.action.u.put.data = "{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}";
+	msg1.u.data.u.action.u.put.data = strdup("{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}");
 
 	res = wc_msg_to_json_str(&msg1);
 
