@@ -48,7 +48,7 @@ int main(void) {
 	STFU_STR_EQ	("Put action path", msg4.u.data.u.action.u.put.path, "/brick/23-32");
 	STFU_STR_EQ	(
 			"Put action data",
-			json_object_to_json_string_ext(msg4.u.data.u.action.u.put.data, JSON_C_TO_STRING_PLAIN),
+			msg4.u.data.u.action.u.put.data,
 			"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
 	);
 

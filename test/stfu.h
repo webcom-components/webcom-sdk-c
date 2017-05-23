@@ -8,12 +8,14 @@
 #include <stdio.h>
 #include <string.h>
 
-inline unsigned int _stfu_npass_incr(unsigned int increment) {
+#define STFU_NOINLINE __attribute__ ((noinline))
+
+STFU_NOINLINE static unsigned int _stfu_npass_incr(unsigned int increment) {
 	static unsigned int n = 0;
 	return (n += increment);
 }
 
-inline unsigned int _stfu_nfail_incr(unsigned int increment) {
+STFU_NOINLINE static unsigned int _stfu_nfail_incr(unsigned int increment) {
 	static unsigned int n = 0;
 	return (n += increment);
 }

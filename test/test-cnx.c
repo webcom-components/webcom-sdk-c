@@ -49,7 +49,7 @@ static void send_cb(EV_P_ ev_timer *w, int revents) {
 	msg1.u.data.u.action.type = WC_ACTION_PUT;
 	msg1.u.data.u.action.r = 0;
 	msg1.u.data.u.action.u.put.path = strdup("/brick/12-12");
-	msg1.u.data.u.action.u.put.data = json_tokener_parse("{\"color\":\"green\",\"uid\":\"anonymous\",\"x\":12,\"y\":12}");
+	msg1.u.data.u.action.u.put.data = "{\"color\":\"green\",\"uid\":\"anonymous\",\"x\":12,\"y\":12}";
 
 	STFU_TRUE	("Data was sent", wc_cnx_send_msg(cnx, &msg1) > 0);
 

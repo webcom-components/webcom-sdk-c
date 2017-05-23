@@ -173,10 +173,8 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
  * tree.
  */
 static void on_data_update_update_put(wc_push_data_update_put_t *event) {
-	char *key;
-	struct json_object *val;
 	if (strcmp(board_name, event->path) == 0) {
-		/* we got informations fot the entire board */
+		/* we got informations for the entire board */
 		if (event->data == NULL) {
 			/* the board was reset */
 			clear_screen();
