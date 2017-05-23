@@ -207,7 +207,7 @@ static void on_brick_update(char *key, json_object *data) {
 		} else {
 			if (json_object_object_get_ex(data, "color", &jcolor)) {
 				scolor = (char *)json_object_get_string(jcolor);
-				if (strcmp("while", scolor) == 0) {
+				if (strcmp("white", scolor) == 0) {
 					brick = WHITE_BRICK;
 				} else if (strcmp("green", scolor) == 0) {
 					brick = GREEN_BRICK;
