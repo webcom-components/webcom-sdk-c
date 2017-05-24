@@ -181,7 +181,7 @@ error1:
 	return NULL;
 }
 
-wc_cnx_t *wc_cnx_new(char *endpoint, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
+wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
 	char sport[6];
 
@@ -196,7 +196,7 @@ wc_cnx_t *wc_cnx_new(char *endpoint, uint16_t port, char *path, wc_on_event_cb_t
 	snprintf(sport, 6, "%hu", port);
 
 	sport[5] = '\0';
-	res->np_conn = nopoll_conn_tls_new(res->np_ctx, 0, endpoint, sport, NULL, path, NULL, NULL);
+	res->np_conn = nopoll_conn_tls_new(res->np_ctx, 0, host, sport, NULL, path, NULL, NULL);
 	if (nopoll_conn_is_ok(res->np_conn)) {
 		res->state = WC_CNX_STATE_CREATED;
 		res->user = user;
