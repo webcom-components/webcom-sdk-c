@@ -1,3 +1,4 @@
+#include <stdlib.h>
 #include <string.h>
 #include <webcom-c/webcom.h>
 
@@ -26,6 +27,7 @@ int main(void) {
 	printf("\tgot: %s\n\tref: %s", res, str1);
 
 	wc_msg_free(&msg1);
+	free(res);
 
 	STFU_SUMMARY();
 
