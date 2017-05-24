@@ -98,12 +98,12 @@ int wc_cnx_get_fd(wc_cnx_t *cnx) {
 	return cnx->fd;
 }
 
-wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *endpoint, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
+static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char *endpoint, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
 	char sport[6];
-	int proxy_socket;
-	struct hostent *proxy_hostent;
-	struct sockaddr_in proxy_serveraddr;
+	int sockfd;
+	struct hostent *sock_hostent;
+	struct sockaddr_in sock_serveraddr;
 	int nread;
 	noPollConnOpts *npopts;
 
@@ -119,46 +119,47 @@ wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *end
 
 	sport[5] = '\0';
 
-	if((proxy_socket = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
 		goto error2;
 	}
 
-	proxy_hostent = gethostbyname(proxy_host);
-	if (proxy_hostent == NULL) {
+	sock_hostent = gethostbyname(proxy_host != NULL ? proxy_host : endpoint);
+	if (sock_hostent == NULL) {
 		goto error2;
 	}
 
 	/* build the server's Internet address */
-	bzero((char *) &proxy_serveraddr, sizeof(proxy_serveraddr));
-	proxy_serveraddr.sin_family = AF_INET;
-	bcopy((char *)proxy_hostent->h_addr,
-			(char *)&proxy_serveraddr.sin_addr.s_addr, proxy_hostent->h_length);
-	proxy_serveraddr.sin_port = htons(proxy_port);
+	bzero((char *) &sock_serveraddr, sizeof(sock_serveraddr));
+	sock_serveraddr.sin_family = AF_INET;
+	bcopy((char *)sock_hostent->h_addr,	(char *)&sock_serveraddr.sin_addr.s_addr, sock_hostent->h_length);
+	sock_serveraddr.sin_port = htons(proxy_host != NULL ? proxy_port : port);
 
-	if (connect(proxy_socket, (struct sockaddr*)&proxy_serveraddr, sizeof(proxy_serveraddr)) < 0) {
+	if (connect(sockfd, (struct sockaddr*)&sock_serveraddr, sizeof(sock_serveraddr)) < 0) {
 		goto error2;
 	}
 
-	dprintf(proxy_socket,
-			"CONNECT %s:%hu HTTP/1.1\r\n"
-			"Host: %s:%hu\r\n"
-			"Proxy-Connection: keep-alive\r\n"
-			"Connection: keep-alive\r\n\r\n",
-			endpoint, port, endpoint, port);
+	if (proxy_host != NULL) {
+		dprintf(sockfd,
+				"CONNECT %s:%hu HTTP/1.1\r\n"
+				"Host: %s:%hu\r\n"
+				"Proxy-Connection: keep-alive\r\n"
+				"Connection: keep-alive\r\n\r\n",
+				endpoint, port, endpoint, port);
 
-	nread = read(proxy_socket, res->rxbuf, 13);
+		nread = read(sockfd, res->rxbuf, 13);
 
-	/* expect "HTTP/1.? 200 *" or die */
-	if (nread != 13 || strncmp(res->rxbuf + 8, " 200 ", 5) != 0) {
-		close(proxy_socket);
-		goto error2;
+		/* expect "HTTP/1.? 200 *" or die */
+		if (nread != 13 || strncmp(res->rxbuf + 8, " 200 ", 5) != 0) {
+			close(sockfd);
+			goto error2;
+		}
+
+		/* empty the socket read buffer */
+		while (recv(sockfd, res->rxbuf, WC_RX_BUF_LEN, MSG_DONTWAIT) > 0);
 	}
-
-	/* empty the socket read buffer */
-	while (recv(proxy_socket, res->rxbuf, WC_RX_BUF_LEN, MSG_DONTWAIT) > 0);
 
 	npopts = nopoll_conn_opts_new();
-	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, proxy_socket, endpoint, sport, NULL, path, NULL, NULL);
+	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, sockfd, endpoint, sport, NULL, path, NULL, NULL);
 	nopoll_conn_opts_free(npopts);
 
 	if (nopoll_conn_is_ok(res->np_conn)) {
@@ -181,40 +182,12 @@ error1:
 	return NULL;
 }
 
+wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
+	return wc_cnx_new_with_ex(proxy_host, proxy_port, host, port, path, callback, user);
+}
+
 wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
-	wc_cnx_t *res;
-	char sport[6];
-
-	res = calloc(1, sizeof(wc_cnx_t));
-
-	if (res == NULL) {
-		goto error1;
-	}
-
-	res->np_ctx = nopoll_ctx_new();
-
-	snprintf(sport, 6, "%hu", port);
-
-	sport[5] = '\0';
-	res->np_conn = nopoll_conn_tls_new(res->np_ctx, 0, host, sport, NULL, path, NULL, NULL);
-	if (nopoll_conn_is_ok(res->np_conn)) {
-		res->state = WC_CNX_STATE_CREATED;
-		res->user = user;
-		res->callback = callback;
-		res->fd = nopoll_conn_socket(res->np_conn);
-		nopoll_conn_wait_until_connection_ready(res->np_conn, 2);
-		res->state = WC_CNX_STATE_READY;
-		callback(WC_EVENT_ON_CNX_ESTABLISHED, res, NULL, 0, user);
-	} else {
-		goto error2;
-	}
-
-	return res;
-
-error2:
-	free(res);
-error1:
-	return NULL;
+	return wc_cnx_new_with_ex(NULL, 0, host, port, path, callback, user);
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {
