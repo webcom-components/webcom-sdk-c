@@ -157,10 +157,9 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 			}
 			break;
 		case WC_EVENT_ON_CNX_CLOSED:
-			clear_screen();
-			move_to(0, 0);
 			puts("Connection closed, Bye");
 			ev_break(EV_A_ EVBREAK_ALL);
+			wc_cnx_free(cnx);
 			break;
 		default:
 			break;
@@ -271,9 +270,10 @@ void stdin_cb (EV_P_ ev_io *w, int revents) {
 	if (feof(stdin)) {
 		clear_screen();
 		move_to(0, 0);
-		puts("Bye");
+		puts("Closing...");
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
+		wc_cnx_close(cnx);
 	}
 }
 
