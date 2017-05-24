@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -10,6 +11,9 @@
 
 #include "webcom-c/webcom-cnx.h"
 #include "webcom-c/webcom-parser.h"
+
+#define WEBCOM_PROTOCOL_VERSION "5"
+#define WEBCOM_WS_PATH "/_wss/.ws"
 
 typedef enum {
 	WC_CNX_STATE_INIT = 0,
@@ -98,7 +102,7 @@ int wc_cnx_get_fd(wc_cnx_t *cnx) {
 	return cnx->fd;
 }
 
-static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char *endpoint, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
+static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
 	char sport[6];
 	int sockfd;
@@ -106,6 +110,7 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	struct sockaddr_in sock_serveraddr;
 	int nread;
 	noPollConnOpts *npopts;
+	char *get_path;
 
 	res = calloc(1, sizeof(wc_cnx_t));
 
@@ -123,7 +128,7 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 		goto error2;
 	}
 
-	sock_hostent = gethostbyname(proxy_host != NULL ? proxy_host : endpoint);
+	sock_hostent = gethostbyname(proxy_host != NULL ? proxy_host : host);
 	if (sock_hostent == NULL) {
 		goto error2;
 	}
@@ -144,7 +149,7 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 				"Host: %s:%hu\r\n"
 				"Proxy-Connection: keep-alive\r\n"
 				"Connection: keep-alive\r\n\r\n",
-				endpoint, port, endpoint, port);
+				host, port, host, port);
 
 		nread = read(sockfd, res->rxbuf, 13);
 
@@ -159,7 +164,9 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	}
 
 	npopts = nopoll_conn_opts_new();
-	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, sockfd, endpoint, sport, NULL, path, NULL, NULL);
+	asprintf(&get_path, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
+	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, sockfd, host, sport, NULL, get_path, NULL, NULL);
+	free(get_path);
 	nopoll_conn_opts_free(npopts);
 
 	if (nopoll_conn_is_ok(res->np_conn)) {
@@ -177,17 +184,18 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	return res;
 
 error2:
+	free(get_path);
 	free(res);
 error1:
 	return NULL;
 }
 
-wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
-	return wc_cnx_new_with_ex(proxy_host, proxy_port, host, port, path, callback, user);
+wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
+	return wc_cnx_new_with_ex(proxy_host, proxy_port, host, port, application, callback, user);
 }
 
-wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user) {
-	return wc_cnx_new_with_ex(NULL, 0, host, port, path, callback, user);
+wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
+	return wc_cnx_new_with_ex(NULL, 0, host, port, application, callback, user);
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {

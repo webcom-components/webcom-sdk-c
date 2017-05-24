@@ -14,9 +14,9 @@ typedef enum {
 
 typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user);
 
-wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user);
+wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user);
 
-wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *path, wc_on_event_cb_t callback, void *user);
+wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *application, uint16_t port, char *path, wc_on_event_cb_t callback, void *user);
 
 void wc_cnx_free(wc_cnx_t *cnx);
 

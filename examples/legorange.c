@@ -67,7 +67,7 @@ int main(int argc, char *argv[]) {
 		cnx = wc_cnx_new(
 				"io.datasync.orange.com",
 				443,
-				"/_wss/.ws?v=5&ns=legorange",
+				"legorange",
 				webcom_service_cb, /* this is the callback that gets called
 				when a webcom-level event occurs */
 				loop);
@@ -77,7 +77,7 @@ int main(int argc, char *argv[]) {
 				proxy_port,
 				"io.datasync.orange.com",
 				443,
-				"/_wss/.ws?v=5&ns=legorange",
+				"legorange",
 				webcom_service_cb,
 				loop);
 	}
