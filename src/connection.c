@@ -192,6 +192,7 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *path, wc_on_event_cb_t cal
 
 void wc_cnx_free(wc_cnx_t *cnx) {
 	nopoll_ctx_unref(cnx->np_ctx);
+	if (cnx->parser != NULL) wc_parser_free(cnx->parser);
 	free(cnx);
 }
 
