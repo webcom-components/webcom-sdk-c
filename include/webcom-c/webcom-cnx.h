@@ -2,7 +2,6 @@
 #define INCLUDE_WEBCOM_C_WEBCOM_CNX_H_
 
 #include <stddef.h>
-#include <ev.h>
 
 #include "webcom-msg.h"
 
@@ -21,8 +20,6 @@ wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *end
 
 void wc_cnx_free(wc_cnx_t *cnx);
 
-void wc_cnx_connect(wc_cnx_t *cnx);
-
 int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg);
 
 int wc_cnx_get_fd(wc_cnx_t *cnx);
@@ -30,8 +27,6 @@ int wc_cnx_get_fd(wc_cnx_t *cnx);
 int wc_cnx_on_readable(wc_cnx_t *cnx);
 
 void wc_cnx_close(wc_cnx_t *cnx);
-
-void wc_service(wc_cnx_t *cnx);
 
 int wc_cnx_keepalive(wc_cnx_t *cnx);
 
