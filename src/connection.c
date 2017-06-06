@@ -167,7 +167,6 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	asprintf(&get_path, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
 	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, sockfd, host, sport, NULL, get_path, NULL, NULL);
 	free(get_path);
-	nopoll_conn_opts_free(npopts);
 
 	if (nopoll_conn_is_ok(res->np_conn)) {
 		res->state = WC_CNX_STATE_CREATED;
