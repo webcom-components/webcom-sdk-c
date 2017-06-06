@@ -108,11 +108,16 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	wc_cnx_t *res;
 	char sport[6];
 	int sockfd;
-	struct hostent *sock_hostent;
-	struct sockaddr_in sock_serveraddr;
-	int nread;
+	struct addrinfo hints;
+	struct addrinfo *result, *rp;
+	int nread, s;
 	noPollConnOpts *npopts;
 	char *get_path;
+	char *sock_host;
+	uint16_t sock_port;
+
+	sock_host = proxy_host == NULL ? host : proxy_host;
+	sock_port = proxy_host == NULL ? port : proxy_port;
 
 	res = calloc(1, sizeof(wc_cnx_t));
 
@@ -122,26 +127,32 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 
 	res->np_ctx = nopoll_ctx_new();
 
-	snprintf(sport, 6, "%hu", port);
+	memset(&hints, 0, sizeof(struct addrinfo));
+	hints.ai_family = AF_INET;
+	hints.ai_socktype = SOCK_STREAM;
 
+	snprintf(sport, 6, "%hu", sock_port);
 	sport[5] = '\0';
 
-	if((sockfd = socket(AF_INET, SOCK_STREAM, 0)) < 0) {
+	s = getaddrinfo(sock_host, sport, &hints, &result);
+
+	if (s != 0) {
 		goto error2;
 	}
 
-	sock_hostent = gethostbyname(proxy_host != NULL ? proxy_host : host);
-	if (sock_hostent == NULL) {
-		goto error2;
+	for (rp = result ; rp != NULL ; rp = rp->ai_next) {
+		if((sockfd = socket(rp->ai_family, rp->ai_socktype, 0)) < 0) {
+			continue;
+		}
+
+		if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) < 0) {
+			close(sockfd);
+		} else {
+			break;
+		}
 	}
 
-	/* build the server's Internet address */
-	bzero((char *) &sock_serveraddr, sizeof(sock_serveraddr));
-	sock_serveraddr.sin_family = AF_INET;
-	bcopy((char *)sock_hostent->h_addr,	(char *)&sock_serveraddr.sin_addr.s_addr, sock_hostent->h_length);
-	sock_serveraddr.sin_port = htons(proxy_host != NULL ? proxy_port : port);
-
-	if (connect(sockfd, (struct sockaddr*)&sock_serveraddr, sizeof(sock_serveraddr)) < 0) {
+	if(rp == NULL) {
 		goto error2;
 	}
 
@@ -167,6 +178,8 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 
 	npopts = nopoll_conn_opts_new();
 	asprintf(&get_path, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
+	snprintf(sport, 6, "%hu", port);
+	sport[5] = '\0';
 	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, sockfd, host, sport, NULL, get_path, NULL, NULL);
 	free(get_path);
 
