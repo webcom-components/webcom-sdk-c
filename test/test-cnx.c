@@ -73,7 +73,7 @@ int main(void) {
 
 
 
-	STFU_TRUE	("Create new wc_cnx_t object", (cnx1 = wc_cnx_new("io.datasync.orange.com", 443, "/_wss/.ws?v=5&ns=legorange", test_cb, (void *)0xDEADBEEF)) != NULL);
+	STFU_TRUE	("Create new wc_cnx_t object", (cnx1 = wc_cnx_new("io.datasync.orange.com", 443, "legorange", test_cb, (void *)0xDEADBEEF)) != NULL);
 
 	ev_io_init(&ev_wc_readable, readable_cb, wc_cnx_get_fd(cnx1), EV_READ);
 	ev_wc_readable.data = (void *)cnx1;
