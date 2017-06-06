@@ -1,7 +1,6 @@
 #define _GNU_SOURCE
 #include <stdio.h>
 #include <unistd.h>
-#include <stdio_ext.h>
 #include <string.h>
 #include <webcom-c/webcom.h>
 #include <ev.h>
