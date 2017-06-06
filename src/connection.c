@@ -177,13 +177,13 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 		res->state = WC_CNX_STATE_READY;
 		callback(WC_EVENT_ON_CNX_ESTABLISHED, res, NULL, 0, user);
 	} else {
-		goto error2;
+		goto error3;
 	}
 
 	return res;
-
-error2:
+error3:
 	free(get_path);
+error2:
 	free(res);
 error1:
 	return NULL;
