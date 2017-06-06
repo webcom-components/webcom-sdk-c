@@ -55,6 +55,7 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 			ret = 1;
 			wc_parser_free(cnx->parser);
 			cnx->parser = NULL;
+			wc_msg_free(&msg);
 			break;
 		case WC_PARSER_CONTINUE:
 			ret = 2;
@@ -88,6 +89,7 @@ int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
 
 	sent = nopoll_conn_send_text(cnx->np_conn, jsonstr, len);
 	nopoll_conn_flush_writes(cnx->np_conn, 2000, 0);
+	free(jsonstr);
 
 	return sent;
 }
