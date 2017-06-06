@@ -339,6 +339,7 @@ wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, w
 
 	switch (jte) {
 	case json_tokener_success:
+		memset(res, 0, sizeof(wc_msg_t));
 		ret = wc_parse_msg_json(jroot, res);
 		json_object_put(jroot);
 		if (ret) {

@@ -44,6 +44,7 @@ static void send_cb(EV_P_ ev_timer *w, int revents) {
 
 	puts("\tSENDING...");
 
+	memset(&msg1, 0, sizeof(wc_msg_t));
 	msg1.type = WC_MSG_DATA;
 	msg1.u.data.type = WC_DATA_MSG_ACTION;
 	msg1.u.data.u.action.type = WC_ACTION_PUT;
