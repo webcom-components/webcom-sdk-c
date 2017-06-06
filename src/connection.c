@@ -156,7 +156,7 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 		nread = read(sockfd, res->rxbuf, 13);
 
 		/* expect "HTTP/1.? 200 *" or die */
-		if (nread != 13 || strncmp(res->rxbuf + 8, " 200 ", 5) != 0) {
+		if (nread != 13 || strncmp(res->rxbuf, "HTTP/1.", 7) != 0 || strncmp(res->rxbuf + 8, " 200 ", 5) != 0) {
 			close(sockfd);
 			goto error2;
 		}
