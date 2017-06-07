@@ -97,13 +97,11 @@ target_include_directories(
 	webcom-test-parser
 	PUBLIC
 	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
 )
 
 target_link_libraries(
 	webcom-test-parser
 	webcom-c
-	${JSONC_LIBRARIES}
 )
 
 add_test(
@@ -121,13 +119,11 @@ target_include_directories(
     webcom-test-msg
     PUBLIC
     ${CMAKE_SOURCE_DIR}/include
-    ${JSONC_INCLUDE_DIRS}
 )
 
 target_link_libraries(
     webcom-test-msg
     webcom-c
-    ${JSONC_LIBRARIES}
 )
 
 add_test(

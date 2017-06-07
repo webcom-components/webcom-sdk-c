@@ -16,18 +16,18 @@ static inline void _wc_free_action(wc_action_t *msg) {
 		break;
 	case WC_ACTION_MERGE:
 		IF_NOT_NULL_DO(free, msg->u.merge.path);
-		IF_NOT_NULL_DO(json_object_put, msg->u.merge.data);
+		IF_NOT_NULL_DO(free, msg->u.merge.data);
 		break;
 	case WC_ACTION_ON_DISCONNECT_CANCEL:
 		IF_NOT_NULL_DO(free, msg->u.on_disc_cancel.path);
 		break;
 	case WC_ACTION_ON_DISCONNECT_MERGE:
 		IF_NOT_NULL_DO(free, msg->u.on_disc_merge.path);
-		IF_NOT_NULL_DO(json_object_put, msg->u.on_disc_merge.data);
+		IF_NOT_NULL_DO(free, msg->u.on_disc_merge.data);
 		break;
 	case WC_ACTION_ON_DISCONNECT_PUT:
 		IF_NOT_NULL_DO(free, msg->u.on_disc_put.path);
-		IF_NOT_NULL_DO(json_object_put, msg->u.on_disc_put.data);
+		IF_NOT_NULL_DO(free, msg->u.on_disc_put.data);
 		break;
 	case WC_ACTION_PUT:
 		IF_NOT_NULL_DO(free, msg->u.put.path);
@@ -53,18 +53,18 @@ static inline void _wc_free_push(wc_push_t *msg) {
 		break;
 	case WC_PUSH_DATA_UPDATE_PUT:
 		IF_NOT_NULL_DO(free, msg->u.update_put.path);
-		IF_NOT_NULL_DO(json_object_put, msg->u.update_put.data);
+		IF_NOT_NULL_DO(free, msg->u.update_put.data);
 		break;
 	case WC_PUSH_DATA_UPDATE_MERGE:
 		IF_NOT_NULL_DO(free, msg->u.update_merge.path);
-		IF_NOT_NULL_DO(json_object_put, msg->u.update_put.data);
+		IF_NOT_NULL_DO(free, msg->u.update_put.data);
 		break;
 	}
 }
 
 static inline void _wc_free_response(wc_response_t *msg) {
 	IF_NOT_NULL_DO(free, msg->status);
-	IF_NOT_NULL_DO(json_object_put, msg->data);
+	IF_NOT_NULL_DO(free, msg->data);
 }
 
 static inline void _wc_free_data_msg(wc_data_msg_t *msg) {

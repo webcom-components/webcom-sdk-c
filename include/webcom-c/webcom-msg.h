@@ -2,7 +2,6 @@
 #define WEBCOM_MSG_H_
 
 #include <stdint.h>
-#include <json-c/json.h>
 
 /* Data message data types */
 
@@ -39,7 +38,7 @@ typedef struct {
 
 typedef struct {
 	char *path;
-	json_object *data;
+	char *data;
 } wc_action_merge_t;
 
 typedef struct {
@@ -57,12 +56,12 @@ typedef struct {
 
 typedef struct {
 	char *path;
-	json_object *data;
+	char *data;
 } wc_action_on_disc_put_t;
 
 typedef struct {
 	char *path;
-	json_object *data;
+	char *data;
 } wc_action_on_disc_merge_t;
 
 typedef struct {
@@ -87,7 +86,7 @@ typedef struct {
 typedef struct {
 	int64_t r;
 	char *status;
-	json_object *data;
+	char *data;
 } wc_response_t;
 
 typedef struct {
@@ -101,12 +100,12 @@ typedef struct {
 
 typedef struct {
 	char *path;
-	json_object *data;
+	char *data;
 } wc_push_data_update_put_t;
 
 typedef struct {
 	char *path;
-	json_object *data;
+	char *data;
 } wc_push_data_update_merge_t;
 
 typedef struct {

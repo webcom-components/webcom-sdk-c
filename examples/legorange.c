@@ -5,6 +5,7 @@
 #include <webcom-c/webcom.h>
 #include <ev.h>
 #include <getopt.h>
+#include <json-c/json.h>
 
 /*
  * boring forward declarations to make the compiler happy, skip this part
@@ -171,21 +172,27 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
  * tree.
  */
 static void on_data_update_update_put(wc_push_data_update_put_t *event) {
+	json_object *data;
+
+	data = json_tokener_parse(event->data);
+
 	if (strcmp(board_name, event->path) == 0) {
 		/* we got informations for the entire board */
-		if (event->data == NULL) {
+		if (data == NULL) {
 			/* the board was reset */
 			clear_screen();
 		} else {
-			json_object_object_foreach(event->data, key, val) {
+			json_object_object_foreach(data, key, val) {
 				on_brick_update(key, val);
 			}
 		}
 	} else if (strncmp(board_name, event->path, strlen(board_name)) == 0
 			&& event->path[strlen(board_name)] == '/') {
 		/* just one single brick data was modified */
-		on_brick_update(event->path + strlen(board_name) + 1, event->data);
+		on_brick_update(event->path + strlen(board_name) + 1, data);
 	}
+
+	json_object_put(data);
 }
 
 /*

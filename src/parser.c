@@ -102,12 +102,8 @@ static int wc_parse_action_put(json_object *jroot, wc_action_put_t *res) {
 }
 
 static int wc_parse_action_merge(json_object *jroot, wc_action_merge_t *res) {
-	if (!json_object_object_get_ex(jroot, "d", &res->data))
-	{
-		return 0;
-	}
-	json_object_get(res->data);
-	return _wc_hlp_get_string(jroot, "p", &res->path);
+	return _wc_hlp_get_string(jroot, "p", &res->path)
+			&& _wc_hlp_get_json_str(jroot, "d", &res->data);
 }
 
 static int wc_parse_action_listen(json_object *jroot, wc_action_listen_t *res) {
@@ -124,21 +120,13 @@ static int wc_parse_action_auth(json_object *jroot, wc_action_auth_t *res) {
 }
 
 static int wc_parse_action_on_disc_put(json_object *jroot, wc_action_on_disc_put_t *res) {
-	if (!json_object_object_get_ex(jroot, "d", &res->data))
-	{
-		return 0;
-	}
-	json_object_get(res->data);
-	return _wc_hlp_get_string(jroot, "p", &res->path);
+	return _wc_hlp_get_string(jroot, "p", &res->path)
+			&& _wc_hlp_get_json_str(jroot, "d", &res->data);;
 }
 
 static int wc_parse_action_on_disc_merge(json_object *jroot, wc_action_on_disc_merge_t *res) {
-	if (!json_object_object_get_ex(jroot, "d", &res->data))
-	{
-		return 0;
-	}
-	json_object_get(res->data);
-	return _wc_hlp_get_string(jroot, "p", &res->path);
+	return _wc_hlp_get_string(jroot, "p", &res->path)
+			&& _wc_hlp_get_json_str(jroot, "d", &res->data);;
 }
 
 static int wc_parse_action_on_disc_cancel(json_object *jroot, wc_action_on_disc_cancel_t *res) {
@@ -194,12 +182,8 @@ static int wc_parse_response(json_object *jroot, wc_response_t *res) {
 	json_object *jtmp;
 	if (_wc_hlp_get_long(jroot, "r", &res->r)) {
 		if (json_object_object_get_ex(jroot, "b", &jtmp)) {
-			if (!json_object_object_get_ex(jtmp, "d", &res->data))
-			{
-				return 0;
-			}
-			json_object_get(res->data);
-			return _wc_hlp_get_string(jtmp, "s", &res->status);
+			return _wc_hlp_get_string(jtmp, "s", &res->status)
+					&& _wc_hlp_get_json_str(jtmp, "d", &res->data);
 		}
 	}
 	return 0;
@@ -215,21 +199,13 @@ static int wc_parse_push_listen_revoked(json_object *jroot, wc_push_listen_revok
 }
 
 static int wc_parse_push_update_put(json_object *jroot, wc_push_data_update_put_t *res) {
-	if (!json_object_object_get_ex(jroot, "d", &res->data))
-	{
-		return 0;
-	}
-	json_object_get(res->data);
-	return _wc_hlp_get_string(jroot, "p", &res->path);
+	return _wc_hlp_get_string(jroot, "p", &res->path)
+			&& _wc_hlp_get_json_str(jroot, "d", &res->data);;
 }
 
 static int wc_parse_push_update_merge(json_object *jroot, wc_push_data_update_merge_t *res) {
-	if (!json_object_object_get_ex(jroot, "d", &res->data))
-	{
-		return 0;
-	}
-	json_object_get(res->data);
-	return _wc_hlp_get_string(jroot, "p", &res->path);
+	return _wc_hlp_get_string(jroot, "p", &res->path)
+			&& _wc_hlp_get_json_str(jroot, "d", &res->data);;
 }
 
 static int wc_parse_push(json_object *jroot, wc_push_t *res) {

@@ -71,13 +71,13 @@ int main(void) {
 	STFU_STR_EQ ("Check put response status is 'ok'", msg6.u.data.u.response.status, "ok");
 	STFU_STR_EQ	(
 				"Check put response data",
-				json_object_to_json_string_ext(msg6.u.data.u.response.data, JSON_C_TO_STRING_PLAIN),
+				msg6.u.data.u.response.data,
 				"\"ok\""
 	);
 	STFU_TRUE	("Parse valid update put push", wc_parse_msg(str7, &msg7) == 1);
 	STFU_STR_EQ	(
 					"Check put update put push data",
-					json_object_to_json_string_ext(msg7.u.data.u.push.u.update_put.data, JSON_C_TO_STRING_PLAIN),
+					msg7.u.data.u.push.u.update_put.data,
 					"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
 	);
 
