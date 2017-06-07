@@ -104,7 +104,7 @@ int wc_cnx_get_fd(wc_cnx_t *cnx) {
 	return cnx->fd;
 }
 
-static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
+static wc_cnx_t *wc_cnx_new_ex(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
 	char sport[6];
 	int sockfd;
@@ -208,11 +208,11 @@ error1:
 }
 
 wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
-	return wc_cnx_new_with_ex(proxy_host, proxy_port, host, port, application, callback, user);
+	return wc_cnx_new_ex(proxy_host, proxy_port, host, port, application, callback, user);
 }
 
 wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
-	return wc_cnx_new_with_ex(NULL, 0, host, port, application, callback, user);
+	return wc_cnx_new_ex(NULL, 0, host, port, application, callback, user);
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {
