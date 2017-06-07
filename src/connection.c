@@ -109,7 +109,7 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	char sport[6];
 	int sockfd;
 	struct addrinfo hints;
-	struct addrinfo *result, *rp;
+	struct addrinfo *ai, *pai;
 	int nread, s;
 	noPollConnOpts *npopts;
 	char *get_path;
@@ -128,31 +128,34 @@ static wc_cnx_t *wc_cnx_new_with_ex(char *proxy_host, uint16_t proxy_port, char 
 	res->np_ctx = nopoll_ctx_new();
 
 	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_INET;
+	hints.ai_family = AF_UNSPEC;
 	hints.ai_socktype = SOCK_STREAM;
 
 	snprintf(sport, 6, "%hu", sock_port);
 	sport[5] = '\0';
 
-	s = getaddrinfo(sock_host, sport, &hints, &result);
+	s = getaddrinfo(sock_host, sport, &hints, &ai);
 
 	if (s != 0) {
 		goto error2;
 	}
 
-	for (rp = result ; rp != NULL ; rp = rp->ai_next) {
-		if((sockfd = socket(rp->ai_family, rp->ai_socktype, 0)) < 0) {
+	for (pai = ai ; pai != NULL ; pai = pai->ai_next) {
+		if((sockfd = socket(pai->ai_family, pai->ai_socktype, 0)) < 0) {
 			continue;
 		}
 
-		if (connect(sockfd, rp->ai_addr, rp->ai_addrlen) < 0) {
+		if (connect(sockfd, pai->ai_addr, pai->ai_addrlen) < 0) {
 			close(sockfd);
+			continue;
 		} else {
 			break;
 		}
 	}
 
-	if(rp == NULL) {
+	freeaddrinfo(ai);
+
+	if(pai == NULL) {
 		goto error2;
 	}
 
