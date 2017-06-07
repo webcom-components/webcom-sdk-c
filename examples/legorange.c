@@ -112,9 +112,9 @@ int main(int argc, char *argv[]) {
 	ev_io_start (loop, &stdin_watcher);
 
 	/* enter the event loop */
-    ev_run(loop, 0);
+	ev_run(loop, 0);
 
-    return 0;
+	return 0;
 }
 
 /* called by libev on read event on the webcom TCP socket */

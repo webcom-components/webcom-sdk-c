@@ -12,11 +12,11 @@ if(NOT ${JSONC_FOUND})
 endif(NOT ${JSONC_FOUND})
 
 if(NOT ${NOPOLL_FOUND})
-    message(FATAL_ERROR "could not find prerequisite: libnopoll")
+	message(FATAL_ERROR "could not find prerequisite: libnopoll")
 endif(NOT ${NOPOLL_FOUND})
 
 if(${EV-NOTFOUND})
-    message(FATAL_ERROR "could not find prerequisite: libev")
+	message(FATAL_ERROR "could not find prerequisite: libev")
 endif(${EV-NOTFOUND})
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
@@ -65,22 +65,22 @@ add_custom_target(
 ## legorange
 
 add_executable(
-    legorange
-    examples/legorange.c
+	legorange
+	examples/legorange.c
 )
 
 target_include_directories(
-    legorange
-    PUBLIC
-    ${CMAKE_SOURCE_DIR}/include
-    ${JSONC_INCLUDE_DIRS}
+	legorange
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
 )
 
 target_link_libraries(
-    legorange
-    webcom-c
-    ${JSONC_LIBRARIES}
-    ${EV}
+	legorange
+	webcom-c
+	${JSONC_LIBRARIES}
+	${EV}
 )
 
 #### tests
@@ -111,24 +111,24 @@ add_test(
 
 ## message builder
 add_executable(
-    webcom-test-msg
-    test/test-msg.c
+	webcom-test-msg
+	test/test-msg.c
 )
 
 target_include_directories(
-    webcom-test-msg
-    PUBLIC
-    ${CMAKE_SOURCE_DIR}/include
+	webcom-test-msg
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
-    webcom-test-msg
-    webcom-c
+	webcom-test-msg
+	webcom-c
 )
 
 add_test(
-    NAME msg
-    COMMAND webcom-test-msg 
+	NAME msg
+	COMMAND webcom-test-msg
 )
 
 ## connection
@@ -149,7 +149,7 @@ target_link_libraries(
 	webcom-test-cnx
 	webcom-c
 	${JSONC_LIBRARIES}
-    ${EV}
+	${EV}
 )
 
 add_test(
