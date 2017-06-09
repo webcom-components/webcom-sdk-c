@@ -46,13 +46,14 @@ int wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	wc_msg_t msg;
 	char pushid[20];
 	int ret;
+	int64_t reqnum  = wc_next_reqnum(cnx);
 
 	wc_msg_init(&msg);
 	msg.type = WC_MSG_DATA;
 	msg.u.data.type = WC_DATA_MSG_ACTION;
 	msg.u.data.u.action.type = WC_ACTION_PUT;
-	msg.u.data.u.action.r = 0;
 	wc_push_id(&cnx->pids, wc_server_now(cnx), pushid);
+	msg.u.data.u.action.r = reqnum;
 	asprintf(&msg.u.data.u.action.u.put.path, "%s/%.20s", path, pushid);
 	msg.u.data.u.action.u.put.data = json;
 
@@ -65,12 +66,13 @@ int wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
 
 int wc_put_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	wc_msg_t msg;
+	int64_t reqnum = wc_next_reqnum(cnx);
 
 	wc_msg_init(&msg);
 	msg.type = WC_MSG_DATA;
 	msg.u.data.type = WC_DATA_MSG_ACTION;
 	msg.u.data.u.action.type = WC_ACTION_PUT;
-	msg.u.data.u.action.r = 0;
+	msg.u.data.u.action.r = reqnum;
 	msg.u.data.u.action.u.put.path = path;
 	msg.u.data.u.action.u.put.data = json;
 

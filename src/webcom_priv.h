@@ -34,6 +34,7 @@ typedef struct wc_cnx {
 	char rxbuf[WC_RX_BUF_LEN];
 	struct pushid_state pids;
 	int64_t time_offset;
+	int64_t last_req;
 } wc_cnx_t;
 
 static inline int64_t wc_now() {
@@ -44,6 +45,10 @@ static inline int64_t wc_now() {
 
 static inline int64_t wc_server_now(wc_cnx_t *cnx) {
 	return wc_now() - cnx->time_offset;
+}
+
+static inline int64_t wc_next_reqnum(wc_cnx_t *cnx) {
+	return ++cnx->last_req;
 }
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

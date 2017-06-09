@@ -132,13 +132,12 @@ static inline json_object* _wc_listen_msg_to_json(wc_action_listen_t *listen) {
 
 static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 	json_object *jroot;
-	static int64_t ref_cnt = 1;
 
 	jroot = json_object_new_object();
 
 	switch (data->type) {
 	case WC_DATA_MSG_ACTION:
-		json_object_object_add(jroot, "r", json_object_new_int64(data->u.action.r ? data->u.action.r : ref_cnt++));
+		json_object_object_add(jroot, "r", json_object_new_int64(data->u.action.r));
 		switch (data->u.action.type) {
 		case WC_ACTION_PUT:
 			json_object_object_add(jroot, "a", json_object_new_string("p"));
