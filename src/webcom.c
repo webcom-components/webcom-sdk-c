@@ -43,25 +43,18 @@ static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 
 
 int64_t wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
-	wc_msg_t msg;
 	char pushid[20];
-	int ret;
-	int64_t reqnum  = wc_next_reqnum(cnx);
+	char *push_path;
+	int64_t ret;
 
-	wc_msg_init(&msg);
-	msg.type = WC_MSG_DATA;
-	msg.u.data.type = WC_DATA_MSG_ACTION;
-	msg.u.data.u.action.type = WC_ACTION_PUT;
-	msg.u.data.u.action.r = reqnum;
 	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), pushid);
-	asprintf(&msg.u.data.u.action.u.put.path, "%s/%.20s", path, pushid);
-	msg.u.data.u.action.u.put.data = json;
+	asprintf(&push_path, "%s/%.20s", path, pushid);
 
-	ret = wc_cnx_send_msg(cnx, &msg);
+	ret = wc_put_json_data(cnx, push_path, json);
 
-	free(msg.u.data.u.action.u.put.path);
+	free(push_path);
 
-	return ret > 0 ? reqnum : -1l;
+	return ret;
 }
 
 int64_t wc_put_json_data(wc_cnx_t *cnx, char *path, char *json) {
