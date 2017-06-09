@@ -5,6 +5,8 @@ find_package(PkgConfig)
 
 pkg_search_module(NOPOLL REQUIRED nopoll)
 pkg_search_module(JSONC REQUIRED json-c)
+pkg_search_module(NCURSES REQUIRED ncurses)
+
 find_library(EV ev)
 
 if(NOT ${JSONC_FOUND})
@@ -18,6 +20,10 @@ endif(NOT ${NOPOLL_FOUND})
 if(${EV-NOTFOUND})
 	message(FATAL_ERROR "could not find prerequisite: libev")
 endif(${EV-NOTFOUND})
+
+if(NOT ${NCURSES_FOUND})
+	message(FATAL_ERROR "could not find prerequisite: libncurses")
+endif(NOT ${NCURSES_FOUND})
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
@@ -81,6 +87,29 @@ target_link_libraries(
 	webcom-c
 	${JSONC_LIBRARIES}
 	${EV}
+)
+
+## wcchat
+
+add_executable(
+	wcchat
+	examples/wcchat.c
+)
+
+target_include_directories(
+	wcchat
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
+	${NCURSES_INCLUDE_DIRS}
+)
+
+target_link_libraries(
+	wcchat
+	webcom-c
+	${JSONC_LIBRARIES}
+	${EV}
+	${NCURSES_LIBRARIES}
 )
 
 #### tests
