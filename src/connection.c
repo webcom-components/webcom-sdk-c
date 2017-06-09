@@ -9,31 +9,12 @@
 #include <netdb.h>
 #include <nopoll.h>
 
-#include "webcom-c/webcom-cnx.h"
+#include "webcom_priv.h"
 #include "webcom-c/webcom-parser.h"
 
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
 
-typedef enum {
-	WC_CNX_STATE_INIT = 0,
-	WC_CNX_STATE_CREATED,
-	WC_CNX_STATE_READY,
-	WC_CNX_STATE_CLOSED,
-} wc_cnx_state_t;
-
-#define WC_RX_BUF_LEN	(1 << 12)
-
-typedef struct wc_cnx {
-	noPollCtx *np_ctx;
-	noPollConn *np_conn;
-	wc_on_event_cb_t callback;
-	void *user;
-	int fd;
-	wc_cnx_state_t state;
-	wc_parser_t *parser;
-	char rxbuf[WC_RX_BUF_LEN];
-} wc_cnx_t;
 
 int wc_cnx_on_readable(wc_cnx_t *cnx) {
 	int n, ret = 0;
@@ -51,6 +32,9 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 		}
 		switch (wc_parse_msg_ex(cnx->parser, cnx->rxbuf, (size_t)n, &msg)) {
 		case WC_PARSER_OK:
+			if (msg.type == WC_MSG_CTRL && msg.u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
+				cnx->time_offset = wc_now() - msg.u.ctrl.u.handshake.ts;
+			}
 			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
 			ret = 1;
 			wc_parser_free(cnx->parser);
