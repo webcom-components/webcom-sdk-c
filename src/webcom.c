@@ -17,9 +17,9 @@ inline static void write_base64(char *buf, uint64_t val, uint64_t n) {
 	}
 }
 
-static void wc_push_id(struct pushid_state *s, uint64_t time, char* buf) {
+static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	/* use the 48 low order bits from the timestamp to make the first 8 chars */
-	write_base64(buf, time, 8);
+	write_base64(buf, (uint64_t)time, 8);
 
 	if (s->last_time != time) {
 		/* if the timestamp differs from the previous one, generate new random information */
@@ -52,8 +52,8 @@ int64_t wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	msg.type = WC_MSG_DATA;
 	msg.u.data.type = WC_DATA_MSG_ACTION;
 	msg.u.data.u.action.type = WC_ACTION_PUT;
-	wc_push_id(&cnx->pids, wc_server_now(cnx), pushid);
 	msg.u.data.u.action.r = reqnum;
+	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), pushid);
 	asprintf(&msg.u.data.u.action.u.put.path, "%s/%.20s", path, pushid);
 	msg.u.data.u.action.u.put.data = json;
 

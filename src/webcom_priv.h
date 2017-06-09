@@ -16,7 +16,7 @@ typedef enum {
 } wc_cnx_state_t;
 
 struct pushid_state {
-	uint64_t last_time;
+	int64_t last_time;
 	uint64_t lastrand_low;
 	uint16_t lastrand_hi;
 };
