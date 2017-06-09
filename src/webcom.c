@@ -42,7 +42,7 @@ static void wc_push_id(struct pushid_state *s, uint64_t time, char* buf) {
 }
 
 
-int wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
+int64_t wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	wc_msg_t msg;
 	char pushid[20];
 	int ret;
@@ -57,15 +57,16 @@ int wc_push_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	asprintf(&msg.u.data.u.action.u.put.path, "%s/%.20s", path, pushid);
 	msg.u.data.u.action.u.put.data = json;
 
-	ret = wc_cnx_send_msg(cnx, &msg) > 0;
+	ret = wc_cnx_send_msg(cnx, &msg);
 
 	free(msg.u.data.u.action.u.put.path);
 
-	return ret;
+	return ret > 0 ? reqnum : -1l;
 }
 
-int wc_put_json_data(wc_cnx_t *cnx, char *path, char *json) {
+int64_t wc_put_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	wc_msg_t msg;
+	int ret;
 	int64_t reqnum = wc_next_reqnum(cnx);
 
 	wc_msg_init(&msg);
@@ -76,17 +77,22 @@ int wc_put_json_data(wc_cnx_t *cnx, char *path, char *json) {
 	msg.u.data.u.action.u.put.path = path;
 	msg.u.data.u.action.u.put.data = json;
 
-	return wc_cnx_send_msg(cnx, &msg) > 0;
+	ret = wc_cnx_send_msg(cnx, &msg);
+	return ret > 0 ? reqnum : -1l;
 }
 
-int wc_listen(wc_cnx_t *cnx, char *path) {
+int64_t wc_listen(wc_cnx_t *cnx, char *path) {
 	wc_msg_t msg;
+	int ret;
+	int64_t reqnum = wc_next_reqnum(cnx);
 
 	wc_msg_init(&msg);
 	msg.type = WC_MSG_DATA;
 	msg.u.data.type = WC_DATA_MSG_ACTION;
 	msg.u.data.u.action.type = WC_ACTION_LISTEN;
-	msg.u.data.u.action.r = 0;
+	msg.u.data.u.action.r = reqnum;
 	msg.u.data.u.action.u.listen.path = path;
-	return wc_cnx_send_msg(cnx, &msg) > 0;
+
+	ret = wc_cnx_send_msg(cnx, &msg);
+	return ret > 0 ? reqnum : -1l;
 }

@@ -16,7 +16,7 @@ int64_t wc_put_json_data(wc_cnx_t *cnx, char *path, char *json);
 
 int64_t wc_push_json_data(wc_cnx_t *cnx, char *path, char *json);
 
-int wc_listen(wc_cnx_t *cnx, char *path);
+int64_t wc_listen(wc_cnx_t *cnx, char *path);
 
 
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_H_ */
