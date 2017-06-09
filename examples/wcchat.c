@@ -1,3 +1,4 @@
+#define _GNU_SOURCE
 #include <string.h>
 #include <getopt.h>
 #include <webcom-c/webcom.h>
@@ -15,7 +16,7 @@ void print_new_message(json_object *message);
 WINDOW *chat, *chatbox;
 WINDOW *input, *inputbox;
 char *name = "C-SDK-demo";
-char *escaped_name;
+const char *escaped_name;
 
 int main(int argc, char *argv[]) {
 	wc_cnx_t *cnx;
@@ -202,10 +203,9 @@ void keepalive_cb(EV_P_ ev_timer *w, int revents) {
 void stdin_cb (EV_P_ ev_io *w, int revents) {
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 	static char buf[2048];
-	static pos = 0;
 	json_object *text;
 	char *json_str;
-	char *escaped_text;
+	const char *escaped_text;
 
 	if (wgetnstr(input, buf, sizeof(buf)) == OK) {
 		if(strcmp(buf, "/quit") == 0) {
