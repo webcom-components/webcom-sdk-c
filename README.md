@@ -11,7 +11,7 @@ On a debian-family platform:
 Then install [nopoll](http://www.aspl.es/nopoll/index.html), using the [provided apt repositories](http://www.aspl.es/nopoll/downloads.html):
 
 ```
-# echo "deb http://www.aspl.es/debian/public <DISTRIBUTION>" > /etc/apt/sources.list.d
+# echo "deb http://www.aspl.es/debian/public <DISTRIBUTION>" > /etc/apt/sources.list.d/nopoll.list
 # apt update
 # apt install libnopoll0 libnopoll0-dev
 ```
