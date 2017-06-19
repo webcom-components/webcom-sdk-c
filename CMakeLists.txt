@@ -185,3 +185,25 @@ add_test(
 	NAME cnx
 	COMMAND webcom-test-cnx
 )
+
+#### code checker
+
+add_custom_target(
+	cppcheck-lib
+	COMMAND
+	cppcheck --enable=warning,performance,portability,style
+	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
+	"-I${JSONC_INCLUDE_DIRS}" "-I${NOPOLL_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	src/
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
+
+add_custom_target(
+	cppcheck-tests
+	COMMAND
+	cppcheck --enable=warning,performance,portability,style
+	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
+	"-I${JSONC_INCLUDE_DIRS}" "-I${NOPOLL_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	test/
+	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+)
