@@ -8,7 +8,7 @@
 
 
 
-void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user) {
+void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, UNUSED_PARAM(size_t len), UNUSED_PARAM(void *user)) {
 	wc_msg_t *msg = (wc_msg_t*) data;
 	switch (event) {
 		case WC_EVENT_ON_CNX_ESTABLISHED:
@@ -37,7 +37,7 @@ static void readable_cb (EV_P_ ev_io *w, int revents) {
 	}
 }
 
-static void send_cb(EV_P_ ev_timer *w, int revents) {
+static void send_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 
 	wc_msg_t msg1;
@@ -58,7 +58,7 @@ static void send_cb(EV_P_ ev_timer *w, int revents) {
 	ev_timer_stop(loop, w);
 }
 
-static void close_cb(EV_P_ ev_timer *w, int revents) {
+static void close_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 	puts("\tCLOSE");
 	wc_cnx_close(cnx);

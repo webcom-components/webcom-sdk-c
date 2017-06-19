@@ -120,7 +120,8 @@ int main(int argc, char *argv[]) {
 }
 
 /* called by libev on read event on the webcom TCP socket */
-void webcom_socket_cb(EV_P_ ev_io *w, int revents) {
+void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
+	UNUSED_VAR(loop);
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 
 	wc_cnx_on_readable(cnx);
@@ -132,7 +133,7 @@ void webcom_socket_cb(EV_P_ ev_io *w, int revents) {
  * webcom connection.
  */
 void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
-		size_t len, void *user)
+		UNUSED_PARAM(size_t len), void *user)
 {
 	wc_msg_t *msg = (wc_msg_t*) data;
 	struct ev_loop *loop = (struct ev_loop*) user;
@@ -153,6 +154,7 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 				if (json != NULL) {
 					if(strcmp(msg->u.data.u.push.u.update_put.path, "/") == 0) {
 						json_object_object_foreach(json, key, val) {
+							UNUSED_VAR(key);
 							print_new_message(val);
 						}
 					} else {
@@ -190,7 +192,8 @@ void print_new_message(json_object *message) {
 
 /* libev timer callback, to send keepalives to the webcom server periodically
  */
-void keepalive_cb(EV_P_ ev_timer *w, int revents) {
+void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
+	UNUSED_VAR(loop);
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 
 	/* just this */
@@ -200,7 +203,7 @@ void keepalive_cb(EV_P_ ev_timer *w, int revents) {
 /*
  * libev callback when data is available on stdin
  */
-void stdin_cb (EV_P_ ev_io *w, int revents) {
+void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 	static char buf[2048];
 	json_object *text;

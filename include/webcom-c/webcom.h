@@ -11,6 +11,7 @@
 #include "webcom-msg.h"
 #include "webcom-parser.h"
 #include "webcom-cnx.h"
+#include "webcom-utils.h"
 
 /**
  * @defgroup webcom Webcom "high-level" functions

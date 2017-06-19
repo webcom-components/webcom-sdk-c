@@ -118,7 +118,8 @@ int main(int argc, char *argv[]) {
 }
 
 /* called by libev on read event on the webcom TCP socket */
-void webcom_socket_cb(EV_P_ ev_io *w, int revents) {
+void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
+	UNUSED_VAR(loop);
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 
 	/* that's all we must do here: let the webcom SDK handle the data and it
@@ -133,7 +134,7 @@ void webcom_socket_cb(EV_P_ ev_io *w, int revents) {
  * webcom connection.
  */
 void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
-		size_t len, void *user)
+		UNUSED_PARAM(size_t len), void *user)
 {
 	wc_msg_t *msg = (wc_msg_t*) data;
 	struct ev_loop *loop = (struct ev_loop*) user;
@@ -237,7 +238,8 @@ static void on_brick_update(char *key, json_object *data) {
 
 /* libev timer callback, to send keepalives to the webcom server periodically
  */
-void keepalive_cb(EV_P_ ev_timer *w, int revents) {
+void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
+	UNUSED_VAR(loop);
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 
 	/* just this */
@@ -248,7 +250,7 @@ void keepalive_cb(EV_P_ ev_timer *w, int revents) {
  * libev callback when data is available on stdin: parse it and send a put
  * message to the webcom server if the input matches "x y color"
  */
-void stdin_cb (EV_P_ ev_io *w, int revents) {
+void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 	static char buf[2048];
 	int x, y, col;
