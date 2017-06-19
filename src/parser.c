@@ -286,6 +286,7 @@ wc_parser_t *wc_parser_new() {
 	parser->jtok = json_tokener_new();
 
 	if (parser->jtok == NULL) {
+		free(parser);
 		return NULL;
 	}
 
