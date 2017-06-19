@@ -28,6 +28,13 @@ $ make all
 
 It will produce **libwebcom-c.so** in the current directory
 
+## Install
+
+```
+[still in the build/ folder]
+$ sudo make install
+```
+
 ## Documentation
 
 The documentation is produced by doxygen:

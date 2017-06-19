@@ -207,3 +207,20 @@ add_custom_target(
 	test/
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
+
+#### install
+
+install(TARGETS
+	webcom-c
+	legorange
+	wcchat
+	RUNTIME DESTINATION bin
+	LIBRARY DESTINATION lib
+)
+
+file(GLOB INSTALL_HEADERS "${CMAKE_SOURCE_DIR}/include/webcom-c/*.h")
+
+install(FILES
+	${INSTALL_HEADERS}
+	DESTINATION include/webcom-c
+)
