@@ -204,7 +204,7 @@ static void on_brick_update(char *key, json_object *data) {
 	char *scolor;
 	legorange_brick_t brick;
 
-	if (sscanf(key, "%d-%d", &x, &y) == 2) {
+	if (sscanf(key, "%4d-%4d", &x, &y) == 2) {
 		if (json_object_is_type(data, json_type_null)) {
 			draw_brick(x, y, NO_BRICK);
 		} else {
@@ -254,7 +254,7 @@ void stdin_cb (EV_P_ ev_io *w, int revents) {
 	int x, y, col;
 	char *col_str, *path, *data, nl;
 	if (fgets(buf, sizeof(buf), stdin)) {
-		if(sscanf(buf, "%d %d %d%c", &x, &y, &col, &nl) == 4) {
+		if(sscanf(buf, "%4d %4d %4d%c", &x, &y, &col, &nl) == 4) {
 			col_str = col ? "white" : "black";
 
 			/* build the path and the data */
