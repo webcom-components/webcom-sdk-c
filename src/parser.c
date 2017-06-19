@@ -224,7 +224,7 @@ static int wc_parse_push(json_object *jroot, wc_push_t *res) {
 			} else if (strcmp("d", s) == 0) {
 				res->type = WC_PUSH_DATA_UPDATE_PUT;
 				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_update_put, &res->u.update_put);
-			} else if (strcmp("ac", s) == 0) {
+			} else if (strcmp("m", s) == 0) {
 				res->type = WC_PUSH_DATA_UPDATE_MERGE;
 				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_update_merge, &res->u.update_merge);
 			}
