@@ -75,11 +75,10 @@ static int wc_parse_handshake(json_object *jroot, wc_handshake_t *res) {
 }
 
 static int wc_parse_ctrl_msg(json_object *jroot, wc_ctrl_msg_t *res) {
-	const char *s;
 	json_object *jtmp;
 	if (json_object_object_get_ex(jroot, "t", &jtmp)) {
 		if (json_object_get_type(jtmp) == json_type_string) {
-			s = json_object_get_string(jtmp);
+			const char *s = json_object_get_string(jtmp);
 			if (strcmp("h", s) == 0) {
 				res->type = WC_CTRL_MSG_HANDSHAKE;
 				WCPM_CALL_DATA_CHILD_PARSER(wc_parse_handshake, &res->u.handshake);
@@ -134,7 +133,6 @@ static int wc_parse_action_on_disc_cancel(json_object *jroot, wc_action_on_disc_
 }
 
 static int wc_parse_action(json_object *jroot, wc_action_t *res) {
-	const char *s;
 	json_object *jtmp;
 
 	if (!_wc_hlp_get_long(jroot, "r", &res->r)) {
@@ -143,7 +141,7 @@ static int wc_parse_action(json_object *jroot, wc_action_t *res) {
 
 	if (json_object_object_get_ex(jroot, "a", &jtmp)) {
 		if (json_object_get_type(jtmp) == json_type_string) {
-			s = json_object_get_string(jtmp);
+			const char *s = json_object_get_string(jtmp);
 			if (strcmp("p", s) == 0) {
 				res->type = WC_ACTION_PUT;
 				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_action_put, &res->u.put);
@@ -209,12 +207,11 @@ static int wc_parse_push_update_merge(json_object *jroot, wc_push_data_update_me
 }
 
 static int wc_parse_push(json_object *jroot, wc_push_t *res) {
-	const char *s;
 	json_object *jtmp;
 
 	if (json_object_object_get_ex(jroot, "a", &jtmp)) {
 		if (json_object_get_type(jtmp) == json_type_string) {
-			s = json_object_get_string(jtmp);
+			const char *s = json_object_get_string(jtmp);
 			if (strcmp("ac", s) == 0) {
 				res->type = WC_PUSH_AUTH_REVOKED;
 				WCPM_CALL_BODY_CHILD_PARSER(wc_parse_push_auth_revoked, &res->u.auth_revoked);
@@ -253,11 +250,10 @@ static int wc_parse_data_msg(json_object *jroot, wc_data_msg_t *res) {
 }
 
 static int wc_parse_msg_json(json_object *jroot, wc_msg_t *res) {
-	const char *s;
 	json_object *jtmp;
 	if (json_object_object_get_ex(jroot, "t", &jtmp)) {
 		if (json_object_get_type(jtmp) == json_type_string) {
-			s = json_object_get_string(jtmp);
+			const char *s = json_object_get_string(jtmp);
 			if (strcmp("c", s) == 0) {
 				res->type = WC_MSG_CTRL;
 				WCPM_CALL_DATA_CHILD_PARSER(wc_parse_ctrl_msg, &res->u.ctrl);
