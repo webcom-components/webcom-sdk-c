@@ -12,7 +12,7 @@ inline static void write_base64(char *buf, uint64_t val, uint64_t n) {
 	static const char base[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 
 	while (n-- > 0) {
-		buf[n] = base[val & ((~0UL) >> 58 )];
+		buf[n] = base[val & (UINT64_MAX >> 58 )];
 		val >>= 6;
 	}
 }
@@ -31,7 +31,7 @@ static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 		s->lastrand_low++;
 
 		/* if the low order bits (60 bits) have overflowed, increment the high order ones */
-		if (!(s->lastrand_low & ((~0UL) >> 4))) {
+		if (!(s->lastrand_low & (UINT64_MAX >> 4))) {
 			s->lastrand_hi++;
 		}
 	}
