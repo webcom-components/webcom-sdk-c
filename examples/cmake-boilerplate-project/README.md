@@ -3,7 +3,7 @@
 This "boilerplate" project gives an example and a starting point for a simple C
 project using the Webcom C SDK. It assumes the event loop is handled by libev,
 and the JSON data manipulation will be done through json-c. Feel free to copy
-this skeleton and adat it to your needs. 
+this skeleton and adapt it to your needs.
 
 ## Prerequisites
 
