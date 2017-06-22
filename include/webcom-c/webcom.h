@@ -60,6 +60,20 @@ int64_t wc_push_json_data(wc_cnx_t *cnx, char *path, char *json);
  */
 int64_t wc_listen(wc_cnx_t *cnx, char *path);
 
+
+/**
+ * gets the server time in milliseconds since 1970/1/1
+ *
+ * This function returns the (estimated) time on the server, in milliseconds.
+ * It is achieved by the SDK by computing and memorizing the clock offset
+ * between the local machine and the server when establishing the connection to
+ * the Webcom server.
+ *
+ * @param cnx the webcom connection
+ * @return the estimated server time in milliseconds since 1970/1/1
+ */
+int64_t wc_get_server_time(wc_cnx_t *cnx);
+
 /**
  * @}
  */

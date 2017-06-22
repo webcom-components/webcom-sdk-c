@@ -89,3 +89,7 @@ int64_t wc_listen(wc_cnx_t *cnx, char *path) {
 	ret = wc_cnx_send_msg(cnx, &msg);
 	return ret > 0 ? reqnum : -1l;
 }
+
+int64_t wc_get_server_time(wc_cnx_t *cnx) {
+	return wc_server_now(cnx);
+}
