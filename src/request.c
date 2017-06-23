@@ -5,7 +5,7 @@
 
 #define PENDING_HACTION_HASH_FACTOR 8
 
-inline static size_t pending_action_hash(int64_t id) {
+WC_INLINE static size_t pending_action_hash(int64_t id) {
 	return ((uint64_t)id) % (1 << PENDING_HACTION_HASH_FACTOR);
 }
 
