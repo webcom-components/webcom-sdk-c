@@ -28,38 +28,26 @@ static void wc_req_store_pending(
 
 	slot = pending_action_hash(id);
 
-	if (pending_req_table[slot] == NULL) {
-		trans->next = NULL;
-		pending_req_table[slot] = trans;
-	} else {
-		trans->next = pending_req_table[slot];
-		pending_req_table[slot] = trans;
-	}
+	trans->next = pending_req_table[slot];
+	pending_req_table[slot] = trans;
 }
 
 wc_action_trans_t *wc_req_get_pending(int64_t id) {
 	wc_action_trans_t *cur, *prev;
-	size_t slot;
 
-	slot = pending_action_hash(id);
-
-	if (pending_req_table[slot] == NULL) {
-		return NULL;
-	} else {
-		prev = NULL;
-		cur = pending_req_table[slot];
-		do {
-			if (cur->id == id) {
-				if (prev != NULL) {
-					prev->next = cur->next;
-				}
-				return cur;
+	prev = NULL;
+	cur = pending_req_table[pending_action_hash(id)];
+	while (cur != NULL) {
+		if (cur->id == id) {
+			if (prev != NULL) {
+				prev->next = cur->next;
 			}
-			prev = cur;
-			cur = cur->next;
-		} while (cur != NULL);
-		return NULL;
+			break;
+		}
+		prev = cur;
+		cur = cur->next;
 	}
+	return cur;
 }
 
 int64_t wc_req_put(wc_cnx_t *cnx, char *path, char *json, wc_on_req_result_t callback) {
