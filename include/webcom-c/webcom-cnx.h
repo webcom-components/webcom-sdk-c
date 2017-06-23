@@ -20,12 +20,20 @@ typedef enum {
 	 */
 	WC_EVENT_ON_CNX_CLOSED,
 	/**
-	 * This event indicates that the webcom connection to the server, passed as
-	 * cnx to the callback, was successfully established.
+	 * This event indicates that the websocket connection to the webcom server,
+	 * passed as cnx to the callback, was successfully established.
 	 *
 	 * Note: this does not mean the server handshake was received yet.
 	 */
 	WC_EVENT_ON_CNX_ESTABLISHED,
+	/**
+	 * This event indicates that the webcom server has sent its handshake
+	 * message. From this point, it's safe to start sending requests to the
+	 * webcom server through this connection.
+	 *
+	 * Note: this does not mean the server handshake was received yet.
+	 */
+	WC_EVENT_ON_SERVER_HANDSHAKE,
 	/**
 	 * This event indicates that a valid webcom message was received on the
 	 * given connection. The parsed message pointer (wc_msg_t *) is passed as
