@@ -11,6 +11,7 @@
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom-parser.h"
+#include "webcom-c/webcom-req.h"
 
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
@@ -19,6 +20,7 @@
 int wc_cnx_on_readable(wc_cnx_t *cnx) {
 	int n, ret = 0;
 	wc_msg_t msg;
+	wc_action_trans_t *trans;
 
 	n = nopoll_conn_read(cnx->np_conn, cnx->rxbuf, WC_RX_BUF_LEN, nopoll_false, 0);
 
@@ -34,6 +36,16 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 		case WC_PARSER_OK:
 			if (msg.type == WC_MSG_CTRL && msg.u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
 				cnx->time_offset = wc_now() - msg.u.ctrl.u.handshake.ts;
+			} else if (msg.type == WC_MSG_DATA && msg.u.data.type == WC_DATA_MSG_RESPONSE) {
+				if ((trans = wc_req_get_pending(msg.u.data.u.response.r)) != NULL) {
+					trans->callback(
+							trans->cnx,
+							trans->id,
+							trans->type,
+							strcmp(msg.u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
+							msg.u.data.u.response.status);
+					free(trans);
+				}
 			}
 			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
 			ret = 1;
