@@ -3,42 +3,100 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <openssl/rand.h>
+#include <endian.h>
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom.h"
 
-inline static void write_base64(char *buf, uint64_t val, uint64_t n) {
-	static const char base[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+/* how many full bytes of randomness do we get for each call to rand_r() */
+#define RANDOM_BYTES_PER_RAND (((8 * sizeof(int)) - (__builtin_clz(((unsigned int)RAND_MAX) + 1)) - 1) / 8)
 
-	while (n-- > 0) {
-		buf[n] = base[val & (UINT64_MAX >> 58 )];
-		val >>= 6;
+static void rand_bytes(unsigned char *buf, size_t num, unsigned int *seedp) {
+	size_t i;
+	size_t j;
+	int rnd;
+	for (i = 0 ; i < num / RANDOM_BYTES_PER_RAND ; i++) {
+		rnd = rand_r(seedp);
+		for (j = 0 ; j < RANDOM_BYTES_PER_RAND ; j++) {
+			*buf++ = (unsigned char)rnd;
+			rnd >>= 8;
+		}
+	}
+	if (num % RANDOM_BYTES_PER_RAND > 0) {
+		rnd = rand_r(seedp);
+		for (j = 0 ; num % RANDOM_BYTES_PER_RAND ; j++) {
+			*buf++ = (unsigned char)rnd;
+			rnd >>= 8;
+		}
+	}
+}
+
+/* NOTE: will only code the biggest multiple of 3 bytes <= n */
+inline static void write_base64(unsigned char *out, unsigned char *in, size_t n) {
+	static const char base[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
+	size_t i;
+	uint32_t tmp;
+
+	in += n;
+	out += (n * 8) / 6;
+	for (i = 0 ; i < n / 3 ; i++) {
+		/* 3 input bytes produce 4 output characters */
+		tmp = (uint32_t)*--in;
+		tmp += ((uint32_t)*--in) << 8;
+		tmp += ((uint32_t)*--in) << 16;
+
+		*--out = base[tmp & 0x3f];
+		*--out = base[(tmp >> 6) & 0x3f];
+		*--out = base[(tmp >> 12) & 0x3f];
+		*--out = base[(tmp >> 18) & 0x3f];
 	}
 }
 
 static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
-	/* use the 48 low order bits from the timestamp to make the first 8 chars */
-	write_base64(buf, (uint64_t)time, 8);
+	uint64_t time_be;
+
+	time_be = htobe64((uint64_t)time);
+	/* use the 48 low order bits (6 bytes) from the timestamp to make the first 8 chars */
+	write_base64((unsigned char*)buf, ((unsigned char*)&time_be) + 2, 6);
 
 	if (s->last_time != time) {
 		/* if the timestamp differs from the previous one, generate new random information */
 		s->last_time = time;
-		RAND_pseudo_bytes((unsigned char *) &s->lastrand_low, 8);
-		RAND_pseudo_bytes((unsigned char *) &s->lastrand_hi, 2);
+		rand_bytes(s->lastrand, 9, &s->rand_seed);
 	} else {
-		/* in case of a time collision, increment the last random value by one */
-		s->lastrand_low++;
+		/* otherwise, increment the last rand array by one
+		 *
+		 * this array is 9 bytes long, therefore we split it as 64 bits low order bits
+		 * plus 8 bits high order bits
+		 *
+		 * s->lastrand
+		 *   |
+		 *   v
+		 * +---+---+---+---+---+---+---+---+---+
+		 * | 0 | 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8 |
+		 * +---+---+---+---+---+---+---+---+---+
+		 *   |  \_____________________________/
+		 *   v                 v
+		 *  high              low
+		 */
 
-		/* if the low order bits (60 bits) have overflowed, increment the high order ones */
-		if (!(s->lastrand_low & (UINT64_MAX >> 4))) {
-			s->lastrand_hi++;
+		uint64_t low;
+
+		memcpy((void*)&low, s->lastrand + 1, 8);
+		/* the value is stored in big endian notation in the array, fetch the host representation: */
+		low = be64toh(low);
+		low++;
+		if (low == 0) {
+			/* increment the hi byte */
+			(*(s->lastrand))++;
 		}
+		/* bach to big endian */
+		low = htobe64(low);
+		memcpy(s->lastrand + 1, (void*)&low, 8);
 	}
 
-	/* write 12 more chars using 12 bits from lastrand_hi and 60 bits from lastrand_low */
-	write_base64(buf + 8, (uint64_t)s->lastrand_hi, 2);
-	write_base64(buf + 10, s->lastrand_low, 10);
+	/* write 12 more chars using the 9 random bytes */
+	write_base64((unsigned char*)buf + 8, s->lastrand, 9);
 }
 
 

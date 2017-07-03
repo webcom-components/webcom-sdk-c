@@ -17,8 +17,8 @@ typedef enum {
 
 struct pushid_state {
 	int64_t last_time;
-	uint64_t lastrand_low;
-	uint16_t lastrand_hi;
+	unsigned char lastrand[9];
+	unsigned int rand_seed;
 };
 
 #define WC_RX_BUF_LEN	(1 << 12)
