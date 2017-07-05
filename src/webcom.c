@@ -8,23 +8,23 @@
 #include "webcom_priv.h"
 #include "webcom-c/webcom.h"
 
-/* how many full bytes of randomness do we get for each call to rand_r() */
-#define RANDOM_BYTES_PER_RAND (((8 * sizeof(int)) - (__builtin_clz(((unsigned int)RAND_MAX) + 1)) - 1) / 8)
+/* lrand48 is documented to return a long int in the [0, 2^31[ range */
+#define RANDOM_BYTES_PER_LRAND48 3
 
-static void rand_bytes(unsigned char *buf, size_t num, unsigned int *seedp) {
+static void rand_bytes(unsigned char *buf, size_t num, struct drand48_data *rand_buffer) {
 	size_t i;
 	size_t j;
-	int rnd;
-	for (i = 0 ; i < num / RANDOM_BYTES_PER_RAND ; i++) {
-		rnd = rand_r(seedp);
-		for (j = 0 ; j < RANDOM_BYTES_PER_RAND ; j++) {
+	long int rnd;
+	for (i = 0 ; i < num / RANDOM_BYTES_PER_LRAND48 ; i++) {
+		lrand48_r(rand_buffer, &rnd);
+		for (j = 0 ; j < RANDOM_BYTES_PER_LRAND48 ; j++) {
 			*buf++ = (unsigned char)rnd;
 			rnd >>= 8;
 		}
 	}
-	if (num % RANDOM_BYTES_PER_RAND > 0) {
-		rnd = rand_r(seedp);
-		for (j = 0 ; num % RANDOM_BYTES_PER_RAND ; j++) {
+	if (num % RANDOM_BYTES_PER_LRAND48 > 0) {
+		lrand48_r(rand_buffer, &rnd);
+		for (j = 0 ; num % RANDOM_BYTES_PER_LRAND48 ; j++) {
 			*buf++ = (unsigned char)rnd;
 			rnd >>= 8;
 		}
@@ -62,7 +62,7 @@ static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	if (s->last_time != time) {
 		/* if the timestamp differs from the previous one, generate new random information */
 		s->last_time = time;
-		rand_bytes(s->lastrand, 9, &s->rand_seed);
+		rand_bytes(s->lastrand, 9, &s->rand_buffer);
 	} else {
 		/* otherwise, increment the last rand array by one
 		 *

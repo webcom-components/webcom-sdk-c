@@ -33,8 +33,9 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 		switch (wc_parse_msg_ex(cnx->parser, cnx->rxbuf, (size_t)n, &msg)) {
 		case WC_PARSER_OK:
 			if (msg.type == WC_MSG_CTRL && msg.u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
-				cnx->time_offset = wc_now() - msg.u.ctrl.u.handshake.ts;
-				cnx->pids.rand_seed = (unsigned int)wc_now();
+				int64_t now = wc_now();
+				srand48_r((long int)now, &cnx->pids.rand_buffer);
+				cnx->time_offset = now - msg.u.ctrl.u.handshake.ts;
 				cnx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, cnx, &msg, sizeof(wc_msg_t), cnx->user);
 			}
 			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);

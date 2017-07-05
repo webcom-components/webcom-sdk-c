@@ -2,6 +2,7 @@
 #define SRC_WEBCOM_PRIV_H_
 
 #include <stdint.h>
+#include <stdlib.h>
 #include <nopoll.h>
 #include <sys/time.h>
 
@@ -18,7 +19,7 @@ typedef enum {
 struct pushid_state {
 	int64_t last_time;
 	unsigned char lastrand[9];
-	unsigned int rand_seed;
+	struct drand48_data rand_buffer;
 };
 
 #define WC_RX_BUF_LEN	(1 << 12)
