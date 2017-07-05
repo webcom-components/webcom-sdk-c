@@ -63,5 +63,6 @@ typedef struct wc_action_trans {
 
 
 wc_action_trans_t *wc_req_get_pending(int64_t id);
+void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

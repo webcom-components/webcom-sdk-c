@@ -17,7 +17,7 @@ inline static void write_base64(char *buf, uint64_t val, uint64_t n) {
 	}
 }
 
-static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
+void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	/* use the 48 low order bits from the timestamp to make the first 8 chars */
 	write_base64(buf, (uint64_t)time, 8);
 
