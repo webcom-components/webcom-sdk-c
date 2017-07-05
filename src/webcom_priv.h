@@ -6,8 +6,7 @@
 #include <nopoll.h>
 #include <sys/time.h>
 
-#include "webcom-c/webcom-cnx.h"
-#include "webcom-c/webcom-parser.h"
+#include "webcom-c/webcom.h"
 
 typedef enum {
 	WC_CNX_STATE_INIT = 0,
@@ -51,5 +50,20 @@ static inline int64_t wc_server_now(wc_cnx_t *cnx) {
 static inline int64_t wc_next_reqnum(wc_cnx_t *cnx) {
 	return ++cnx->last_req;
 }
+
+
+
+typedef struct wc_action_trans {
+	wc_cnx_t *cnx;
+	int64_t id;
+	wc_action_type_t type;
+	wc_on_req_result_t callback;
+	struct wc_action_trans *next;
+} wc_action_trans_t;
+
+
+
+wc_action_trans_t *wc_req_get_pending(int64_t id);
+void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

@@ -54,6 +54,8 @@ typedef struct {
 	char *cred;
 } wc_action_auth_t;
 
+typedef void *wc_action_unauth_t;
+
 typedef struct {
 	char *path;
 	char *data;
@@ -77,6 +79,7 @@ typedef struct {
 		wc_action_listen_t listen;
 		wc_action_unlisten_t unlisten;
 		wc_action_auth_t auth;
+		wc_action_unauth_t unauth;
 		wc_action_on_disc_put_t on_disc_put;
 		wc_action_on_disc_merge_t on_disc_merge;
 		wc_action_on_disc_cancel_t on_disc_cancel;

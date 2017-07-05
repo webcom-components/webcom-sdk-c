@@ -43,6 +43,7 @@ add_library(
 	src/message.c
 	src/connection.c
 	src/webcom.c
+	src/request.c
 )
 
 target_include_directories(

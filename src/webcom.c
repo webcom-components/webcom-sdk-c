@@ -67,7 +67,7 @@ inline static void write_base64(unsigned char *out, unsigned char *in, size_t n)
 	}
 }
 
-static void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
+void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	uint64_t time_be;
 
 	time_be = htobe64((uint64_t)time);
