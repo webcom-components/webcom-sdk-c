@@ -31,15 +31,15 @@ static void rand_bytes(unsigned char *buf, size_t num, struct drand48_data *rand
 	}
 }
 
-/* NOTE: will only code the biggest multiple of 3 bytes <= n */
 inline static void write_base64(unsigned char *out, unsigned char *in, size_t n) {
 	static const char base[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 	size_t i;
 	uint32_t tmp;
+	const size_t ndiv = n / 3, nmod = n % 3;
 
 	in += n;
-	out += (n * 8) / 6;
-	for (i = 0 ; i < n / 3 ; i++) {
+	out += ((n - nmod) * 8) / 6 + (nmod ? 1 + nmod: 0);
+	for (i = 0 ; i < ndiv ; i++) {
 		/* 3 input bytes produce 4 output characters */
 		tmp = (uint32_t)*--in;
 		tmp += ((uint32_t)*--in) << 8;
@@ -49,6 +49,21 @@ inline static void write_base64(unsigned char *out, unsigned char *in, size_t n)
 		*--out = base[(tmp >> 6) & 0x3f];
 		*--out = base[(tmp >> 12) & 0x3f];
 		*--out = base[(tmp >> 18) & 0x3f];
+	}
+
+	switch (nmod) {
+	case 2:
+		tmp = (uint32_t)*--in;
+		tmp += ((uint32_t)*--in) << 8;
+		*--out = base[tmp & 0x3f];
+		*--out = base[(tmp >> 6) & 0x3f];
+		*--out = base[(tmp >> 18) & 0x3f];
+		break;
+	case 1:
+		tmp = (uint32_t)*--in;
+		*--out = base[tmp & 0x3f];
+		*--out = base[(tmp >> 6) & 0x3f];
+		break;
 	}
 }
 
