@@ -130,6 +130,34 @@ static inline json_object* _wc_listen_msg_to_json(wc_action_listen_t *listen) {
 	return jroot;
 }
 
+static inline json_object* _wc_unlisten_msg_to_json(wc_action_unlisten_t *unlisten) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(unlisten->path));
+
+	return jroot;
+}
+
+static inline json_object* _wc_merge_msg_to_json(wc_action_merge_t *merge) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(merge->path));
+	json_object_object_add(jroot, "d", json_tokener_parse(merge->data));
+
+	return jroot;
+}
+
+static inline json_object* _wc_auth_msg_to_json(wc_action_auth_t *auth) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "cred", json_object_new_string(auth->cred));
+
+	return jroot;
+}
+
 static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 	json_object *jroot;
 
@@ -143,10 +171,27 @@ static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 			json_object_object_add(jroot, "a", json_object_new_string("p"));
 			json_object_object_add(jroot, "b", _wc_put_msg_to_json(&data->u.action.u.put));
 			break;
+		case WC_ACTION_MERGE:
+			json_object_object_add(jroot, "a", json_object_new_string("m"));
+			json_object_object_add(jroot, "b", _wc_merge_msg_to_json(&data->u.action.u.merge));
+			break;
 		case WC_ACTION_LISTEN:
 			json_object_object_add(jroot, "a", json_object_new_string("l"));
 			json_object_object_add(jroot, "b", _wc_listen_msg_to_json(&data->u.action.u.listen));
 			break;
+		case WC_ACTION_UNLISTEN:
+			json_object_object_add(jroot, "a", json_object_new_string("u"));
+			json_object_object_add(jroot, "b", _wc_unlisten_msg_to_json(&data->u.action.u.unlisten));
+			break;
+		case WC_ACTION_AUTHENTICATE:
+			json_object_object_add(jroot, "a", json_object_new_string("auth"));
+			json_object_object_add(jroot, "b", _wc_auth_msg_to_json(&data->u.action.u.auth));
+			break;
+		case WC_ACTION_UNAUTHENTICATE:
+			json_object_object_add(jroot, "a", json_object_new_string("unauth"));
+			json_object_object_add(jroot, "b", NULL);
+			break;
+
 		default:
 			/* TODO: other actions */
 			break;
