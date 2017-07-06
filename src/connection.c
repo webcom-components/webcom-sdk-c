@@ -17,10 +17,37 @@
 #define WEBCOM_WS_PATH "/_wss/.ws"
 
 
+int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
+	wc_action_trans_t *trans;
+
+	if (msg->type == WC_MSG_CTRL && msg->u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
+		int64_t now = wc_now();
+		srand48_r((long int)now, &cnx->pids.rand_buffer);
+		cnx->time_offset = now - msg->u.ctrl.u.handshake.ts;
+		cnx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, cnx, &msg, sizeof(wc_msg_t), cnx->user);
+		cnx->time_offset = wc_now() - msg->u.ctrl.u.handshake.ts;
+	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
+
+
+		if ((trans = wc_req_get_pending(msg->u.data.u.response.r)) != NULL) {
+			if (trans->callback != NULL) {
+				trans->callback(
+						trans->cnx,
+						trans->id,
+						trans->type,
+						strcmp(msg->u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
+						msg->u.data.u.response.status);
+			}
+			free(trans);
+		}
+	}
+	cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
+	return 1;
+}
+
 int wc_cnx_on_readable(wc_cnx_t *cnx) {
 	int n, ret = 0;
 	wc_msg_t msg;
-	wc_action_trans_t *trans;
 
 	n = nopoll_conn_read(cnx->np_conn, cnx->rxbuf, WC_RX_BUF_LEN, nopoll_false, 0);
 
@@ -34,27 +61,7 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 		}
 		switch (wc_parse_msg_ex(cnx->parser, cnx->rxbuf, (size_t)n, &msg)) {
 		case WC_PARSER_OK:
-			if (msg.type == WC_MSG_CTRL && msg.u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
-				int64_t now = wc_now();
-				srand48_r((long int)now, &cnx->pids.rand_buffer);
-				cnx->time_offset = now - msg.u.ctrl.u.handshake.ts;
-				cnx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, cnx, &msg, sizeof(wc_msg_t), cnx->user);
-				cnx->time_offset = wc_now() - msg.u.ctrl.u.handshake.ts;
-			} else if (msg.type == WC_MSG_DATA && msg.u.data.type == WC_DATA_MSG_RESPONSE) {
-				if ((trans = wc_req_get_pending(msg.u.data.u.response.r)) != NULL) {
-					if (trans->callback != NULL) {
-						trans->callback(
-								trans->cnx,
-								trans->id,
-								trans->type,
-								strcmp(msg.u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
-								msg.u.data.u.response.status);
-					}
-					free(trans);
-				}
-			}
-			cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
-			ret = 1;
+			ret = wc_process_incoming_message(cnx, &msg);
 			wc_parser_free(cnx->parser);
 			cnx->parser = NULL;
 			wc_msg_free(&msg);
