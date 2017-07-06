@@ -42,12 +42,14 @@ int wc_cnx_on_readable(wc_cnx_t *cnx) {
 				cnx->time_offset = wc_now() - msg.u.ctrl.u.handshake.ts;
 			} else if (msg.type == WC_MSG_DATA && msg.u.data.type == WC_DATA_MSG_RESPONSE) {
 				if ((trans = wc_req_get_pending(msg.u.data.u.response.r)) != NULL) {
-					trans->callback(
-							trans->cnx,
-							trans->id,
-							trans->type,
-							strcmp(msg.u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
-							msg.u.data.u.response.status);
+					if (trans->callback != NULL) {
+						trans->callback(
+								trans->cnx,
+								trans->id,
+								trans->type,
+								strcmp(msg.u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
+								msg.u.data.u.response.status);
+					}
 					free(trans);
 				}
 			}
