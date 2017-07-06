@@ -31,15 +31,16 @@ static void rand_bytes(unsigned char *buf, size_t num, struct drand48_data *rand
 	}
 }
 
-inline static void write_base64(unsigned char *out, unsigned char *in, size_t n) {
+/* base64-ish encoding used to encode the timestamp and random bits for the push id */
+inline static void wc_b64ish_encode(unsigned char *out, unsigned char *in, size_t n) {
 	static const char base[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
-	size_t i;
 	uint32_t tmp;
-	const size_t ndiv = n / 3, nmod = n % 3;
+	size_t ndiv = n / 3;
+	const size_t nmod = n % 3;
 
 	in += n;
 	out += ((n - nmod) * 8) / 6 + (nmod ? 1 + nmod: 0);
-	for (i = 0 ; i < ndiv ; i++) {
+	while (ndiv--) {
 		/* 3 input bytes produce 4 output characters */
 		tmp = (uint32_t)*--in;
 		tmp += ((uint32_t)*--in) << 8;
@@ -53,6 +54,7 @@ inline static void write_base64(unsigned char *out, unsigned char *in, size_t n)
 
 	switch (nmod) {
 	case 2:
+		/* 2 trailing bytes (16 bits) produce 3 output characters (18 bits) */
 		tmp = (uint32_t)*--in;
 		tmp += ((uint32_t)*--in) << 8;
 		*--out = base[tmp & 0x3f];
@@ -60,6 +62,7 @@ inline static void write_base64(unsigned char *out, unsigned char *in, size_t n)
 		*--out = base[(tmp >> 18) & 0x3f];
 		break;
 	case 1:
+		/* 1 trailing byte (8 bits) produce 2 output characters (12 bits) */
 		tmp = (uint32_t)*--in;
 		*--out = base[tmp & 0x3f];
 		*--out = base[(tmp >> 6) & 0x3f];
@@ -72,7 +75,7 @@ void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 
 	time_be = htobe64((uint64_t)time);
 	/* use the 48 low order bits (6 bytes) from the timestamp to make the first 8 chars */
-	write_base64((unsigned char*)buf, ((unsigned char*)&time_be) + 2, 6);
+	wc_b64ish_encode((unsigned char*)buf, ((unsigned char*)&time_be) + 2, 6);
 
 	if (s->last_time != time) {
 		/* if the timestamp differs from the previous one, generate new random information */
@@ -111,7 +114,7 @@ void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	}
 
 	/* write 12 more chars using the 9 random bytes */
-	write_base64((unsigned char*)buf + 8, s->lastrand, 9);
+	wc_b64ish_encode((unsigned char*)buf + 8, s->lastrand, 9);
 }
 
 
