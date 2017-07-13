@@ -32,9 +32,8 @@ void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, UNUSED_PARAM(size_t le
 static void readable_cb (EV_P_ ev_io *w, int revents) {
 	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
 	printf ("\tfd %d, ev %08x, erv %08x\n", w->fd, w->events, revents);
-	if (wc_cnx_on_readable(cnx)) {
-		ev_io_stop(loop, w);
-	}
+	wc_cnx_on_readable(cnx);
+	ev_io_stop(loop, w);
 }
 
 static void send_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {

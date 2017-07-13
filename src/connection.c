@@ -7,11 +7,15 @@
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <netdb.h>
-#include <nopoll.h>
+#include <libwebsockets.h>
+#include <assert.h>
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom-parser.h"
 #include "webcom-c/webcom-req.h"
+
+#include <openssl/ssl.h>
+#include <openssl/x509v3.h>
 
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
@@ -37,46 +41,74 @@ int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
 	return 1;
 }
 
-int wc_cnx_on_readable(wc_cnx_t *cnx) {
-	int n, ret = 0;
+void wc_cnx_on_readable(wc_cnx_t *cnx) {
+	lws_service(cnx->lws_context, 100);
+}
+
+void _wc_process_incoming_data(wc_cnx_t *cnx, char *buf, size_t len) {
 	wc_msg_t msg;
 
-	n = nopoll_conn_read(cnx->np_conn, cnx->rxbuf, WC_RX_BUF_LEN, nopoll_false, 0);
-
-	if (n > 0) {
-		if (cnx->parser == NULL) {
-			if (*cnx->rxbuf == '{') {
-				cnx->parser = wc_parser_new();
-			} else {
-				return 1;
-			}
-		}
-		switch (wc_parse_msg_ex(cnx->parser, cnx->rxbuf, (size_t)n, &msg)) {
-		case WC_PARSER_OK:
-			ret = wc_process_incoming_message(cnx, &msg);
-			wc_parser_free(cnx->parser);
-			cnx->parser = NULL;
-			wc_msg_free(&msg);
-			break;
-		case WC_PARSER_CONTINUE:
-			ret = 2;
-			break;
-		case WC_PARSER_ERROR:
-			wc_parser_free(cnx->parser);
-			cnx->parser = NULL;
-			break;
-		}
-	} else if (n == -1) {
-		if (nopoll_conn_is_ok(cnx->np_conn) == nopoll_false) {
-			cnx->state = WC_CNX_STATE_CLOSED;
-			cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
+	if (cnx->parser == NULL) {
+		if (*buf == '{') {
+			cnx->parser = wc_parser_new();
+		} else {
+			return;
 		}
 	}
-	return ret;
+	switch (wc_parse_msg_ex(cnx->parser, buf, (size_t)len, &msg)) {
+	case WC_PARSER_OK:
+		wc_process_incoming_message(cnx, &msg);
+		wc_parser_free(cnx->parser);
+		cnx->parser = NULL;
+		wc_msg_free(&msg);
+		break;
+	case WC_PARSER_CONTINUE:
+		break;
+	case WC_PARSER_ERROR:
+		wc_parser_free(cnx->parser);
+		cnx->parser = NULL;
+		break;
+	}
+}
+
+static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_reasons reason, void *user, void *in, size_t len) {
+	wc_cnx_t *cnx = (wc_cnx_t *) user;
+
+	lwsl_debug("EVENT %d, user %p, in %p, %zu\n", reason, user, in, len);
+
+	switch (reason) {
+	struct lws_pollargs *pa;
+	case LWS_CALLBACK_ADD_POLL_FD:
+		pa = (struct lws_pollargs *)in;
+		cnx->fd = pa->fd;
+		break;
+	case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS:
+		/* TODO: fix hostname validation */
+		break;
+	case LWS_CALLBACK_CLIENT_ESTABLISHED:
+		cnx->state = WC_CNX_STATE_READY;
+		cnx->callback(WC_EVENT_ON_CNX_ESTABLISHED, cnx, NULL, 0, cnx->user);
+		break;
+	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
+		cnx->state = WC_CNX_STATE_CLOSED;
+		cnx->callback(WC_EVENT_ON_CNX_ERROR, cnx, in, len, cnx->user);
+		lwsl_debug("ERROR: %.*s\n", (int)len, (char*)in);
+		break;
+	case LWS_CALLBACK_CLIENT_RECEIVE:
+		_wc_process_incoming_data(cnx, (char*)in, len);
+		break;
+	case LWS_CALLBACK_CLOSED:
+		cnx->state = WC_CNX_STATE_CLOSED;
+		break;
+	default:
+		break;
+	}
+	return 0;
 }
 
 int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
 	char *jsonstr;
+	unsigned char *buf;
 	long len;
 	int sent;
 
@@ -88,16 +120,21 @@ int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
 	jsonstr = wc_msg_to_json_str(msg);
 	len = strlen(jsonstr);
 
-	sent = nopoll_conn_send_text(cnx->np_conn, jsonstr, len);
-	nopoll_conn_flush_writes(cnx->np_conn, 2000, 0);
-	free(jsonstr);
+	buf = malloc (LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING);
 
+	memcpy(buf + LWS_SEND_BUFFER_PRE_PADDING, jsonstr, len);
+
+	sent = lws_write(cnx->lws_conn, buf + LWS_SEND_BUFFER_PRE_PADDING, len, LWS_WRITE_TEXT);
+	lwsl_debug("*** [%d] sent %s\n", sent, jsonstr);
+	free(jsonstr);
+	free(buf);
 	return sent;
 }
 
 void wc_cnx_close(wc_cnx_t *cnx) {
 	cnx->state = WC_CNX_STATE_CLOSED;
-	nopoll_conn_close(cnx->np_conn);
+	lws_context_destroy(cnx->lws_context);
+	cnx->lws_context = NULL;
 	cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
 }
 
@@ -105,20 +142,23 @@ int wc_cnx_get_fd(wc_cnx_t *cnx) {
 	return cnx->fd;
 }
 
+struct lws_protocols protocols[] = {
+	{
+		.name = "webcom-protocol",
+		.callback =_wc_lws_callback,
+		.rx_buffer_size = WC_RX_BUF_LEN
+	},
+	{.name=NULL}
+};
+
 static wc_cnx_t *wc_cnx_new_ex(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
-	char sport[6];
-	int sockfd;
-	struct addrinfo hints;
-	struct addrinfo *ai, *pai;
-	int nread, s;
-	noPollConnOpts *npopts;
-	char *get_path;
-	char *sock_host;
-	uint16_t sock_port;
 
-	sock_host = proxy_host == NULL ? host : proxy_host;
-	sock_port = proxy_host == NULL ? port : proxy_port;
+	struct lws_client_connect_info lws_client_cnx_nfo;
+	struct lws_context_creation_info lws_ctx_creation_nfo;
+
+	memset(&lws_client_cnx_nfo, 0, sizeof(lws_client_cnx_nfo));
+	memset(&lws_ctx_creation_nfo, 0, sizeof(lws_ctx_creation_nfo));
 
 	res = calloc(1, sizeof(wc_cnx_t));
 
@@ -126,82 +166,44 @@ static wc_cnx_t *wc_cnx_new_ex(char *proxy_host, uint16_t proxy_port, char *host
 		goto error1;
 	}
 
-	res->np_ctx = nopoll_ctx_new();
-
-	memset(&hints, 0, sizeof(struct addrinfo));
-	hints.ai_family = AF_UNSPEC;
-	hints.ai_socktype = SOCK_STREAM;
-
-	snprintf(sport, 6, "%hu", sock_port);
-	sport[5] = '\0';
-
-	s = getaddrinfo(sock_host, sport, &hints, &ai);
-
-	if (s != 0) {
-		goto error2;
-	}
-
-	for (pai = ai ; pai != NULL ; pai = pai->ai_next) {
-		if((sockfd = socket(pai->ai_family, pai->ai_socktype, 0)) < 0) {
-			continue;
-		}
-
-		if (connect(sockfd, pai->ai_addr, pai->ai_addrlen) < 0) {
-			close(sockfd);
-			continue;
-		} else {
-			break;
-		}
-	}
-
-	freeaddrinfo(ai);
-
-	if(pai == NULL) {
-		goto error2;
-	}
-
+	/*
+	 * XXX: logging configuration
+	lws_set_log_level(0xffffffff, NULL);
+	 */
+	lws_set_log_level(0, NULL);
+	lws_ctx_creation_nfo.port = CONTEXT_PORT_NO_LISTEN;
+	lws_ctx_creation_nfo.protocols = protocols;
+	lws_ctx_creation_nfo.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+	lws_ctx_creation_nfo.gid = -1;
+	lws_ctx_creation_nfo.uid = -1;
 	if (proxy_host != NULL) {
-		dprintf(sockfd,
-				"CONNECT %s:%hu HTTP/1.1\r\n"
-				"Host: %s:%hu\r\n"
-				"Proxy-Connection: keep-alive\r\n"
-				"Connection: keep-alive\r\n\r\n",
-				host, port, host, port);
-
-		nread = read(sockfd, res->rxbuf, 13);
-
-		/* expect "HTTP/1.? 200 *" or die */
-		if (nread != 13 || strncmp(res->rxbuf, "HTTP/1.", 7) != 0 || strncmp(res->rxbuf + 8, " 200 ", 5) != 0) {
-			close(sockfd);
-			goto error2;
-		}
-
-		/* empty the socket read buffer */
-		while (recv(sockfd, res->rxbuf, WC_RX_BUF_LEN, MSG_DONTWAIT) > 0);
+		lws_ctx_creation_nfo.http_proxy_address = proxy_host;
+		lws_ctx_creation_nfo.http_proxy_port = (unsigned int)proxy_port;
 	}
+	res->lws_context = lws_create_context(&lws_ctx_creation_nfo);
 
-	npopts = nopoll_conn_opts_new();
-	asprintf(&get_path, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
-	snprintf(sport, 6, "%hu", port);
-	sport[5] = '\0';
-	res->np_conn = nopoll_conn_tls_new_with_socket(res->np_ctx, npopts, sockfd, host, sport, NULL, get_path, NULL, NULL);
-	free(get_path);
+	lws_client_cnx_nfo.context = res->lws_context;
+	lws_client_cnx_nfo.address = host;
+	lws_client_cnx_nfo.host = host;
+	lws_client_cnx_nfo.port = (int)port;
+	lws_client_cnx_nfo.ssl_connection = 1;
+	asprintf((char **)&lws_client_cnx_nfo.path, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
+	lws_client_cnx_nfo.protocol = protocols[0].name;
+	lws_client_cnx_nfo.ietf_version_or_minus_one = -1;
+	lws_client_cnx_nfo.userdata = (void *)res;
+	res->user = user;
+	res->callback = callback;
 
-	if (nopoll_conn_is_ok(res->np_conn)) {
-		res->state = WC_CNX_STATE_CREATED;
-		res->user = user;
-		res->callback = callback;
-		res->fd = nopoll_conn_socket(res->np_conn);
-		nopoll_conn_wait_until_connection_ready(res->np_conn, 2);
-		res->state = WC_CNX_STATE_READY;
-		callback(WC_EVENT_ON_CNX_ESTABLISHED, res, NULL, 0, user);
-	} else {
-		goto error3;
+	res->lws_conn = lws_client_connect_via_info(&lws_client_cnx_nfo);
+	res->state = WC_CNX_STATE_INIT;
+	lws_service(res->lws_context, 100);
+	free((char *)lws_client_cnx_nfo.path);
+
+	if(res->fd <= 0) {
+		goto error2;
 	}
 
 	return res;
-error3:
-	free(get_path);
 error2:
 	free(res);
 error1:
@@ -217,7 +219,7 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {
-	nopoll_ctx_unref(cnx->np_ctx);
+	if (cnx->lws_context != NULL) lws_context_destroy(cnx->lws_context);
 	if (cnx->parser != NULL) wc_parser_free(cnx->parser);
 
 	wc_free_on_data_handlers(cnx->handlers);
@@ -228,10 +230,11 @@ void wc_cnx_free(wc_cnx_t *cnx) {
 
 int wc_cnx_keepalive(wc_cnx_t *cnx) {
 	int sent = 0;
-	static char keepalive = '0';
+	unsigned char keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING + 1 + LWS_SEND_BUFFER_POST_PADDING];
 
-	sent = nopoll_conn_send_text(cnx->np_conn, &keepalive, 1);
-	nopoll_conn_flush_writes(cnx->np_conn, 2000, 0);
+	keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING] = '0';
+	sent = lws_write(cnx->lws_conn, &(keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING]), 1, LWS_WRITE_TEXT);
+	lwsl_debug("*** [%d] keepalive sent\n", sent);
 
 	return sent;
 }

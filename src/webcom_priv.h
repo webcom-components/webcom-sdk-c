@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <stdlib.h>
-#include <nopoll.h>
+#include <libwebsockets.h>
 #include <sys/time.h>
 
 #include "webcom-c/webcom.h"
@@ -31,8 +31,8 @@ typedef struct wc_action_trans wc_action_trans_t;
 typedef struct wc_on_data_handler wc_on_data_handler_t;
 
 typedef struct wc_cnx {
-	noPollCtx *np_ctx;
-	noPollConn *np_conn;
+	struct lws_context *lws_context;
+	struct lws *lws_conn;
 	wc_on_event_cb_t callback;
 	void *user;
 	int fd;

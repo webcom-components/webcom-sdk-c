@@ -6,9 +6,10 @@ project("webcom-sdk-c"
 
 find_package(PkgConfig)
 
-pkg_search_module(NOPOLL REQUIRED nopoll)
+pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
 pkg_search_module(NCURSES REQUIRED ncurses)
+pkg_search_module(OPENSSL REQUIRED openssl)
 
 find_library(EV ev)
 
@@ -16,9 +17,9 @@ if(NOT ${JSONC_FOUND})
 	message(FATAL_ERROR "could not find prerequisite: libjson-c")
 endif(NOT ${JSONC_FOUND})
 
-if(NOT ${NOPOLL_FOUND})
-	message(FATAL_ERROR "could not find prerequisite: libnopoll")
-endif(NOT ${NOPOLL_FOUND})
+if(NOT ${WEBSOCKETS_FOUND})
+	message(FATAL_ERROR "could not find prerequisite: libwebsockets")
+endif(NOT ${WEBSOCKETS_FOUND})
 
 if(${EV-NOTFOUND})
 	message(FATAL_ERROR "could not find prerequisite: libev")
@@ -31,7 +32,7 @@ endif(NOT ${NCURSES_FOUND})
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
 link_directories(
-	${NOPOLL_LIBRARY_DIRS}
+	${WEBSOCKETS_LIBRARY_DIRS}
 	${JSONC_LIBRARY_DIRS}
 )
 
@@ -59,13 +60,15 @@ target_include_directories(
 	INTERFACE
 	${JSONC_INCLUDE_DIRS}
 	PUBLIC
-	${NOPOLL_INCLUDE_DIRS}
+	${WEBSOCKETS_INCLUDE_DIRS}
+	${OPENSSL_INCLUDE_DIRS}
 	${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
 	webcom-c
-	${NOPOLL_LIBRARIES}
+	${WEBSOCKETS_LIBRARIES}
+	${OPENSSL_LIBRARIES}
 	${JSONC_LIBRARIES}
 )
 
@@ -209,7 +212,6 @@ target_include_directories(
 	PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
-	${NOPOLL_INCLUDE_DIRS}
 )
 
 add_test(
@@ -229,7 +231,6 @@ target_include_directories(
 	PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
-	${NOPOLL_INCLUDE_DIRS}
 )
 
 add_test(
@@ -249,7 +250,6 @@ target_include_directories(
 	PUBLIC
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
-	${NOPOLL_INCLUDE_DIRS}
 )
 
 add_test(
@@ -264,7 +264,7 @@ add_custom_target(
 	COMMAND
 	cppcheck --enable=warning,performance,portability,style
 	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
-	"-I${JSONC_INCLUDE_DIRS}" "-I${NOPOLL_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	"-I${JSONC_INCLUDE_DIRS}" "-I${WEBSOCKETS_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
 	src/
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
@@ -274,7 +274,7 @@ add_custom_target(
 	COMMAND
 	cppcheck --enable=warning,performance,portability,style
 	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
-	"-I${JSONC_INCLUDE_DIRS}" "-I${NOPOLL_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	"-I${JSONC_INCLUDE_DIRS}" "-I${WEBSOCKETS_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
 	test/
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
@@ -311,11 +311,11 @@ set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
 
 ## deb-specific
 
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libnopoll0, libjson-c2, libssl1.0.0, libev4, libncurses5")
+set(CPACK_DEBIAN_PACKAGE_DEPENDS "libwebsockets8, libjson-c2, libssl1.0.0, libev4, libncurses5")
 
 ## rpm-specific
 
 set(CPACK_RPM_PACKAGE_RELEASE "1")
-set(CPACK_RPM_PACKAGE_REQUIRES "libnopoll0, json-c, openssl-libs, libev, ncurses-libs")
+set(CPACK_RPM_PACKAGE_REQUIRES "libwebsockets, json-c, openssl-libs, libev, ncurses-libs")
 
 include(CPack)

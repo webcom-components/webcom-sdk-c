@@ -40,6 +40,11 @@ typedef enum {
 	 * (void *)data to the callback.
 	 */
 	WC_EVENT_ON_MSG_RECEIVED,
+	/**
+	 * This event indicates that an error occurred on the given connection. An
+	 * additional error string of size len is given in data.
+	 */
+	WC_EVENT_ON_CNX_ERROR,
 } wc_event_t;
 
 /**
@@ -148,9 +153,8 @@ int wc_cnx_get_fd(wc_cnx_t *cnx);
  * wc_on_event_cb_t callback.
  *
  * @param cnx the connection whose incoming data should be processed
- * @return (not used)
  */
-int wc_cnx_on_readable(wc_cnx_t *cnx);
+void wc_cnx_on_readable(wc_cnx_t *cnx);
 
 /**
  * Gracefully closes a connection to a webcom server.
