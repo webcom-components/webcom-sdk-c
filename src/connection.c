@@ -41,7 +41,7 @@ int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
 			free(trans);
 		}
 	}
-	cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, &msg, sizeof(wc_msg_t), cnx->user);
+	cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, msg, sizeof(wc_msg_t), cnx->user);
 	return 1;
 }
 
