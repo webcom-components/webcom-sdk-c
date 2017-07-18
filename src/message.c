@@ -158,6 +158,35 @@ static inline json_object* _wc_auth_msg_to_json(wc_action_auth_t *auth) {
 	return jroot;
 }
 
+static inline json_object* _wc_odp_msg_to_json(wc_action_on_disc_put_t *odp) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(odp->path));
+	json_object_object_add(jroot, "d", json_tokener_parse(odp->data));
+
+	return jroot;
+}
+
+static inline json_object* _wc_odm_msg_to_json(wc_action_on_disc_merge_t *odm) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(odm->path));
+	json_object_object_add(jroot, "d", json_tokener_parse(odm->data));
+
+	return jroot;
+}
+
+static inline json_object* _wc_odc_msg_to_json(wc_action_on_disc_cancel_t *odc) {
+	json_object *jroot;
+
+	jroot = json_object_new_object();
+	json_object_object_add(jroot, "p", json_object_new_string(odc->path));
+
+	return jroot;
+}
+
 static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 	json_object *jroot;
 
@@ -191,7 +220,18 @@ static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 			json_object_object_add(jroot, "a", json_object_new_string("unauth"));
 			json_object_object_add(jroot, "b", NULL);
 			break;
-
+		case WC_ACTION_ON_DISCONNECT_PUT:
+			json_object_object_add(jroot, "a", json_object_new_string("o"));
+			json_object_object_add(jroot, "b", _wc_odp_msg_to_json(&data->u.action.u.on_disc_put));
+			break;
+		case WC_ACTION_ON_DISCONNECT_MERGE:
+			json_object_object_add(jroot, "a", json_object_new_string("om"));
+			json_object_object_add(jroot, "b", _wc_odm_msg_to_json(&data->u.action.u.on_disc_merge));
+			break;
+		case WC_ACTION_ON_DISCONNECT_CANCEL:
+			json_object_object_add(jroot, "a", json_object_new_string("oc"));
+			json_object_object_add(jroot, "b", _wc_odc_msg_to_json(&data->u.action.u.on_disc_cancel));
+			break;
 		default:
 			/* TODO: other actions */
 			break;

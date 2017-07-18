@@ -98,6 +98,20 @@ DEFINE_REQ_FUNC (merge, WC_ACTION_MERGE, char *path, char *json)
 	req->data = json;
 END_DEFINE_REQ_FUNC
 
+DEFINE_REQ_FUNC (on_disc_put, WC_ACTION_ON_DISCONNECT_PUT, char *path, char *json)
+	req->path = path;
+	req->data = json;
+END_DEFINE_REQ_FUNC
+
+DEFINE_REQ_FUNC (on_disc_merge, WC_ACTION_ON_DISCONNECT_MERGE, char *path, char *json)
+	req->path = path;
+	req->data = json;
+END_DEFINE_REQ_FUNC
+
+DEFINE_REQ_FUNC (on_disc_cancel, WC_ACTION_ON_DISCONNECT_CANCEL, char *path)
+	req->path = path;
+END_DEFINE_REQ_FUNC
+
 int64_t wc_req_push(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json) {
 	char pushid[20];
 	char *push_path;

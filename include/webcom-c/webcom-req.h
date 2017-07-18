@@ -131,6 +131,46 @@ int64_t wc_req_auth(wc_cnx_t *cnx, wc_on_req_result_t callback, char *cred);
 int64_t wc_req_unauth(wc_cnx_t *cnx, wc_on_req_result_t callback);
 
 /**
+ * sends an on-disconnect-put request to the webcom server and get notified of
+ * the status
+ *
+ * @param cnx the webcom connection
+ * @param callback callback that will be called when the status of the request
+ * is sent back from the server
+ * @param path a string representing the path of the data
+ * @param json a string containing the JSON-encoded data to store on the server
+ * 	             at the given path on disconnection
+ * @return the put request id (>0) if it was sent successfully, -1 otherwise
+ */
+int64_t wc_req_on_disc_push(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+
+/**
+ * sends an on-disconnect-merge request to the webcom server and get notified of
+ * the status
+ *
+ * @param cnx the webcom connection
+ * @param callback callback that will be called when the status of the request
+ * is sent back from the server
+ * @param path a string representing the path of the data
+ * @param json a string containing the JSON-encoded data to merge on the server
+ * 	             at the given path on disconnection
+ * @return the put request id (>0) if it was sent successfully, -1 otherwise
+ */
+int64_t wc_req_on_disc_merge(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+
+/**
+ * sends an on-disconnect-cancel request to the webcom server and get notified
+ * of the status
+ *
+ * @param cnx the webcom connection
+ * @param callback callback that will be called when the status of the request
+ * is sent back from the server
+ * @param path a string representing the path of the data
+ * @return the put request id (>0) if it was sent successfully, -1 otherwise
+ */
+int64_t wc_req_on_disc_cancel(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path);
+
+/**
  * @}
  */
 
