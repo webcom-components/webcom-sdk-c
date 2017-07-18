@@ -142,7 +142,7 @@ int64_t wc_req_unauth(wc_cnx_t *cnx, wc_on_req_result_t callback);
  * 	             at the given path on disconnection
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_on_disc_push(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+int64_t wc_req_on_disc_put(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json);
 
 /**
  * sends an on-disconnect-merge request to the webcom server and get notified of
