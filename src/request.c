@@ -54,7 +54,7 @@ wc_action_trans_t *wc_req_get_pending(int64_t id) {
 
 #define DEFINE_REQ_FUNC(__name, __type, ... /* args */)						\
 	int64_t wc_req_ ## __name(wc_cnx_t *cnx, wc_on_req_result_t callback,	\
-			__VA_ARGS__) {													\
+		## __VA_ARGS__) {													\
 		wc_msg_t msg;														\
 		wc_action_ ## __name ## _t *req;									\
 		int ret;															\
@@ -76,7 +76,7 @@ DEFINE_REQ_FUNC (auth, WC_ACTION_AUTHENTICATE, char *cred)
 	req->cred = cred;
 END_DEFINE_REQ_FUNC
 
-DEFINE_REQ_FUNC (unauth, WC_ACTION_UNAUTHENTICATE, ...)
+DEFINE_REQ_FUNC (unauth, WC_ACTION_UNAUTHENTICATE)
 	UNUSED_VAR(req);
 END_DEFINE_REQ_FUNC
 

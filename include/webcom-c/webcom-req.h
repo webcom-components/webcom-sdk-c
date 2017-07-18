@@ -27,9 +27,6 @@ typedef enum {WC_REQ_OK, WC_REQ_ERROR} wc_req_pending_result_t;
  */
 typedef void (*wc_on_req_result_t) (wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason);
 
-DECLARE_REQ_FUNC(auth, char *cred)
-DECLARE_REQ_FUNC(unauth, ...)
-
 /**
  * sends a data put request to the webcom server and get notified of the status
  *
@@ -107,6 +104,31 @@ int64_t wc_req_listen(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path);
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
 int64_t wc_req_unlisten(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path);
+
+/**
+ * sends an authentication request to the webcom server and get notified of the
+ * status
+ *
+ * @param cnx the webcom connection
+ * @param callback callback that will be called when the status of the request
+ * is sent back from the server
+ * @param cred a string containing the secret token
+ *
+ * @return the put request id (>0) if it was sent successfully, -1 otherwise
+ */
+int64_t wc_req_auth(wc_cnx_t *cnx, wc_on_req_result_t callback, char *cred);
+
+/**
+ * sends a un-authentication request to the webcom server and get notified of
+ * the status
+ *
+ * @param cnx the webcom connection
+ * @param callback callback that will be called when the status of the request
+ * is sent back from the server
+ *
+ * @return the put request id (>0) if it was sent successfully, -1 otherwise
+ */
+int64_t wc_req_unauth(wc_cnx_t *cnx, wc_on_req_result_t callback);
 
 /**
  * @}
