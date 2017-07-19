@@ -35,18 +35,17 @@ static void wc_req_store_pending(
 }
 
 wc_action_trans_t *wc_req_get_pending(int64_t id) {
-	wc_action_trans_t *cur, *prev;
+	wc_action_trans_t *cur, **prev;
 
-	prev = NULL;
-	cur = pending_req_table[pending_req_hash(id)];
+	prev = &pending_req_table[pending_req_hash(id)];
+	cur = *prev;
+
 	while (cur != NULL) {
 		if (cur->id == id) {
-			if (prev != NULL) {
-				prev->next = cur->next;
-			}
+			*prev = cur->next;
 			break;
 		}
-		prev = cur;
+		prev = &(cur->next);
 		cur = cur->next;
 	}
 	return cur;
