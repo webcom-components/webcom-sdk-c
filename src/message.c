@@ -232,9 +232,6 @@ static inline json_object* _wc_data_msg_to_json(wc_data_msg_t *data) {
 			json_object_object_add(jroot, "a", json_object_new_string("oc"));
 			json_object_object_add(jroot, "b", _wc_odc_msg_to_json(&data->u.action.u.on_disc_cancel));
 			break;
-		default:
-			/* TODO: other actions */
-			break;
 		}
 		break;
 	case WC_DATA_MSG_PUSH:

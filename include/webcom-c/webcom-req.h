@@ -6,10 +6,6 @@
 
 typedef enum {WC_REQ_OK, WC_REQ_ERROR} wc_req_pending_result_t;
 
-
-#define DECLARE_REQ_FUNC(__name, ... /* args */)	\
-	int64_t wc_req_ ## __name(wc_cnx_t *cnx, wc_on_req_result_t callback, __VA_ARGS__);
-
 /**
  * @defgroup requests Webcom client to server request functions
  * @{

@@ -343,4 +343,3 @@ int wc_parse_msg(char *str, wc_msg_t *res) {
 	return ret == WC_PARSER_OK;
 }
 
-/* void wc_msg_free(wc_msg_t *res); TODO */
