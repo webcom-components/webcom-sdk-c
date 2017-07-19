@@ -44,6 +44,7 @@ add_library(
 	src/connection.c
 	src/webcom.c
 	src/request.c
+	src/event.c
 )
 
 target_include_directories(

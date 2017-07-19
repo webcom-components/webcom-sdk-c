@@ -26,6 +26,12 @@ int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
 		cnx->time_offset = now - msg->u.ctrl.u.handshake.ts;
 		cnx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, cnx, &msg, sizeof(wc_msg_t), cnx->user);
 		cnx->time_offset = wc_now() - msg->u.ctrl.u.handshake.ts;
+	} else if (msg->type == WC_MSG_DATA
+			&& msg->u.data.type == WC_DATA_MSG_PUSH
+			&& (msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT
+					|| msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_MERGE))
+	{
+		wc_on_data_dispatch(cnx, &msg->u.data.u.push);
 	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
 
 

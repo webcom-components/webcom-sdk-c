@@ -24,7 +24,7 @@ void webcom_socket_cb(EV_P_ ev_io *w, int revents);
 void stdin_cb (EV_P_ ev_io *w, int revents);
 void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 		size_t len, void *user);
-static void on_data_update_update_put(wc_push_data_update_put_t *event);
+static void on_data_update_update_put_cb(wc_cnx_t *cnx, int put_or_merge, char *path, char *json_data, void *param);
 static void on_brick_update(char *key, json_object *data);
 /*
  * end of boredom
@@ -133,29 +133,19 @@ void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
  * ready", "connection was closed", or "incoming webcom message" occur on the
  * webcom connection.
  */
-void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
+void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, UNUSED_PARAM(void *data),
 		UNUSED_PARAM(size_t len), void *user)
 {
-	wc_msg_t *msg = (wc_msg_t*) data;
 	struct ev_loop *loop = (struct ev_loop*) user;
 
 	switch (event) {
-		case WC_EVENT_ON_CNX_ESTABLISHED:
+		case WC_EVENT_ON_SERVER_HANDSHAKE:
 			/* when the connection is established, register to events in the
 			 * BOARD_NAME path
 			 */
-			wc_listen(cnx, board_name);
+			wc_on_data(cnx, board_name, on_data_update_update_put_cb, NULL);
+			wc_req_listen(cnx, NULL, board_name);
 			clear_screen();
-			break;
-		case WC_EVENT_ON_MSG_RECEIVED:
-			/* if this is a data update put (data changed notification)
-			 * message, call a subroutine to handle it */
-			if (msg->type == WC_MSG_DATA
-					&& msg->u.data.type == WC_DATA_MSG_PUSH
-					&& msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT)
-			{
-				on_data_update_update_put(&msg->u.data.u.push.u.update_put);
-			}
 			break;
 		case WC_EVENT_ON_CNX_CLOSED:
 			puts("Connection closed, Bye");
@@ -167,17 +157,16 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 	}
 }
 
-/*
- * Helper function called to process an update message from the server. We
- * receive such messages because we listened on a certain path of the data
- * tree.
- */
-static void on_data_update_update_put(wc_push_data_update_put_t *event) {
+static void on_data_update_update_put_cb(UNUSED_PARAM(wc_cnx_t *cnx),
+		UNUSED_PARAM(int put_or_merge),
+		char *path,
+		char *json_data,
+		UNUSED_PARAM(void *param)) {
 	json_object *data;
 
-	data = json_tokener_parse(event->data);
+	data = json_tokener_parse(json_data);
 
-	if (strcmp(board_name, event->path) == 0) {
+	if (strcmp(board_name, path) == 0) {
 		/* we got informations for the entire board */
 		if (data == NULL) {
 			/* the board was reset */
@@ -187,10 +176,10 @@ static void on_data_update_update_put(wc_push_data_update_put_t *event) {
 				on_brick_update(key, val);
 			}
 		}
-	} else if (strncmp(board_name, event->path, strlen(board_name)) == 0
-			&& event->path[strlen(board_name)] == '/') {
+	} else if (strncmp(board_name, path, strlen(board_name)) == 0
+			&& path[strlen(board_name)] == '/') {
 		/* just one single brick data was modified */
-		on_brick_update(event->path + strlen(board_name) + 1, data);
+		on_brick_update(path + strlen(board_name) + 1, data);
 	}
 
 	json_object_put(data);
@@ -265,7 +254,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 					"\"y\":%d}", col_str, x, y);
 
 			/* send the put message to the webcom server */
-			if (wc_put_json_data(cnx, path, data) > 0) {
+			if (wc_req_put(cnx, NULL, path, data) > 0) {
 				puts("OK");
 			} else {
 				puts("ERROR");

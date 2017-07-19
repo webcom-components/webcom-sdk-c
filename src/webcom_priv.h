@@ -21,6 +21,15 @@ struct pushid_state {
 	struct drand48_data rand_buffer;
 };
 
+
+typedef struct wc_on_data_handler {
+	char *path;
+	size_t path_len;
+	wc_on_data_callback_t callback;
+	void *user;
+	struct wc_on_data_handler *next;
+} wc_on_data_handler_t;
+
 #define WC_RX_BUF_LEN	(1 << 12)
 
 typedef struct wc_cnx {
@@ -35,6 +44,7 @@ typedef struct wc_cnx {
 	struct pushid_state pids;
 	int64_t time_offset;
 	int64_t last_req;
+	wc_on_data_handler_t *handlers;
 } wc_cnx_t;
 
 static inline int64_t wc_now() {
@@ -61,9 +71,8 @@ typedef struct wc_action_trans {
 	struct wc_action_trans *next;
 } wc_action_trans_t;
 
-
-
 wc_action_trans_t *wc_req_get_pending(int64_t id);
 void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
+void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push);
 
 #endif /* SRC_WEBCOM_PRIV_H_ */
