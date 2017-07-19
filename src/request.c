@@ -121,7 +121,6 @@ int64_t wc_req_push(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char
 	asprintf(&push_path, "%s/%.20s", path, pushid);
 
 	ret = wc_req_put(cnx, callback, push_path, json);
-	wc_req_unauth(cnx, callback);
 	free(push_path);
 
 	return ret;
