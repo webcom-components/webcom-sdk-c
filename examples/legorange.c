@@ -24,7 +24,7 @@ void webcom_socket_cb(EV_P_ ev_io *w, int revents);
 void stdin_cb (EV_P_ ev_io *w, int revents);
 void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 		size_t len, void *user);
-static void on_data_update_update_put_cb(wc_cnx_t *cnx, int put_or_merge, char *path, char *json_data, void *param);
+static void on_data_update(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
 static void on_brick_update(char *key, json_object *data);
 /*
  * end of boredom
@@ -143,7 +143,7 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, UNUSED_PARAM(void *data)
 			/* when the connection is established, register to events in the
 			 * BOARD_NAME path
 			 */
-			wc_on_data(cnx, board_name, on_data_update_update_put_cb, NULL);
+			wc_on_data(cnx, board_name, on_data_update, NULL);
 			wc_req_listen(cnx, NULL, board_name);
 			clear_screen();
 			break;
@@ -157,11 +157,13 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, UNUSED_PARAM(void *data)
 	}
 }
 
-static void on_data_update_update_put_cb(UNUSED_PARAM(wc_cnx_t *cnx),
-		UNUSED_PARAM(int put_or_merge),
+static void on_data_update(
+		UNUSED_PARAM(wc_cnx_t *cnx),
+		UNUSED_PARAM(ws_on_data_event_t event),
 		char *path,
 		char *json_data,
-		UNUSED_PARAM(void *param)) {
+		UNUSED_PARAM(void *param))
+{
 	json_object *data;
 
 	data = json_tokener_parse(json_data);
