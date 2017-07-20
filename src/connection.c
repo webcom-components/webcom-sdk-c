@@ -231,8 +231,18 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {
+	wc_on_data_handler_t *p, *q;
+
 	nopoll_ctx_unref(cnx->np_ctx);
 	if (cnx->parser != NULL) wc_parser_free(cnx->parser);
+
+	p = cnx->handlers;
+	while (p != NULL) {
+		free(p->path);
+		q = p;
+		p = p->next;
+		free(q);
+	}
 	free(cnx);
 }
 

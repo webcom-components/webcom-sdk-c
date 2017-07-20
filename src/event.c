@@ -19,15 +19,18 @@ void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void 
 
 void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push) {
 	wc_on_data_handler_t *p;
+	ws_on_data_event_t event;
 	char *push_path;
 	char *push_data;
 
 	if (push->type == WC_PUSH_DATA_UPDATE_PUT) {
 		push_path = push->u.update_put.path;
 		push_data = push->u.update_put.data;
+		event = WC_ON_DATA_PUT;
 	} else if(push->type == WC_PUSH_DATA_UPDATE_MERGE) {
 		push_path = push->u.update_merge.path;
 		push_data = push->u.update_merge.data;
+		event = WC_ON_DATA_MERGE;
 	} else {
 		return;
 	}
@@ -36,7 +39,7 @@ void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push) {
 	for (p = cnx->handlers ; p ; p = p->next) {
 		if (strncmp(push_path, p->path, p->path_len) == 0) {
 			p->callback(cnx,
-					push->type == WC_PUSH_DATA_UPDATE_PUT,
+					event,
 					push_path,
 					push_data,
 					p->user);
