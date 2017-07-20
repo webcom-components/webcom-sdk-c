@@ -169,3 +169,7 @@ int64_t wc_listen(wc_cnx_t *cnx, char *path) {
 int64_t wc_get_server_time(wc_cnx_t *cnx) {
 	return wc_server_now(cnx);
 }
+
+void wc_get_push_id(wc_cnx_t *cnx, char *result) {
+	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), result);
+}

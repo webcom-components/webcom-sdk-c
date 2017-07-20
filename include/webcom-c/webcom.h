@@ -76,6 +76,37 @@ int64_t wc_listen(wc_cnx_t *cnx, char *path);
 int64_t wc_get_server_time(wc_cnx_t *cnx);
 
 /**
+ * builds a webcom push id
+ *
+ * This function will write a new push id in the buffer pointed by `result`.
+ *
+ * A push id is a 20-bytes string that guarantees several properties:
+ * - all SDKs across all platform generate it using the exact same method
+ * - when sorted in lexicographical order, they are also sorted by
+ *   chronological order of their creation, regardless of what webcom client
+ *   node has generated it (the SDKs does so by computing a local to server
+ *   clock offset during the webcom protocolar handshake)
+ *
+ * **Example:**
+ *
+ *			foo(wc_cnx_t *cnx) {
+ *				char buf[20];
+ *				...
+ *				wc_get_push_id(cnx, buf);
+ *				printf("the id is: %20s\n", buf);
+ *				...
+ *			}
+ *
+ * @note the result buffer **will not** be nul-terminated
+ *
+ * @param cnx the webcom connection (it **MUST** have received the handshake
+ * from the server, and it may be currently connected or disconnected)
+ * @param result the address of a (minimum) 20-bytes buffer that will receive
+ * the newly created push id
+ */
+void wc_get_push_id(wc_cnx_t *cnx, char *result);
+
+/**
  * @}
  */
 
