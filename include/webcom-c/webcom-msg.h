@@ -3,7 +3,10 @@
 
 #include <stdint.h>
 
-/* Data message data types */
+/**
+ * @ingroup messages
+ * @{
+ */
 
 typedef enum {
 	WC_DATA_MSG_ACTION = 1,
@@ -166,11 +169,6 @@ typedef struct {
 		wc_data_msg_t data;
 	} u;
 } wc_msg_t;
-
-/**
- * @defgroup messages Webcom messages manipulation and data types
- * @{
- */
 
 /**
  * does the internal initialization of a message structure

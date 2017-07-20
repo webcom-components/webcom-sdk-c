@@ -8,7 +8,7 @@
 typedef struct wc_cnx wc_cnx_t;
 
 /**
- * @defgroup connection Webcom client to server connection management
+ * @ingroup connection
  * @{
  */
 

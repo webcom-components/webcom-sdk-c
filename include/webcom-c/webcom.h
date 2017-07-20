@@ -5,6 +5,22 @@
  * to C/C++ programmer.
  */
 
+/**
+ * @defgroup hilev		Higher level functions
+ * @{
+ * 	@defgroup webcom		Webcom general functions
+ * 	@defgroup connection 	Connect a client to a Webcom server
+ * 	@defgroup requests		Send Webcom client to server request
+ *	@defgroup event			Register callback on Webcom events
+ * @}
+ * @defgroup lolev		Lower level functions (you may not need them)
+ * @{
+ * 	@defgroup messages	Webcom protocol data types, messages manipulation
+ * 	@defgroup parser 	Webcom protocol parsing functions
+ * 	@defgroup utils 	Some utility macros, functions, ...
+ * @}
+ */
+
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_H_
 
@@ -16,7 +32,7 @@
 #include "webcom-event.h"
 
 /**
- * @defgroup webcom Webcom "high-level" functions
+ * @ingroup webcom
  * @{
  */
 
