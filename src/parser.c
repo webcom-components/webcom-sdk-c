@@ -2,6 +2,7 @@
 #include <sys/time.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 #include <json-c/json.h>
 
 #include "webcom-c/webcom-msg.h"
@@ -49,6 +50,59 @@ static inline int _wc_hlp_get_json_str(json_object *j, char *key, char **s) {
 	if (json_object_object_get_ex(j, key, &jtmp)) {
 		*s = strdup(json_object_to_json_string_ext(jtmp, JSON_C_TO_STRING_PLAIN));
 		return 1;
+	}
+	return 0;
+}
+
+struct _wc_hlp_json_keyval {
+	char *key;
+	json_object *val;
+};
+
+static int cmp_json_keys(const void *a, const void *b) {
+	return strcmp(
+			((struct _wc_hlp_json_keyval *)a)->key,
+			((struct _wc_hlp_json_keyval *)b)->key);
+}
+
+static int _wc_hlp_get_level1_sorted_json_str(json_object *j, char *key, char **s) {
+	json_object *jtmp;
+	struct lh_table *t;
+	struct lh_entry *it;
+	struct _wc_hlp_json_keyval *sorted_keys;
+	int i;
+
+	if (json_object_object_get_ex(j, key, &jtmp)) {
+		if (json_object_get_type(jtmp) == json_type_object) {
+			t = json_object_get_object(jtmp);
+			sorted_keys = malloc(t->count * sizeof(struct _wc_hlp_json_keyval));
+
+			it = t->head;
+			for (i = 0; i < t->count ; i++) {
+				sorted_keys[i].key = (char *)it->k;
+				sorted_keys[i].val = (struct json_object*)it->v;
+				it = it->next;
+			}
+
+			qsort(sorted_keys, t->count, sizeof(struct _wc_hlp_json_keyval), cmp_json_keys);
+			/* now the sorted_keys name is relevant */
+
+			jtmp = json_object_new_object();
+
+			for (i = 0 ; i < t->count ; i++) {
+				json_object_get(sorted_keys[i].val);
+				json_object_object_add(jtmp, sorted_keys[i].key, sorted_keys[i].val);
+			}
+
+			*s = strdup(json_object_to_json_string_ext(jtmp, JSON_C_TO_STRING_PLAIN));
+			json_object_put(jtmp);
+
+			free(sorted_keys);
+			return 1;
+		} else {
+			*s = strdup(json_object_to_json_string_ext(jtmp, JSON_C_TO_STRING_PLAIN));
+			return 1;
+		}
 	}
 	return 0;
 }
@@ -198,12 +252,12 @@ static int wc_parse_push_listen_revoked(json_object *jroot, wc_push_listen_revok
 
 static int wc_parse_push_update_put(json_object *jroot, wc_push_data_update_put_t *res) {
 	return _wc_hlp_get_string(jroot, "p", &res->path)
-			&& _wc_hlp_get_json_str(jroot, "d", &res->data);;
+			&& _wc_hlp_get_level1_sorted_json_str(jroot, "d", &res->data);
 }
 
 static int wc_parse_push_update_merge(json_object *jroot, wc_push_data_update_merge_t *res) {
 	return _wc_hlp_get_string(jroot, "p", &res->path)
-			&& _wc_hlp_get_json_str(jroot, "d", &res->data);;
+			&& _wc_hlp_get_level1_sorted_json_str(jroot, "d", &res->data);
 }
 
 static int wc_parse_push(json_object *jroot, wc_push_t *res) {
