@@ -5,13 +5,9 @@
 #include "webcom-c/webcom.h"
 #include "webcom_priv.h"
 
-#define PENDING_HACTION_HASH_FACTOR 8
-
 inline static size_t pending_req_hash(int64_t id) {
-	return ((uint64_t)id) % (1 << PENDING_HACTION_HASH_FACTOR);
+	return ((uint64_t)id) % (1 << PENDING_ACTION_HASH_FACTOR);
 }
-
-static wc_action_trans_t* pending_req_table[1 << PENDING_HACTION_HASH_FACTOR] = {NULL};
 
 static void wc_req_store_pending(
 		wc_cnx_t *cnx,
@@ -23,21 +19,20 @@ static void wc_req_store_pending(
 	size_t slot;
 
 	trans = malloc(sizeof(wc_action_trans_t));
-	trans->cnx = cnx;
 	trans->id = id;
 	trans->type = type;
 	trans->callback = callback;
 
 	slot = pending_req_hash(id);
 
-	trans->next = pending_req_table[slot];
-	pending_req_table[slot] = trans;
+	trans->next = cnx->pending_req_table[slot];
+	cnx->pending_req_table[slot] = trans;
 }
 
-wc_action_trans_t *wc_req_get_pending(int64_t id) {
+wc_action_trans_t *wc_req_get_pending(wc_cnx_t *cnx, int64_t id) {
 	wc_action_trans_t *cur, **prev;
 
-	prev = &pending_req_table[pending_req_hash(id)];
+	prev = &cnx->pending_req_table[pending_req_hash(id)];
 	cur = *prev;
 
 	while (cur != NULL) {

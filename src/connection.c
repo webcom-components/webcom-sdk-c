@@ -35,10 +35,10 @@ int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
 	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
 
 
-		if ((trans = wc_req_get_pending(msg->u.data.u.response.r)) != NULL) {
+		if ((trans = wc_req_get_pending(cnx, msg->u.data.u.response.r)) != NULL) {
 			if (trans->callback != NULL) {
 				trans->callback(
-						trans->cnx,
+						cnx,
 						trans->id,
 						trans->type,
 						strcmp(msg->u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
@@ -232,6 +232,8 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 
 void wc_cnx_free(wc_cnx_t *cnx) {
 	wc_on_data_handler_t *p, *q;
+	wc_action_trans_t *t, *t_tmp;
+	size_t i;
 
 	nopoll_ctx_unref(cnx->np_ctx);
 	if (cnx->parser != NULL) wc_parser_free(cnx->parser);
@@ -243,6 +245,16 @@ void wc_cnx_free(wc_cnx_t *cnx) {
 		p = p->next;
 		free(q);
 	}
+
+	for (i = 0 ; i < (1 << PENDING_ACTION_HASH_FACTOR) ; i++) {
+		t = cnx->pending_req_table[i];
+		while(t != NULL) {
+			t_tmp = t->next;
+			free(t);
+			t = t_tmp;
+		}
+	}
+
 	free(cnx);
 }
 

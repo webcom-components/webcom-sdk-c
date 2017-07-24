@@ -31,6 +31,8 @@ typedef struct wc_on_data_handler {
 } wc_on_data_handler_t;
 
 #define WC_RX_BUF_LEN	(1 << 12)
+#define PENDING_ACTION_HASH_FACTOR 8
+typedef struct wc_action_trans wc_action_trans_t;
 
 typedef struct wc_cnx {
 	noPollCtx *np_ctx;
@@ -44,6 +46,7 @@ typedef struct wc_cnx {
 	struct pushid_state pids;
 	int64_t time_offset;
 	int64_t last_req;
+	wc_action_trans_t* pending_req_table[1 << PENDING_ACTION_HASH_FACTOR];
 	wc_on_data_handler_t *handlers;
 } wc_cnx_t;
 
@@ -64,14 +67,13 @@ static inline int64_t wc_next_reqnum(wc_cnx_t *cnx) {
 
 
 typedef struct wc_action_trans {
-	wc_cnx_t *cnx;
 	int64_t id;
 	wc_action_type_t type;
 	wc_on_req_result_t callback;
 	struct wc_action_trans *next;
 } wc_action_trans_t;
 
-wc_action_trans_t *wc_req_get_pending(int64_t id);
+wc_action_trans_t *wc_req_get_pending(wc_cnx_t *cnx, int64_t id);
 void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
 void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push);
 
