@@ -190,6 +190,26 @@ add_test(
 	COMMAND webcom-test-cnx
 )
 
+## on data handlers hashtable
+
+add_executable(
+	webcom-test-data-handlers
+	test/test-on-data.c
+)
+
+target_include_directories(
+	webcom-test-data-handlers
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
+	${NOPOLL_INCLUDE_DIRS}
+)
+
+add_test(
+	NAME "data-handlers"
+	COMMAND webcom-test-data-handlers
+)
+
 #### code checker
 
 add_custom_target(

@@ -1,49 +1,159 @@
 #include <string.h>
+#include <stdint.h>
 
 #include "webcom-c/webcom.h"
 #include "webcom_priv.h"
 
+typedef struct wc_on_data_handler {
+	char *path;
+	wc_on_data_callback_t callback;
+	void *user;
+	struct wc_on_data_handler *next;
+} wc_on_data_handler_t;
+
+static int path_eq(char *p1, char *p2) {
+	do {
+		while (*p1 && *p1 == '/') p1++;
+		while (*p2 && *p2 == '/') p2++;
+		while (*p1 && *p1 != '/' && *p2 && *p2 != '/') {
+			if (*p1 != *p2) {
+				return 0;
+			}
+			p1++;
+			p2++;
+		}
+		if ((*p1 != 0 && *p1 != '/') || (*p2 != 0 && *p2 != '/')) {
+			return 0;
+		}
+	} while (*p1 && *p2);
+	return 1;
+}
+
+/* djb2 hash */
+static uint32_t str_hash_update(unsigned char **str, uint32_t hash) {
+	while (**str != '/' && **str != '\0') {
+		hash = ((hash << 5) + hash) + **str;
+		(*str)++;
+	}
+
+	return ((hash << 5) + hash) + '/';
+}
+
+static uint32_t path_hash(char *path) {
+	uint32_t hash = 177620; /* '/' hashed through djb2 */
+	while (*path) {
+		while (*path == '/') {
+			path++;
+		}
+		if (*path) {
+			hash = str_hash_update((unsigned char **)&path, hash);
+		}
+	}
+	return hash;
+}
+
+/*
+ * calls
+ *
+ *     __func(wc_cnx_t *__cnx, char *__path, char *__path_chunk, __hash, ...)
+ *
+ * for each chunk on the given path.
+ *
+ * Example: if "/aaa/bbb/ccc/" is given as input path, this macro will
+ * sequentially call
+ *
+ * - __func(__cnx, "/aaa/bbb/ccc/", "/aaa/", H("/aaa/"), ...)
+ * - __func(__cnx, "/aaa/bbb/ccc/", "/aaa/bbb/", H("/aaa/bbb/"), ...)
+ * - __func(__cnx, "/aaa/bbb/ccc/", "/aaa/bbb/ccc/", H("/aaa/bbb/ccc/"), ...)
+ *
+ */
+#define FOR_EACH_PATH_CHUNK_HASH(__func, __cnx, __path, ...)                          \
+	do {                                                                              \
+		char *__path_ptr = strdup(__path), *__path_chunk = __path_ptr, __bak;         \
+		uint32_t __hash = 177620;                                                     \
+		while (*__path_ptr) {                                                         \
+			while (*__path_ptr == '/') {                                              \
+				__path_ptr++;                                                         \
+			}                                                                         \
+			if (*__path_ptr) {                                                        \
+				__hash = str_hash_update((unsigned char **)&__path_ptr, __hash);      \
+				__bak = *__path_ptr;                                                  \
+				*__path_ptr = '\0';                                                   \
+				__func(__cnx, __path, __path_chunk, __hash, ## __VA_ARGS__);          \
+				*__path_ptr = __bak;                                                  \
+			}                                                                         \
+		}                                                                             \
+		free(__path_chunk);                                                           \
+	} while (0)
+
 void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void *user) {
-	wc_on_data_handler_t *new_h;
+	wc_on_data_handler_t *new_h, *tmp;
+	uint32_t slot;
 
 	new_h = malloc(sizeof(wc_on_data_handler_t));
 
 	new_h->path = strdup(path);
-	new_h->path_len = strlen(path);
 	new_h->callback = callback;
 	new_h->user = user;
-	new_h->next = cnx->handlers;
 
-	cnx->handlers = new_h;
+	slot = path_hash(path) % (1 << DATA_HANDLERS_HASH_FACTOR);
+
+	tmp = cnx->handlers[slot];
+
+	new_h->next = tmp;
+	cnx->handlers[slot] = new_h;
+}
+
+static void _dispatch_helper(wc_cnx_t *cnx, char *full_path, char *path_chunk, uint32_t hash, ws_on_data_event_t event, char *json_data) {
+	wc_on_data_handler_t *p;
+
+	p = cnx->handlers[hash % (1 << DATA_HANDLERS_HASH_FACTOR)];
+
+	while (p != NULL) {
+		if (path_eq(path_chunk, p->path)) {
+			p->callback(cnx,
+					event,
+					full_path,
+					json_data,
+					p->user);
+		}
+		p = p->next;
+	}
 }
 
 void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push) {
-	wc_on_data_handler_t *p;
 	ws_on_data_event_t event;
-	char *push_path;
-	char *push_data;
+	char *updated_path;
+	char *updated_data;
 
 	if (push->type == WC_PUSH_DATA_UPDATE_PUT) {
-		push_path = push->u.update_put.path;
-		push_data = push->u.update_put.data;
+		updated_path = push->u.update_put.path;
+		updated_data = push->u.update_put.data;
 		event = WC_ON_DATA_PUT;
 	} else if(push->type == WC_PUSH_DATA_UPDATE_MERGE) {
-		push_path = push->u.update_merge.path;
-		push_data = push->u.update_merge.data;
+		updated_path = push->u.update_merge.path;
+		updated_data = push->u.update_merge.data;
 		event = WC_ON_DATA_MERGE;
 	} else {
 		return;
 	}
 
+	FOR_EACH_PATH_CHUNK_HASH (
+			_dispatch_helper, cnx, updated_path, event, updated_data
+	);
+}
 
-	for (p = cnx->handlers ; p ; p = p->next) {
-		if (strncmp(push_path, p->path, p->path_len) == 0) {
-			p->callback(cnx,
-					event,
-					push_path,
-					push_data,
-					p->user);
-			break;
+void wc_free_on_data_handlers(wc_on_data_handler_t **table) {
+	wc_on_data_handler_t *p, *q;
+	size_t i;
+
+	for (i = 0 ; i < (1 << DATA_HANDLERS_HASH_FACTOR) ; i++) {
+		p = table[i];
+		while(p) {
+			q = p->next;
+			free(p->path);
+			free(p);
+			p = q;
 		}
 	}
 }

@@ -34,7 +34,8 @@ typedef void (*wc_on_data_callback_t)(wc_cnx_t *cnx, ws_on_data_event_t event, c
  * `"/foo/bar/"`, `"/foo/bar/quux/corge/"`, ..., but not `"/foo/baz/"`.
  *
  * @remark If a data event path matches several paths registered through this
- * function, only one callback will be called: the most recently registered one.
+ * function, they will all be called, in the shortest to the longest path
+ * order.
  *
  * @param cnx the webcom connection
  * @param path the "root" path of the events to register
