@@ -5,6 +5,13 @@
 #include "webcom-c/webcom.h"
 #include "webcom_priv.h"
 
+typedef struct wc_action_trans {
+	int64_t id;
+	wc_action_type_t type;
+	wc_on_req_result_t callback;
+	struct wc_action_trans *next;
+} wc_action_trans_t;
+
 inline static size_t pending_req_hash(int64_t id) {
 	return ((uint64_t)id) % (1 << PENDING_ACTION_HASH_FACTOR);
 }
@@ -44,6 +51,36 @@ wc_action_trans_t *wc_req_get_pending(wc_cnx_t *cnx, int64_t id) {
 		cur = cur->next;
 	}
 	return cur;
+}
+
+void wc_req_response_dispatch(wc_cnx_t *cnx, wc_response_t *response) {
+	wc_action_trans_t *trans;
+
+	if ((trans = wc_req_get_pending(cnx, response->r)) != NULL) {
+		if (trans->callback != NULL) {
+			trans->callback(
+					cnx,
+					trans->id,
+					trans->type,
+					strcmp(response->status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
+					response->status);
+		}
+		free(trans);
+	}
+}
+
+void wc_free_pending_trans(wc_action_trans_t **table) {
+	wc_action_trans_t *p, *q;
+	size_t i;
+
+	for (i = 0 ; i < (1 << PENDING_ACTION_HASH_FACTOR) ; i++) {
+		p = table[i];
+		while(p) {
+			q = p->next;
+			free(p);
+			p = q;
+		}
+	}
 }
 
 #define DEFINE_REQ_FUNC(__name, __type, ... /* args */)						\

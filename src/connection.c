@@ -18,8 +18,6 @@
 
 
 int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
-	wc_action_trans_t *trans;
-
 	if (msg->type == WC_MSG_CTRL && msg->u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
 		int64_t now = wc_now();
 		srand48_r((long int)now, &cnx->pids.rand_buffer);
@@ -33,19 +31,7 @@ int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
 	{
 		wc_on_data_dispatch(cnx, &msg->u.data.u.push);
 	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
-
-
-		if ((trans = wc_req_get_pending(cnx, msg->u.data.u.response.r)) != NULL) {
-			if (trans->callback != NULL) {
-				trans->callback(
-						cnx,
-						trans->id,
-						trans->type,
-						strcmp(msg->u.data.u.response.status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
-						msg->u.data.u.response.status);
-			}
-			free(trans);
-		}
+		wc_req_response_dispatch(cnx, &msg->u.data.u.response);
 	}
 	cnx->callback(WC_EVENT_ON_MSG_RECEIVED, cnx, msg, sizeof(wc_msg_t), cnx->user);
 	return 1;
@@ -231,22 +217,11 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {
-	wc_action_trans_t *t, *t_tmp;
-	size_t i;
-
 	nopoll_ctx_unref(cnx->np_ctx);
 	if (cnx->parser != NULL) wc_parser_free(cnx->parser);
 
 	wc_free_on_data_handlers(cnx->handlers);
-
-	for (i = 0 ; i < (1 << PENDING_ACTION_HASH_FACTOR) ; i++) {
-		t = cnx->pending_req_table[i];
-		while(t != NULL) {
-			t_tmp = t->next;
-			free(t);
-			t = t_tmp;
-		}
-	}
+	wc_free_pending_trans(cnx->pending_req_table);
 
 	free(cnx);
 }
