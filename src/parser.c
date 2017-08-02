@@ -69,11 +69,12 @@ static int _wc_hlp_get_level1_sorted_json_str(json_object *j, char *key, char **
 	json_object *jtmp;
 	struct lh_table *t;
 	struct lh_entry *it;
-	struct _wc_hlp_json_keyval *sorted_keys;
-	int i;
 
 	if (json_object_object_get_ex(j, key, &jtmp)) {
 		if (json_object_get_type(jtmp) == json_type_object) {
+			struct _wc_hlp_json_keyval *sorted_keys;
+			int i;
+
 			t = json_object_get_object(jtmp);
 			sorted_keys = malloc(t->count * sizeof(struct _wc_hlp_json_keyval));
 
