@@ -141,7 +141,7 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 	switch (event) {
 		case WC_EVENT_ON_CNX_ESTABLISHED:
 
-			wc_listen(cnx, "/");
+			wc_req_listen(cnx, NULL, "/");
 
 			break;
 		case WC_EVENT_ON_MSG_RECEIVED:
@@ -219,7 +219,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		text = json_object_new_string(buf);
 		escaped_text = json_object_to_json_string(text);
 		asprintf(&json_str, "{\"name\":%s,\"text\":%s}", escaped_name, escaped_text);
-		wc_push_json_data(cnx, "/", json_str);
+		wc_req_push(cnx, NULL, "/", json_str);
 		free(json_str);
 		json_object_put(text);
 	}
