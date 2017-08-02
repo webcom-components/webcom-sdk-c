@@ -32,7 +32,7 @@ static void rand_bytes(unsigned char *buf, size_t num, struct drand48_data *rand
 }
 
 /* base64-ish encoding used to encode the timestamp and random bits for the push id */
-inline static void wc_b64ish_encode(unsigned char *out, unsigned char *in, size_t n) {
+inline static void wc_b64ish_encode(char *out, unsigned char *in, size_t n) {
 	static const char base[] = "-0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ_abcdefghijklmnopqrstuvwxyz";
 	uint32_t tmp;
 	size_t ndiv = n / 3;
@@ -75,7 +75,7 @@ void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 
 	time_be = htobe64((uint64_t)time);
 	/* use the 48 low order bits (6 bytes) from the timestamp to make the first 8 chars */
-	wc_b64ish_encode((unsigned char*)buf, ((unsigned char*)&time_be) + 2, 6);
+	wc_b64ish_encode(buf, ((unsigned char*)&time_be) + 2, 6);
 
 	if (s->last_time != time) {
 		/* if the timestamp differs from the previous one, generate new random information */
@@ -114,7 +114,7 @@ void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	}
 
 	/* write 12 more chars using the 9 random bytes */
-	wc_b64ish_encode((unsigned char*)buf + 8, s->lastrand, 9);
+	wc_b64ish_encode(buf + 8, s->lastrand, 9);
 }
 
 int64_t wc_get_server_time(wc_cnx_t *cnx) {
