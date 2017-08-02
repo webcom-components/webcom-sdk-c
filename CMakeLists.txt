@@ -210,6 +210,46 @@ add_test(
 	COMMAND webcom-test-data-handlers
 )
 
+## pending request handlers hashtable
+
+add_executable(
+	webcom-test-req
+	test/test-req.c
+)
+
+target_include_directories(
+	webcom-test-req
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
+	${NOPOLL_INCLUDE_DIRS}
+)
+
+add_test(
+	NAME "request-handlers"
+	COMMAND webcom-test-req
+)
+
+## misc webcom internals tests
+
+add_executable(
+	webcom-test-misc
+	test/test-misc.c
+)
+
+target_include_directories(
+	webcom-test-misc
+	PUBLIC
+	${CMAKE_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
+	${NOPOLL_INCLUDE_DIRS}
+)
+
+add_test(
+	NAME "misc"
+	COMMAND webcom-test-misc
+)
+
 #### code checker
 
 add_custom_target(
