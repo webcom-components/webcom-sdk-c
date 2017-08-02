@@ -24,7 +24,7 @@ static void rand_bytes(unsigned char *buf, size_t num, struct drand48_data *rand
 	}
 	if (num % RANDOM_BYTES_PER_LRAND48 > 0) {
 		lrand48_r(rand_buffer, &rnd);
-		for (j = 0 ; num % RANDOM_BYTES_PER_LRAND48 ; j++) {
+		for (j = 0 ; j < num % RANDOM_BYTES_PER_LRAND48 ; j++) {
 			*buf++ = (unsigned char)rnd;
 			rnd >>= 8;
 		}
