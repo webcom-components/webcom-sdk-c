@@ -13,8 +13,8 @@ typedef struct wc_on_data_handler {
 
 static int path_eq(char *p1, char *p2) {
 	do {
-		while (*p1 && *p1 == '/') p1++;
-		while (*p2 && *p2 == '/') p2++;
+		while (*p1 == '/') p1++;
+		while (*p2 == '/') p2++;
 		while (*p1 && *p1 != '/' && *p2 && *p2 != '/') {
 			if (*p1 != *p2) {
 				return 0;
