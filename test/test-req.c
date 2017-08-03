@@ -1,5 +1,7 @@
 #include "../src/request.c"
 
+#include <inttypes.h>
+
 #include "stfu.h"
 
 /* stubs */
