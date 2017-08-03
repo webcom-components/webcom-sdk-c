@@ -47,6 +47,12 @@ add_library(
 	src/event.c
 )
 
+target_compile_options(
+	webcom-c
+	PRIVATE
+	-Werror
+)
+
 target_include_directories(
 	webcom-c
 	INTERFACE
