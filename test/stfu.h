@@ -23,10 +23,11 @@ STFU_NOINLINE static unsigned int _stfu_nfail_incr(unsigned int increment) {
 #define STFU_TRUE(message, test) \
 	do { \
 		printf("[....] Testing \"%s\"", (message)); \
+		fflush(stdout); \
 		if ((test)) { \
-			_stfu_npass_incr(1); printf("\r[" "\033[32m" "PASS" "\033[0m" "\n"); \
+			_stfu_npass_incr(1); printf("\r[" "\033[1;32m" "PASS" "\033[0m" "] Tested:\n"); \
 		} else { \
-			_stfu_nfail_incr(1); printf("\r[" "\033[31m" "FAIL" "\033[0m" "\n\t%s\n", #test); \
+			_stfu_nfail_incr(1); printf("\r[" "\033[1;31m" "FAIL" "\033[0m" "] Tested:\n\t%s\n", #test); \
 		} \
 	} while (0)
 
