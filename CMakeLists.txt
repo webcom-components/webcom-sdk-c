@@ -10,23 +10,7 @@ pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
 pkg_search_module(NCURSES REQUIRED ncurses)
 
-find_library(EV ev)
-
-if(NOT ${JSONC_FOUND})
-	message(FATAL_ERROR "could not find prerequisite: libjson-c")
-endif(NOT ${JSONC_FOUND})
-
-if(NOT ${WEBSOCKETS_FOUND})
-	message(FATAL_ERROR "could not find prerequisite: libwebsockets")
-endif(NOT ${WEBSOCKETS_FOUND})
-
-if(${EV-NOTFOUND})
-	message(FATAL_ERROR "could not find prerequisite: libev")
-endif(${EV-NOTFOUND})
-
-if(NOT ${NCURSES_FOUND})
-	message(FATAL_ERROR "could not find prerequisite: libncurses")
-endif(NOT ${NCURSES_FOUND})
+find_library(LIBEV ev)
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
@@ -97,7 +81,7 @@ target_link_libraries(
 	legorange
 	webcom-c
 	${JSONC_LIBRARIES}
-	${EV}
+	${LIBEV}
 )
 
 ## wcchat
@@ -119,7 +103,7 @@ target_link_libraries(
 	wcchat
 	webcom-c
 	${JSONC_LIBRARIES}
-	${EV}
+	${LIBEV}
 	${NCURSES_LIBRARIES}
 )
 
@@ -189,7 +173,7 @@ target_link_libraries(
 	webcom-test-cnx
 	webcom-c
 	${JSONC_LIBRARIES}
-	${EV}
+	${LIBEV}
 )
 
 add_test(
@@ -261,7 +245,7 @@ add_custom_target(
 	COMMAND
 	cppcheck --enable=warning,performance,portability,style
 	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
-	"-I${JSONC_INCLUDE_DIRS}" "-I${WEBSOCKETS_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	"-I${JSONC_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
 	src/
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
@@ -271,7 +255,7 @@ add_custom_target(
 	COMMAND
 	cppcheck --enable=warning,performance,portability,style
 	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
-	"-I${JSONC_INCLUDE_DIRS}" "-I${WEBSOCKETS_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	"-I${JSONC_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
 	test/
 	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
 )
