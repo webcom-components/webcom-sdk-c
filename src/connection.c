@@ -14,9 +14,6 @@
 #include "webcom-c/webcom-parser.h"
 #include "webcom-c/webcom-req.h"
 
-#include <openssl/ssl.h>
-#include <openssl/x509v3.h>
-
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
 
@@ -81,9 +78,6 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 	case LWS_CALLBACK_ADD_POLL_FD:
 		pa = (struct lws_pollargs *)in;
 		cnx->fd = pa->fd;
-		break;
-	case LWS_CALLBACK_OPENSSL_LOAD_EXTRA_CLIENT_VERIFY_CERTS:
-		/* TODO: fix hostname validation */
 		break;
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
 		cnx->state = WC_CNX_STATE_READY;

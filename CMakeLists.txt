@@ -9,7 +9,6 @@ find_package(PkgConfig)
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
 pkg_search_module(NCURSES REQUIRED ncurses)
-pkg_search_module(OPENSSL REQUIRED openssl)
 
 find_library(EV ev)
 
@@ -61,14 +60,12 @@ target_include_directories(
 	${JSONC_INCLUDE_DIRS}
 	PUBLIC
 	${WEBSOCKETS_INCLUDE_DIRS}
-	${OPENSSL_INCLUDE_DIRS}
 	${CMAKE_SOURCE_DIR}/include
 )
 
 target_link_libraries(
 	webcom-c
 	${WEBSOCKETS_LIBRARIES}
-	${OPENSSL_LIBRARIES}
 	${JSONC_LIBRARIES}
 )
 
