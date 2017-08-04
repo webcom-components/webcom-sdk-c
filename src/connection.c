@@ -173,7 +173,9 @@ static wc_cnx_t *wc_cnx_new_ex(char *proxy_host, uint16_t proxy_port, char *host
 	lws_set_log_level(0, NULL);
 	lws_ctx_creation_nfo.port = CONTEXT_PORT_NO_LISTEN;
 	lws_ctx_creation_nfo.protocols = protocols;
+#if defined(LWS_LIBRARY_VERSION_MAJOR) && LWS_LIBRARY_VERSION_MAJOR >= 2
 	lws_ctx_creation_nfo.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+#endif
 	lws_ctx_creation_nfo.gid = -1;
 	lws_ctx_creation_nfo.uid = -1;
 	if (proxy_host != NULL) {
