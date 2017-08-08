@@ -1,0 +1,25 @@
+FROM fedora:25
+
+RUN dnf install -y git
+
+# build tools
+RUN dnf install -y cmake gcc make pkgconfig
+
+# SDK build dependencies
+RUN dnf install -y json-c-devel libwebsockets-devel openssl-devel
+
+# examples build dependencies
+RUN dnf install -y libev-devel ncurses-devel
+
+# documentation build dependencies
+RUN dnf install -y doxygen graphviz
+
+RUN dnf install -y rpm-build
+
+RUN dnf -y clean all
+
+COPY build.sh /var/build/
+
+ENV package_flavour fedora25
+
+CMD /var/build/build.sh

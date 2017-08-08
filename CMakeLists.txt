@@ -277,26 +277,4 @@ install(FILES
 	DESTINATION include/webcom-c
 )
 
-#### packaging
-
-## common
-
-set(CPACK_PACKAGE_NAME "webcom-sdk-c")
-set(CPACK_PACKAGE_VERvimSION ${PROJECT_VERSION})
-set(CPACK_PACKAGE_CONTACT "Camille Oudot <camille.oudot@orange.com>")
-set(CPACK_PACKAGE_VENDOR "Orange S.A.")
-set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
-"Webcom C SDK, containing the library and the development headers to build C
-  applications that need to connect to the Orange Flexible Datasync service."
-)
-
-## deb-specific
-
-set(CPACK_DEBIAN_PACKAGE_DEPENDS "libwebsockets8, libjson-c2, libssl1.0.0, libev4, libncurses5")
-
-## rpm-specific
-
-set(CPACK_RPM_PACKAGE_RELEASE "1")
-set(CPACK_RPM_PACKAGE_REQUIRES "libwebsockets, json-c, openssl-libs, libev, ncurses-libs")
-
-include(CPack)
+include("${CMAKE_SOURCE_DIR}/pkg/pkg.cmake")

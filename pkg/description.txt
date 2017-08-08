@@ -1,0 +1,15 @@
+This is the Webcom C SDK. It contains the ressources required to develop C
+applications that need to access to a Webcom server, e.g. Orange Flexible
+Datasync.
+
+Orange Flexible Dadasync is a Backend As A Service with a complete client
+framework. Developers can build real-time applications and communication
+services and deploy them easily. Here are some examples : chat, audio and
+video, conference apps, collaborative apps, data exchange for IoT,
+multiplayer games, data repositories like address book or user
+preferences.
+
+This SDK contains the client SDK dynamic library for C, and the development
+headers.
+
+[1] https://io.datasync.orange.com/
