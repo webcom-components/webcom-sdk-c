@@ -40,9 +40,8 @@ target_compile_options(
 
 target_include_directories(
 	webcom-c
-	INTERFACE
+	PRIVATE
 	${JSONC_INCLUDE_DIRS}
-	PUBLIC
 	${WEBSOCKETS_INCLUDE_DIRS}
 	${CMAKE_SOURCE_DIR}/include
 )
@@ -72,7 +71,7 @@ add_executable(
 
 target_include_directories(
 	legorange
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
 )
@@ -93,7 +92,7 @@ add_executable(
 
 target_include_directories(
 	wcchat
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
 	${NCURSES_INCLUDE_DIRS}
@@ -119,7 +118,7 @@ add_executable(
 
 target_include_directories(
 	webcom-test-parser
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 )
 
@@ -141,7 +140,7 @@ add_executable(
 
 target_include_directories(
 	webcom-test-msg
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 )
 
@@ -164,7 +163,7 @@ add_executable(
 
 target_include_directories(
 	webcom-test-cnx
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
 )
@@ -190,7 +189,7 @@ add_executable(
 
 target_include_directories(
 	webcom-test-data-handlers
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
 )
@@ -209,7 +208,7 @@ add_executable(
 
 target_include_directories(
 	webcom-test-req
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
 )
@@ -228,7 +227,7 @@ add_executable(
 
 target_include_directories(
 	webcom-test-misc
-	PUBLIC
+	PRIVATE
 	${CMAKE_SOURCE_DIR}/include
 	${JSONC_INCLUDE_DIRS}
 )
@@ -264,11 +263,21 @@ add_custom_target(
 
 install(TARGETS
 	webcom-c
+	EXPORT webcom-c-targets
+	LIBRARY DESTINATION lib
+)
+
+install(TARGETS
 	legorange
 	wcchat
 	RUNTIME DESTINATION bin
-	LIBRARY DESTINATION lib
 )
+
+install(EXPORT webcom-c-targets
+	FILE webcom-c-targets.cmake
+	NAMESPACE webcom::
+	DESTINATION lib/cmake/webcom
+	)
 
 file(GLOB INSTALL_HEADERS "${CMAKE_SOURCE_DIR}/include/webcom-c/*.h")
 
