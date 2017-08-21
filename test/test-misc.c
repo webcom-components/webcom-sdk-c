@@ -1,4 +1,4 @@
-#include "../src/webcom.c"
+#include "../lib/webcom.c"
 
 #include "stfu.h"
 

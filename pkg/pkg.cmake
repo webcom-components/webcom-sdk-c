@@ -5,7 +5,7 @@ set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
 set(CPACK_PACKAGE_CONTACT "Camille Oudot <camille.oudot@orange.com>")
 set(CPACK_PACKAGE_VENDOR "Orange S.A.")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Webcom C SDK - dynamic library and development headers")
-set(CPACK_PACKAGE_DESCRIPTION_FILE "${CMAKE_SOURCE_DIR}/pkg/description.txt")
+set(CPACK_PACKAGE_DESCRIPTION_FILE "${webcom-sdk-c_SOURCE_DIR}/pkg/description.txt")
 
 if(TARGET_PACKAGE_FLAVOUR)
 	if(TARGET_PACKAGE_FLAVOUR STREQUAL "debian9")
@@ -56,16 +56,16 @@ else(TARGET_PACKAGE_FLAVOUR)
 endif(TARGET_PACKAGE_FLAVOUR)
 
 if(CPACK_GENERATOR STREQUAL "DEB")
-	file(READ "${CMAKE_SOURCE_DIR}/pkg/description.txt" PACKAGE_DESCRIPTION)
+	file(READ "${webcom-sdk-c_SOURCE_DIR}/pkg/description.txt" PACKAGE_DESCRIPTION)
 	execute_process(
 		COMMAND sh -c "fmt -w 78 | sed -e 's/^$/./' -e 's/^/ /'"
-		INPUT_FILE "${CMAKE_SOURCE_DIR}/pkg/description.txt"
+		INPUT_FILE "${webcom-sdk-c_DIR}/pkg/description.txt"
 		OUTPUT_VARIABLE PACKAGE_DESCRIPTION)
 	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
 "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}
 ${PACKAGE_DESCRIPTION}")
 elseif(CPACK_GENERATOR STREQUAL "RPM")
-	set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${CMAKE_SOURCE_DIR}/pkg/postinst")
+	set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${webcom-sdk-c_SOURCE_DIR}/pkg/postinst")
 endif(CPACK_GENERATOR STREQUAL "DEB")
 
 include(CPack)

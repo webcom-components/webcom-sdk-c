@@ -1,4 +1,4 @@
-#include "../src/event.c"
+#include "../lib/event.c"
 
 #include "stfu.h"
 

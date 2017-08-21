@@ -1,241 +1,14 @@
 cmake_minimum_required(VERSION 3.0)
 project("webcom-sdk-c"
 	LANGUAGES C
-	VERSION 0.0.1
 )
 
-find_package(PkgConfig)
-
-pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
-pkg_search_module(JSONC REQUIRED json-c)
-pkg_search_module(NCURSES REQUIRED ncurses)
-
-find_library(LIBEV ev)
-
-set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
-
-link_directories(
-	${WEBSOCKETS_LIBRARY_DIRS}
-	${JSONC_LIBRARY_DIRS}
-)
-
-#### libwebcom-c.so
-
-add_library(
-	webcom-c
-	SHARED
-	src/parser.c
-	src/message.c
-	src/connection.c
-	src/webcom.c
-	src/request.c
-	src/event.c
-)
-
-target_compile_options(
-	webcom-c
-	PRIVATE
-	-Werror
-)
-
-target_include_directories(
-	webcom-c
-	PRIVATE
-	${JSONC_INCLUDE_DIRS}
-	${WEBSOCKETS_INCLUDE_DIRS}
-	${CMAKE_SOURCE_DIR}/include
-)
-
-target_link_libraries(
-	webcom-c
-	${WEBSOCKETS_LIBRARIES}
-	${JSONC_LIBRARIES}
-)
-
-#### documentation
-
-add_custom_target(
-	doc
-	COMMAND doxygen doxygen.conf
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
-)
-
-#### examples
-
-## legorange
-
-add_executable(
-	legorange
-	examples/legorange.c
-)
-
-target_include_directories(
-	legorange
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-)
-
-target_link_libraries(
-	legorange
-	webcom-c
-	${JSONC_LIBRARIES}
-	${LIBEV}
-)
-
-## wcchat
-
-add_executable(
-	wcchat
-	examples/wcchat.c
-)
-
-target_include_directories(
-	wcchat
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-	${NCURSES_INCLUDE_DIRS}
-)
-
-target_link_libraries(
-	wcchat
-	webcom-c
-	${JSONC_LIBRARIES}
-	${LIBEV}
-	${NCURSES_LIBRARIES}
-)
-
-#### tests
-
+#### sub-projects
+add_subdirectory(lib)
+add_subdirectory(examples)
+add_subdirectory(doc)
 enable_testing()
-
-## parser
-add_executable(
-	webcom-test-parser 
-	test/test-parser.c
-)
-
-target_include_directories(
-	webcom-test-parser
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-)
-
-target_link_libraries(
-	webcom-test-parser
-	webcom-c
-)
-
-add_test(
-	NAME parser
-	COMMAND webcom-test-parser
-)
-
-## message builder
-add_executable(
-	webcom-test-msg
-	test/test-msg.c
-)
-
-target_include_directories(
-	webcom-test-msg
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-)
-
-target_link_libraries(
-	webcom-test-msg
-	webcom-c
-)
-
-add_test(
-	NAME msg
-	COMMAND webcom-test-msg
-)
-
-## connection
-
-add_executable(
-	webcom-test-cnx
-	test/test-cnx.c
-)
-
-target_include_directories(
-	webcom-test-cnx
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-)
-
-target_link_libraries(
-	webcom-test-cnx
-	webcom-c
-	${JSONC_LIBRARIES}
-	${LIBEV}
-)
-
-add_test(
-	NAME cnx
-	COMMAND webcom-test-cnx
-)
-
-## on data handlers hashtable
-
-add_executable(
-	webcom-test-data-handlers
-	test/test-on-data.c
-)
-
-target_include_directories(
-	webcom-test-data-handlers
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-)
-
-add_test(
-	NAME "data-handlers"
-	COMMAND webcom-test-data-handlers
-)
-
-## pending request handlers hashtable
-
-add_executable(
-	webcom-test-req
-	test/test-req.c
-)
-
-target_include_directories(
-	webcom-test-req
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-)
-
-add_test(
-	NAME "request-handlers"
-	COMMAND webcom-test-req
-)
-
-## misc webcom internals tests
-
-add_executable(
-	webcom-test-misc
-	test/test-misc.c
-)
-
-target_include_directories(
-	webcom-test-misc
-	PRIVATE
-	${CMAKE_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-)
-
-add_test(
-	NAME "misc"
-	COMMAND webcom-test-misc
-)
+add_subdirectory(test)
 
 #### code checker
 
@@ -243,10 +16,10 @@ add_custom_target(
 	cppcheck-lib
 	COMMAND
 	cppcheck --enable=warning,performance,portability,style
-	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
-	"-I${JSONC_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
-	src/
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	--std=posix --verbose --quiet --template=gcc
+	"-I${JSONC_INCLUDE_DIRS}" "-I${webcom-sdk-c_SOURCE_DIR}/include"
+	lib/
+	WORKING_DIRECTORY ${webcom-sdk-c_SOURCE_DIR}
 )
 
 add_custom_target(
@@ -254,36 +27,10 @@ add_custom_target(
 	COMMAND
 	cppcheck --enable=warning,performance,portability,style
 	--std=posix --library=qt.cfg --verbose --quiet --template=gcc
-	"-I${JSONC_INCLUDE_DIRS}" "-I${CMAKE_SOURCE_DIR}/include"
+	"-I${JSONC_INCLUDE_DIRS}" "-I${webcom-sdk-c_SOURCE_DIR}/include"
 	test/
-	WORKING_DIRECTORY ${CMAKE_SOURCE_DIR}
+	WORKING_DIRECTORY ${webcom-sdk-c_SOURCE_DIR}
 )
 
-#### install
-
-install(TARGETS
-	webcom-c
-	EXPORT webcom-c-targets
-	LIBRARY DESTINATION lib
-)
-
-install(TARGETS
-	legorange
-	wcchat
-	RUNTIME DESTINATION bin
-)
-
-install(EXPORT webcom-c-targets
-	FILE webcom-c-targets.cmake
-	NAMESPACE webcom::
-	DESTINATION lib/cmake/webcom
-	)
-
-file(GLOB INSTALL_HEADERS "${CMAKE_SOURCE_DIR}/include/webcom-c/*.h")
-
-install(FILES
-	${INSTALL_HEADERS}
-	DESTINATION include/webcom-c
-)
-
-include("${CMAKE_SOURCE_DIR}/pkg/pkg.cmake")
+#### packaging
+include("${webcom-sdk-c_SOURCE_DIR}/pkg/pkg.cmake")
