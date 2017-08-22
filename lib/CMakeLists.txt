@@ -64,3 +64,15 @@ install(FILES
 	${INSTALL_HEADERS}
 	DESTINATION include/webcom-c
 )
+
+#### code checker
+
+add_custom_target(
+	cppcheck-lib
+	COMMAND
+	cppcheck --enable=warning,performance,portability,style
+	--std=posix --verbose --quiet --template=gcc
+	"-I${JSONC_INCLUDE_DIRS}" "-I${webcom-sdk-c-lib_SOURCE_DIR}/../include"
+	lib/
+	WORKING_DIRECTORY ${webcom-sdk-c_SOURCE_DIR}
+)
