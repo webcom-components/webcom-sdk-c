@@ -14,7 +14,7 @@ RUN apt-get -y install libjson-c-dev libwebsockets-dev
 RUN apt-get -y install libev-dev libncurses5-dev
 
 # documentation build dependencies
-RUN apt-get -y install doxygen graphviz
+RUN apt-get -y install doxygen
 
 RUN apt-get -y install dpkg-dev
 

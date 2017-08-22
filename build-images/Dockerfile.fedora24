@@ -12,7 +12,7 @@ RUN dnf install -y json-c-devel libwebsockets-devel openssl-devel
 RUN dnf install -y libev-devel ncurses-devel
 
 # documentation build dependencies
-RUN dnf install -y doxygen graphviz
+RUN dnf install -y doxygen
 
 RUN dnf install -y rpm-build
 

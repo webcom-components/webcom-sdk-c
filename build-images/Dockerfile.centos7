@@ -14,7 +14,7 @@ RUN yum install -y json-c-devel libwebsockets-devel openssl-devel
 RUN yum install -y libev-devel ncurses-devel
 
 # documentation build dependencies
-RUN yum install -y doxygen graphviz
+RUN yum install -y doxygen
 
 RUN yum install -y rpm-build
 
