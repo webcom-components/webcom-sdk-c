@@ -59,10 +59,9 @@ else(TARGET_PACKAGE_FLAVOUR)
 endif(TARGET_PACKAGE_FLAVOUR)
 
 if(CPACK_GENERATOR STREQUAL "DEB")
-	file(READ "${webcom-sdk-c_SOURCE_DIR}/pkg/description.txt" PACKAGE_DESCRIPTION)
 	execute_process(
 		COMMAND sh -c "fmt -w 78 | sed -e 's/^$/./' -e 's/^/ /'"
-		INPUT_FILE "${webcom-sdk-c_DIR}/pkg/description.txt"
+		INPUT_FILE "${webcom-sdk-c_SOURCE_DIR}/pkg/description.txt"
 		OUTPUT_VARIABLE PACKAGE_DESCRIPTION)
 	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
 "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}

@@ -6,21 +6,44 @@ project("webcom-sdk-c-doc"
 
 include(FindDoxygen)
 
-#### documentation
+option(BUILD_HTML_DOCUMENTATION "Create the HTML based API documentation (requires Doxygen)" OFF)
+option(BUILD_MAN_PAGES "Create and install the API man pages (requires Doxygen)" ON)
 
-configure_file(${webcom-sdk-c-doc_SOURCE_DIR}/doxygen.conf.in doxygen.conf)
+if(BUILD_HTML_DOCUMENTATION OR BUILD_MAN_PAGES)
+	if(BUILD_HTML_DOCUMENTATION)
+		set(DOXYGEN_BUILD_HTML_DOCUMENTATION YES)
+	else()
+		set(DOXYGEN_BUILD_HTML_DOCUMENTATION NO)
+	endif()
 
-add_custom_target(
-	doc
-	COMMAND doxygen doxygen.conf
-)
+	if(BUILD_MAN_PAGES)
+		set(DOXYGEN_BUILD_MAN_PAGES YES)
+	else()
+		set(DOXYGEN_BUILD_MAN_PAGES NO)
+	endif()
 
-#### install
+	#### documentation
 
-#[=[
-install(TARGETS
-	webcom-c
-	EXPORT webcom-c-targets
-	LIBRARY DESTINATION lib
-)
-#]=]
+	configure_file(${webcom-sdk-c-doc_SOURCE_DIR}/doxygen.conf.in doxygen.conf)
+
+	add_custom_target(
+		doc ALL
+		COMMAND doxygen doxygen.conf
+	)
+	#### install
+	if(BUILD_MAN_PAGES)
+		install(
+			FILES
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-connection.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-event.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-general.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-messages.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-parser.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-requests.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-utils.3"
+			DESTINATION
+				man/man3
+		)
+	endif()
+
+endif(BUILD_HTML_DOCUMENTATION OR BUILD_MAN_PAGES)
