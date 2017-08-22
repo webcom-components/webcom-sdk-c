@@ -8,7 +8,7 @@
 typedef struct wc_cnx wc_cnx_t;
 
 /**
- * @ingroup connection
+ * @ingroup webcom-connection
  * @{
  */
 
@@ -30,8 +30,6 @@ typedef enum {
 	 * This event indicates that the webcom server has sent its handshake
 	 * message. From this point, it's safe to start sending requests to the
 	 * webcom server through this connection.
-	 *
-	 * Note: this does not mean the server handshake was received yet.
 	 */
 	WC_EVENT_ON_SERVER_HANDSHAKE,
 	/**

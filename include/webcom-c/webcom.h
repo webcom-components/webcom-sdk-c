@@ -8,16 +8,16 @@
 /**
  * @defgroup hilev		Higher level functions
  * @{
- * 	@defgroup webcom		Webcom general functions
- * 	@defgroup connection 	Connect a client to a Webcom server
- * 	@defgroup requests		Send Webcom client to server request
- *	@defgroup event			Register callback on Webcom events
+ * 	@defgroup webcom-general		Webcom general functions
+ * 	@defgroup webcom-connection 	Connect a client to a Webcom server
+ * 	@defgroup webcom-requests		Send Webcom client to server request
+ *	@defgroup webcom-event			Register callback on Webcom events
  * @}
  * @defgroup lolev		Lower level functions (you may not need them)
  * @{
- * 	@defgroup messages	Webcom protocol data types, messages manipulation
- * 	@defgroup parser 	Webcom protocol parsing functions
- * 	@defgroup utils 	Some utility macros, functions, ...
+ * 	@defgroup webcom-messages	Webcom protocol data types, messages manipulation
+ * 	@defgroup webcom-parser 	Webcom protocol parsing functions
+ * 	@defgroup webcom-utils 	Some utility macros, functions, ...
  * @}
  */
 
@@ -45,7 +45,7 @@
 #include "webcom-event.h"
 
 /**
- * @ingroup webcom
+ * @ingroup webcom-general
  * @{
  */
 

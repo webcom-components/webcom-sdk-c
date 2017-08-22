@@ -4,7 +4,7 @@
 #include <stdint.h>
 
 /**
- * @ingroup messages
+ * @ingroup webcom-messages
  * @{
  */
 

@@ -4,7 +4,7 @@
 #include "webcom-cnx.h"
 
 /**
- * @ingroup event
+ * @ingroup webcom-event
  * @{
  */
 

@@ -2,7 +2,7 @@
 #define INCLUDE_WEBCOM_C_WEBCOM_UTILS_H_
 
 /**
- * @ingroup utils
+ * @ingroup webcom-utils
  * @{
  */
 

@@ -7,7 +7,7 @@
 typedef enum {WC_REQ_OK, WC_REQ_ERROR} wc_req_pending_result_t;
 
 /**
- * @ingroup requests
+ * @ingroup webcom-requests
  * @{
  */
 

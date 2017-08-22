@@ -9,7 +9,7 @@
 typedef struct wc_parser wc_parser_t;
 
 /**
- * @ingroup parser
+ * @ingroup webcom-parser
  * @{
  */
 
