@@ -2,6 +2,9 @@
 
 set(CPACK_PACKAGE_NAME "webcom-sdk-c")
 set(CPACK_PACKAGE_VERSION ${PROJECT_VERSION})
+if(PROJECT_VERSION_EXTRA)
+	set(CPACK_PACKAGE_VERSION "${CPACK_PACKAGE_VERSION}-${PROJECT_VERSION_EXTRA}")
+endif(PROJECT_VERSION_EXTRA)
 set(CPACK_PACKAGE_CONTACT "Camille Oudot <camille.oudot@orange.com>")
 set(CPACK_PACKAGE_VENDOR "Orange S.A.")
 set(CPACK_PACKAGE_DESCRIPTION_SUMMARY "Webcom C SDK - dynamic library and development headers")
