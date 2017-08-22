@@ -124,3 +124,7 @@ int64_t wc_get_server_time(wc_cnx_t *cnx) {
 void wc_get_push_id(wc_cnx_t *cnx, char *result) {
 	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), result);
 }
+
+const char* wc_version() {
+	return WEBCOM_SDK_VERSION_STR;
+}

@@ -94,6 +94,12 @@ int64_t wc_get_server_time(wc_cnx_t *cnx);
 void wc_get_push_id(wc_cnx_t *cnx, char *result);
 
 /**
+ * get the webcom SDK version string
+ * @return a string representing the version
+ */
+const char* wc_version();
+
+/**
  * @}
  */
 
