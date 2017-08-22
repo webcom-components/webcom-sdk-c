@@ -58,11 +58,13 @@ install(EXPORT webcom-c-targets
 	DESTINATION lib/cmake/webcom
 	)
 
-file(GLOB INSTALL_HEADERS "${webcom-sdk-c-lib_SOURCE_DIR}/../include/webcom-c/*.h")
-
-install(FILES
-	${INSTALL_HEADERS}
-	DESTINATION include/webcom-c
+install(
+	DIRECTORY
+		"${webcom-sdk-c-lib_SOURCE_DIR}/../include/webcom-c/"
+	DESTINATION
+		include/webcom-c
+	FILES_MATCHING PATTERN
+		"*.h"
 )
 
 #### code checker
