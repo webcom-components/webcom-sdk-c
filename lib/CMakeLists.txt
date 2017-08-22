@@ -1,13 +1,37 @@
 cmake_minimum_required(VERSION 3.0)
+
 project("webcom-sdk-c-lib"
 	LANGUAGES C
 	VERSION 0.0.1
 )
 
+# Extra version information appearing after "Major.minor.patch" in the library
+# version string.
+# set to "false" to disable
+# set to "git" to use the current git revision abbbreviated hash
+# set to anything else to specify anything else
+set(PROJECT_VERSION_EXTRA git)
+
+
+
+if(PROJECT_VERSION_EXTRA)
+	if(PROJECT_VERSION_EXTRA STREQUAL "git")
+		execute_process(
+			COMMAND git rev-parse --short HEAD
+			WORKING_DIRECTORY "${webcom-sdk-c-lib_SOURCE_DIR}"
+			OUTPUT_VARIABLE PROJECT_VERSION_EXTRA
+			OUTPUT_STRIP_TRAILING_WHITESPACE)
+	endif(PROJECT_VERSION_EXTRA STREQUAL "git")
+endif(PROJECT_VERSION_EXTRA)
+
 find_package(PkgConfig)
 
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
+
+configure_file(
+	"${webcom-sdk-c-lib_SOURCE_DIR}/../include/webcom-c/webcom-config.h.in"
+	"${webcom-sdk-c-lib_SOURCE_DIR}/../include/webcom-c/webcom-config.h")
 
 #### libwebcom-c.so
 

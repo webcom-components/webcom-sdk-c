@@ -24,6 +24,19 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_H_
 
+#include "webcom-config.h"
+
+#define WEBCOM_SDK_VERSION	((unsigned)((WEBCOM_SDK_MAJOR<<16)|(WEBCOM_SDK_MINOR<<8)|WEBCOM_SDK_PATCH))
+
+#define WC_XSTR(s) WC_STR(s)
+#define WC_STR(s) #s
+
+#ifdef WEBCOM_SDK_EXTRA
+#	define WEBCOM_SDK_VERSION_STR WC_XSTR(WEBCOM_SDK_MAJOR) "." WC_XSTR(WEBCOM_SDK_MINOR) "." WC_XSTR(WEBCOM_SDK_PATCH) "-" WEBCOM_SDK_EXTRA
+#else
+#	define WEBCOM_SDK_VERSION_STR WC_XSTR(WEBCOM_SDK_MAJOR) "." WC_XSTR(WEBCOM_SDK_MINOR) "." WC_XSTR(WEBCOM_SDK_PATCH)
+#endif
+
 #include "webcom-msg.h"
 #include "webcom-parser.h"
 #include "webcom-cnx.h"
