@@ -26,10 +26,27 @@ if(BUILD_HTML_DOCUMENTATION OR BUILD_MAN_PAGES)
 
 	configure_file(${webcom-sdk-c-doc_SOURCE_DIR}/doxygen.conf.in doxygen.conf)
 
+	add_custom_command(
+		OUTPUT
+			doxygen.stamp
+		DEPENDS
+			"${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf"
+		IMPLICIT_DEPENDS C
+			"${webcom-sdk-c-doc_SOURCE_DIR}/../include/webcom-c/webcom.h"
+		COMMAND
+			${DOXYGEN_EXECUTABLE} doxygen.conf
+		COMMAND
+			${CMAKE_COMMAND} -E touch doxygen.stamp
+		COMMENT
+			"Generating API documentation with Doxygen"
+		VERBATIM
+	)
+
 	add_custom_target(
 		doc ALL
-		COMMAND doxygen doxygen.conf
+		DEPENDS doxygen.stamp
 	)
+
 	#### install
 	if(BUILD_MAN_PAGES)
 		install(
