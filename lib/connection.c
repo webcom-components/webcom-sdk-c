@@ -174,12 +174,14 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 	lws_ctx_creation_nfo.gid = -1;
 	lws_ctx_creation_nfo.uid = -1;
 
+#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER < 2002000
+	/* hack to make LWS support the http_proxy variable beginning with "https://" */
 	proxy = getenv("http_proxy");
 	if (proxy != NULL && strncmp("http://", proxy, 7) == 0) {
 		proxy += 7;
 	}
-
 	lws_ctx_creation_nfo.http_proxy_address = proxy;
+#endif
 
 	res->lws_context = lws_create_context(&lws_ctx_creation_nfo);
 
