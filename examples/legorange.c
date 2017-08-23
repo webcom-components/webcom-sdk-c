@@ -40,8 +40,6 @@ int main(int argc, char *argv[]) {
 	ev_timer ka_timer;
 	int opt;
 
-	char *proxy_host = NULL;
-	uint16_t proxy_port = 8080;
 	board_name = "/brick";
 
 	/* [mildly boring] set stdout unbuffered to see the bricks appear in real
@@ -49,38 +47,21 @@ int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 
 	/* [boring] parse the command line options (proxy settings, board) */
-	while ((opt = getopt(argc, argv, "P:p:b:")) != -1) {
+	while ((opt = getopt(argc, argv, "b:")) != -1) {
 		switch((char)opt) {
-		case 'P':
-			proxy_host = optarg;
-			break;
-		case 'p':
-			proxy_port = (uint64_t) strtoul(optarg, NULL, 10);
-			break;
 		case 'b':
 			board_name = optarg;
 		}
 	}
 
-	/* establish the connection to the webcom server (without or with a proxy) */
-	if (proxy_host == NULL) {
-		cnx = wc_cnx_new(
-				"io.datasync.orange.com",
-				443,
-				"legorange",
-				webcom_service_cb, /* this is the callback that gets called
-				when a webcom-level event occurs */
-				loop);
-	} else {
-		cnx = wc_cnx_new_with_proxy(
-				proxy_host,
-				proxy_port,
-				"io.datasync.orange.com",
-				443,
-				"legorange",
-				webcom_service_cb,
-				loop);
-	}
+	/* establish the connection to the webcom server */
+	cnx = wc_cnx_new(
+			"io.datasync.orange.com",
+			443,
+			"legorange",
+			webcom_service_cb, /* this is the callback that gets called
+			when a webcom-level event occurs */
+			loop);
 
 	if (cnx == NULL) {
 		fputs("could not connect\n", stderr);

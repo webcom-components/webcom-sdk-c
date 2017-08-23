@@ -28,44 +28,24 @@ int main(int argc, char *argv[]) {
 	int opt;
 	json_object *json_name;
 
-	char *proxy_host = NULL;
-	uint16_t proxy_port = 8080;
-
 	/* [mildly boring] set stdout unbuffered to see the bricks appear in real
 	 * time */
 	setbuf(stdout, NULL);
 
 	/* [boring] parse the command line options (proxy settings, board) */
-	while ((opt = getopt(argc, argv, "P:p:n:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:")) != -1) {
 		switch((char)opt) {
-		case 'P':
-			proxy_host = optarg;
-			break;
-		case 'p':
-			proxy_port = (uint64_t) strtoul(optarg, NULL, 10);
-			break;
 		case 'n':
 			name = optarg;
 		}
 	}
 
-	if (proxy_host == NULL) {
-		cnx = wc_cnx_new(
-				"io.datasync.orange.com",
-				443,
-				"chat",
-				webcom_service_cb,
-				loop);
-	} else {
-		cnx = wc_cnx_new_with_proxy(
-				proxy_host,
-				proxy_port,
-				"io.datasync.orange.com",
-				443,
-				"chat",
-				webcom_service_cb,
-				loop);
-	}
+	cnx = wc_cnx_new(
+			"io.datasync.orange.com",
+			443,
+			"chat",
+			webcom_service_cb,
+			loop);
 
 	if (cnx == NULL) {
 		return 1;
