@@ -145,8 +145,9 @@ struct lws_protocols protocols[] = {
 	{.name=NULL}
 };
 
-static wc_cnx_t *wc_cnx_new_ex(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
+wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
+	char *proxy;
 
 	struct lws_client_connect_info lws_client_cnx_nfo;
 	struct lws_context_creation_info lws_ctx_creation_nfo;
@@ -172,10 +173,14 @@ static wc_cnx_t *wc_cnx_new_ex(char *proxy_host, uint16_t proxy_port, char *host
 #endif
 	lws_ctx_creation_nfo.gid = -1;
 	lws_ctx_creation_nfo.uid = -1;
-	if (proxy_host != NULL) {
-		lws_ctx_creation_nfo.http_proxy_address = proxy_host;
-		lws_ctx_creation_nfo.http_proxy_port = (unsigned int)proxy_port;
+
+	proxy = getenv("http_proxy");
+	if (proxy != NULL && strncmp("http://", proxy, 7) == 0) {
+		proxy += 7;
 	}
+
+	lws_ctx_creation_nfo.http_proxy_address = proxy;
+
 	res->lws_context = lws_create_context(&lws_ctx_creation_nfo);
 
 	lws_client_cnx_nfo.context = res->lws_context;
@@ -204,14 +209,6 @@ error2:
 	free(res);
 error1:
 	return NULL;
-}
-
-wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
-	return wc_cnx_new_ex(proxy_host, proxy_port, host, port, application, callback, user);
-}
-
-wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
-	return wc_cnx_new_ex(NULL, 0, host, port, application, callback, user);
 }
 
 void wc_cnx_free(wc_cnx_t *cnx) {

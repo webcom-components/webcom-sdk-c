@@ -62,8 +62,9 @@ typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, s
 /**
  * Establishes a direct connection to a webcom server.
  *
- * This function establishes a new direct connection (no proxy) to a webcom
- * server host.
+ * This function establishes a new direct connection to a webcom server host.
+ * If the **http_proxy** environment variable is set, the connection will be
+ * established through this HTTP proxy.
  *
  * Note: this function is synchronous, it will return once the connection has
  * been established or once it failed to be established.
@@ -81,31 +82,6 @@ typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, s
  * failure
  */
 wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user);
-
-/**
- * Establishes a connection to a webcom server through a HTTP proxy.
- *
- * Notes:
- *
- * - the only supported proxy method is CONNECT over unencrypted HTTP (the
- * webcom connection will then be TLS encrypted in this tunnel)
- * - this function is synchronous, it will return once the connection has
- * been established or once it failed to be established.
- *
- * @param proxy_host the HTTP proxy server host name
- * @param proxy_port the HTTP proxy server port
- * @param host the webcom server host name
- * @param port the webcom server port
- * @param application the name of the webcom application to tie to (e.g.
- * "legorange", "chat", ...)
- * @param callback the user-defined callback that will be called by the SDK
- * when one of the events listed in the wc_event_t enum occurs
- * @param user some optional user-data that will be passed to the callback for
- * every event occurring on this connection
- * @return a pointer to the newly created connection on success, NULL on
- * failure
- */
-wc_cnx_t *wc_cnx_new_with_proxy(char *proxy_host, uint16_t proxy_port, char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user);
 
 /**
  * Frees the resources used by a wc_cnx_t object.
