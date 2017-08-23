@@ -24,4 +24,6 @@ COPY build.sh /var/build/
 
 ENV package_flavour centos7
 
+VOLUME /tmp/webcom-package/
+
 CMD /var/build/build.sh

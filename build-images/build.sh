@@ -3,7 +3,8 @@
 set -e
 set -x
 
-BUILD_ROOT='/var/build'
+BUILD_ROOT='/tmp/webcom-build/'
+PACKAGE_DEST='/tmp/webcom-package/'
 
 git_url=${git_url:-https://www.forge.orange-labs.fr/plugins/git/webcom/webcom-sdk-c.git}
 git_ref=${git_ref:-master}
@@ -38,6 +39,6 @@ git merge "origin/$git_ref"
 
 cd build
 
-"$CMAKE" .. "-DTARGET_PACKAGE_FLAVOUR=${package_flavour}"
+"$CMAKE" .. "-DTARGET_PACKAGE_FLAVOUR=${package_flavour}" "-DCPACK_OUTPUT_FILE_PREFIX=$PACKAGE_DEST"
 make clean all
 make package

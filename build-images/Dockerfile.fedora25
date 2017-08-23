@@ -22,4 +22,6 @@ COPY build.sh /var/build/
 
 ENV package_flavour fedora25
 
+VOLUME /tmp/webcom-package/
+
 CMD /var/build/build.sh
