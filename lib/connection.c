@@ -202,13 +202,13 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 	lws_service(res->lws_context, 100);
 	free((char *)lws_client_cnx_nfo.path);
 
-	if(res->fd <= 0) {
+	if(res->fd <= 0 || res->state == WC_CNX_STATE_CLOSED) {
 		goto error2;
 	}
 
 	return res;
 error2:
-	free(res);
+	wc_cnx_free(res);
 error1:
 	return NULL;
 }
