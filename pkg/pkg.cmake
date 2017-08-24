@@ -59,6 +59,8 @@ else(TARGET_PACKAGE_FLAVOUR)
 endif(TARGET_PACKAGE_FLAVOUR)
 
 if(CPACK_GENERATOR STREQUAL "DEB")
+### .deb specificities
+	# generate teh well-formatted description
 	execute_process(
 		COMMAND sh -c "fmt -w 78 | sed -e 's/^$/./' -e 's/^/ /'"
 		INPUT_FILE "${webcom-sdk-c_SOURCE_DIR}/pkg/description.txt"
@@ -66,7 +68,12 @@ if(CPACK_GENERATOR STREQUAL "DEB")
 	set(CPACK_PACKAGE_DESCRIPTION_SUMMARY
 "${CPACK_PACKAGE_DESCRIPTION_SUMMARY}
 ${PACKAGE_DESCRIPTION}")
+
+	# add the ABI version in the package name
+	set(CPACK_PACKAGE_NAME "${CPACK_PACKAGE_NAME}${PROJECT_VERSION_MAJOR}")
 elseif(CPACK_GENERATOR STREQUAL "RPM")
+### RPM specificities
+	# run ldconfig after package installation
 	set(CPACK_RPM_POST_INSTALL_SCRIPT_FILE "${webcom-sdk-c_SOURCE_DIR}/pkg/postinst")
 endif(CPACK_GENERATOR STREQUAL "DEB")
 

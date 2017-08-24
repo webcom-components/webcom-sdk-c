@@ -33,5 +33,13 @@ add_subdirectory(doc)
 enable_testing()
 add_subdirectory(test)
 
+set_target_properties(webcom-c
+	PROPERTIES
+		VERSION
+			${PROJECT_VERSION}
+		SOVERSION
+			${PROJECT_VERSION_MAJOR}
+)
+
 #### packaging
 include("${webcom-sdk-c_SOURCE_DIR}/pkg/pkg.cmake")
