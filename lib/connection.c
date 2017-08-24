@@ -1,4 +1,3 @@
-#define _GNU_SOURCE
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -9,6 +8,7 @@
 #include <netdb.h>
 #include <libwebsockets.h>
 #include <assert.h>
+#include <alloca.h>
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom-parser.h"
@@ -148,6 +148,7 @@ struct lws_protocols protocols[] = {
 wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
 	char *proxy;
+	size_t ws_path_l;
 
 	struct lws_client_connect_info lws_client_cnx_nfo;
 	struct lws_context_creation_info lws_ctx_creation_nfo;
@@ -190,7 +191,15 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 	lws_client_cnx_nfo.host = host;
 	lws_client_cnx_nfo.port = (int)port;
 	lws_client_cnx_nfo.ssl_connection = 1;
-	asprintf((char **)&lws_client_cnx_nfo.path, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
+	ws_path_l = (
+			sizeof(WEBCOM_WS_PATH) - 1
+			+ 3
+			+ sizeof(WEBCOM_PROTOCOL_VERSION) - 1
+			+ 4
+			+ strlen(application)
+			+ 1 );
+	lws_client_cnx_nfo.path = alloca(ws_path_l);
+	snprintf((char*)lws_client_cnx_nfo.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
 	lws_client_cnx_nfo.protocol = protocols[0].name;
 	lws_client_cnx_nfo.ietf_version_or_minus_one = -1;
 	lws_client_cnx_nfo.userdata = (void *)res;
@@ -200,7 +209,6 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 	res->lws_conn = lws_client_connect_via_info(&lws_client_cnx_nfo);
 	res->state = WC_CNX_STATE_INIT;
 	lws_service(res->lws_context, 100);
-	free((char *)lws_client_cnx_nfo.path);
 
 	if(res->fd <= 0 || res->state == WC_CNX_STATE_CLOSED) {
 		goto error2;

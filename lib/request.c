@@ -1,7 +1,7 @@
-#define _GNU_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <alloca.h>
 
 #include "webcom-c/webcom.h"
 #include "webcom_priv.h"
@@ -145,15 +145,19 @@ DEFINE_REQ_FUNC (on_disc_cancel, WC_ACTION_ON_DISCONNECT_CANCEL, char *path)
 END_DEFINE_REQ_FUNC
 
 int64_t wc_req_push(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json) {
-	char pushid[20];
 	char *push_path;
 	int64_t ret;
+	size_t path_l;
 
-	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), pushid);
-	asprintf(&push_path, "%s/%.20s", path, pushid);
+	path_l = strlen(path);
+	push_path = alloca(path_l + 22);
+
+	memcpy(push_path, path, path_l);
+	push_path[path_l] = '/';
+	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), push_path + path_l + 1);
+	push_path[path_l + 21] = '\0';
 
 	ret = wc_req_put(cnx, callback, push_path, json);
-	free(push_path);
 
 	return ret;
 }
