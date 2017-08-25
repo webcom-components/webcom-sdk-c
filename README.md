@@ -49,7 +49,7 @@ $ docker image build -f Dockerfile.<DISTRIBUTION> . -t <TAG_NAME>
 $ docker container run [<OPT ENV VARIABLES>] -v "$PWD:/tmp/webcom-package/" -ti <TAG_NAME>
 ```
 
-After the build process, the container should exit and the binary package the
+After the build process, the container should exit and the binary package that
 was produced should be located in the current working directory on the host.
 You can modify the behaviour of the build by providing some environment
 variables to the container:
@@ -75,7 +75,7 @@ $ docker container run \
 
 #### Build prerequisites
 
-(**Note:** yo can also take a look the Dockerfiles in
+(**Note:** you can also take a look the Dockerfiles in
 [build-images/](build-images/) to get an idea of the requirements)
 
 ##### On a debian-family platform (Debian >= 9, Ubuntu >= 16.04)
@@ -146,10 +146,11 @@ $ make doc
 
 ## Demos
 
-This SDK comes with two examples: **legorange** and **wcchat**. They are the C
-counterparts of [Legorange](https://io.datasync.orange.com/samples/legorange/)
-and [WebCom Simple Chat](https://io.datasync.orange.com/samples/chat/). These
-demos are automatically built and installed along with the SDK, and their
-source code are meant to be a source of information and ispiration on how to
-start hacking with the SDK.
+This SDK comes with two examples: **legorange** and **wcchat** in the
+[examples/](examples/) directory. They are the C counterparts of
+[Legorange](https://io.datasync.orange.com/samples/legorange/) and
+[WebCom Simple Chat](https://io.datasync.orange.com/samples/chat/). These demos
+are automatically built and installed along with the SDK, and their source code
+are meant to be a source of information and inspiration on how to start hacking
+with the SDK.
 
