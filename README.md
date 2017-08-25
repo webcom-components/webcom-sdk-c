@@ -6,13 +6,15 @@ The **Webcom C SDK** allows the C developers to easily interact with a Webcom
 server, such as the ones operated by the
 [Orange Flexible Datasync](https://datasync.orange.com/) service.
 
+It is licensed under the LGPL V2.1. We appreciate contributions!
+
 The Webcom C SDK has been developed on and for linux systems, but it might also
 work out of the box on other platforms, or require only little tweaks to do so.
 If you run it on another platform, kindly let us know so that we can share the
 information. If you made some modifications to make it work on your platform,
 please consider opening a pull request so it gets integrated here.
 
-## Get the SDK
+## Get the SDK
 
 There are serveral ways of getting this SDK. The easiest one is to download a
 precompiled package for your distribution. If we don't provide a package for
