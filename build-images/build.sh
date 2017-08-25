@@ -6,7 +6,7 @@ set -x
 BUILD_ROOT='/tmp/webcom-build/'
 PACKAGE_DEST='/tmp/webcom-package/'
 
-git_url=${git_url:-https://www.forge.orange-labs.fr/plugins/git/webcom/webcom-sdk-c.git}
+git_url=${git_url:-https://github.com/webcom-components/webcom-sdk-c.git}
 git_ref=${git_ref:-master}
 package_flavour="${package_flavour:-0}"
 
