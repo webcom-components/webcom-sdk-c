@@ -169,7 +169,6 @@ struct lws_protocols protocols[] = {
 
 wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
 	wc_cnx_t *res;
-	char *proxy;
 	size_t ws_path_l;
 
 	struct lws_client_connect_info lws_client_cnx_nfo;
@@ -198,6 +197,7 @@ wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_c
 	lws_ctx_creation_nfo.uid = -1;
 
 #if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER < 2002000
+	char *proxy;
 	/* hack to make LWS support the http_proxy variable beginning with "https://" */
 	proxy = getenv("http_proxy");
 	if (proxy != NULL && strncmp("http://", proxy, 7) == 0) {
