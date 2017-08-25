@@ -1,26 +1,125 @@
 # Webcom C SDK
 
-## Build prerequisites
+![Legorange Demo Image](res/legorange-demo.gif)
 
-On a debian-family platform:
+The **Webcom C SDK** allows the C developers to easily interact with a Webcom
+server, such as the ones operated by the
+[Orange Flexible Datasync](https://datasync.orange.com/) service.
+
+The Webcom C SDK has been developed on and for linux systems, but it might also
+work out of the box on other platforms, or require only little tweaks to do so.
+If you run it on another platform, kindly let us know so that we can share the
+information. If you made some modifications to make it work on your platform,
+please consider opening a pull request so it gets integrated here.
+
+## Get the SDK
+
+There are serveral ways of getting this SDK. The easiest one is to download a
+precompiled package for your distribution. If we don't provide a package for
+your distribution, you can build it from the sources, directly on your host, or
+using a dedicated docker image.
+
+### Install the pre-compiled package
+
+Choose one package corresponding to your hardware/distribution from the
+Github **releases** tab.
+
+### Docker build images
+
+Some Docker images have been crafted in [build-images/](build-images/), to build
+the Webcom C SDK for several distributions. If you want to build your own
+package of your own version of the SDK, using these images make it rather
+straighforward.
+
+#### Build the Docker image
+
+Follow these steps:
 
 ```
-# apt-get install cmake build-essential libjson-c-dev libev-dev libev4 doxygen graphviz libwebsockets-dev libwebsockets8 libssl-dev
+$ cd build-images
+$ docker image build -f Dockerfile.<DISTRIBUTION> . -t <TAG_NAME>
+(replace DISTRIBUTION by an appropricate value, and TAG_NAME by what you want)
 ```
 
-## Build
+#### Build the Webcom C SDK by running the docker image
 
 ```
-$ cd build
+$ docker container run [<OPT ENV VARIABLES>] -v "$PWD:/tmp/webcom-package/" -ti <TAG_NAME>
+```
+
+After the build process, the container should exit and the binary package the
+was produced should be located in the current working directory on the host.
+You can modify the behaviour of the build by providing some environment
+variables to the container:
+
+Variable name | Meaning
+--------------|--------
+**`git_url`** | the git repository URL to clone the source code from
+**`git_ref`** | the git revision (hash, branch, tag, ...) to build
+
+**Example:**
+
+```
+$ docker image build -f Dockerfile.ubuntu16.10 . -t webcom-sdk-c-build-ubuntu16.10
+(...)
+$ docker container run \
+	-e git_url="git@github.com:johndoe/webcom-sdk-c.git" \
+	-e git_ref="my_branch" \
+	-v "$PWD:/tmp/webcom-package/" \
+	-ti webcom-sdk-c-build-ubuntu16.10
+```
+
+### Build manually from Git
+
+#### Build prerequisites
+
+(**Note:** yo can also take a look the Dockerfiles in
+[build-images/](build-images/) to get an idea of the requirements)
+
+##### On a debian-family platform (Debian >= 9, Ubuntu >= 16.04)
+
+```
+# apt-get install cmake gcc cmake make pkg-config libjson-c-dev libwebsockets-dev libev-dev libncurses5-dev doxygen
+```
+
+##### On a RedHat-family platform (CentOS or RHEL >= 7, Fedora Core >= 24)
+
+for CentOS 7 and RHEL 7
+
+```
+# yum install epel-release
+# yum install cmake3
+
+```
+
+for fedora core >= 24
+
+```
+# yum install cmake
+```
+
+then
+
+```
+# yum install gcc make pkgconfig json-c-devel libwebsockets-devel openssl-devel libev-devel ncurses-devel doxygen
+```
+
+#### Build process
+
+```
+$ git clone [this repo URL]
+(...)
+$ cd webcom-sdk-c/build
 $ cmake ..
+(use `cmake3` instead of cmake) under CentOS 7 and RHEL 7)
 (...)
 $ make all
 (...)
 ```
+It will produce **libwebcom-c.so** in the **lib/** subdirectory, plus the
+examples, documentation, and the test programs.
 
-It will produce **libwebcom-c.so** in the current directory
-
-## Install
+#### Install
 
 ```
 [still in the build/ folder]
@@ -29,18 +128,26 @@ $ sudo make install
 
 ## Documentation
 
-The documentation is produced by doxygen:
+The documentation is produced by doxygen (the public .h files contain the
+documentation). The binary packages and manual installation do install the
+**webcom-connection**, **webcom-event**, **webcom-general**,
+**webcom-messages**, **webcom-parser**, **webcom-requests**, **webcom-utils**
+man pages, that document the SDK API. You can also generate the documentation
+in HTML format (requires graphviz):
 
 ```
 [still in the build/ folder]
+$ cmake .. -DBUILD_HTML_DOCUMENTATION=ON
 $ make doc
-(...)
+(builds the HTML doc in doc/html/)
 ```
 
-## Test
+## Demos
 
-```
-[still in the build/ folder]
-$ make all test
-(...)
-```
+This SDK comes with two examples: **legorange** and **wcchat**. They are the C
+counterparts of [Legorange](https://io.datasync.orange.com/samples/legorange/)
+and [WebCom Simple Chat](https://io.datasync.orange.com/samples/chat/). These
+demos are automatically built and installed along with the SDK, and their
+source code are meant to be a source of information and ispiration on how to
+start hacking with the SDK.
+
