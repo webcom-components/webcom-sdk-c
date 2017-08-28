@@ -69,11 +69,27 @@ int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 
 	/* [boring] parse the command line options (proxy settings, board) */
-	while ((opt = getopt(argc, argv, "b:")) != -1) {
+	while ((opt = getopt(argc, argv, "b:h")) != -1) {
 		switch((char)opt) {
 		case 'b':
+			if (*optarg != '/') {
+				fprintf(stderr, "the board name must begin with '/'\n");
+				exit(1);
+			}
 			board_name = optarg;
+			break;
+		case 'h':
+			printf(
+					"%s [OPTIONS]\n"
+					"Options:\n"
+					"-b BOARDNAME: Use the board BOARDNAME instead of the default board. It MUST\n"
+					"              contain a leading '/', e.g. \"-b /demo\"\n"
+					"-h          : Displays this help message.\n",
+					*argv);
+			exit(0);
+			break;
 		}
+
 	}
 
 	/* establish the connection to the webcom server */

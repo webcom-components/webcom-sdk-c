@@ -55,10 +55,21 @@ int main(int argc, char *argv[]) {
 	setbuf(stdout, NULL);
 
 	/* [boring] parse the command line options (proxy settings, board) */
-	while ((opt = getopt(argc, argv, "n:")) != -1) {
+	while ((opt = getopt(argc, argv, "n:h")) != -1) {
 		switch((char)opt) {
 		case 'n':
 			name = optarg;
+			break;
+		case 'h':
+			printf(
+					"%s [OPTIONS]\n"
+					"Note: quit the chatroom by entering \"/quit\"\n"
+					"Options:\n"
+					"-n NICKNAME: Set your nickname in the chatroom (default: \"C-SDK-demo\")\n"
+					"-h         : Displays this help message.\n",
+					*argv);
+			exit(0);
+			break;
 		}
 	}
 
