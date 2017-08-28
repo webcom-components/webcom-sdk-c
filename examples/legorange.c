@@ -68,7 +68,6 @@ int main(int argc, char *argv[]) {
 	 * time */
 	setbuf(stdout, NULL);
 
-	/* [boring] parse the command line options (proxy settings, board) */
 	while ((opt = getopt(argc, argv, "b:h")) != -1) {
 		switch((char)opt) {
 		case 'b':

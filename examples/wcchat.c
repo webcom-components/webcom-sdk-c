@@ -50,11 +50,6 @@ int main(int argc, char *argv[]) {
 	int opt;
 	json_object *json_name;
 
-	/* [mildly boring] set stdout unbuffered to see the bricks appear in real
-	 * time */
-	setbuf(stdout, NULL);
-
-	/* [boring] parse the command line options (proxy settings, board) */
 	while ((opt = getopt(argc, argv, "n:h")) != -1) {
 		switch((char)opt) {
 		case 'n':

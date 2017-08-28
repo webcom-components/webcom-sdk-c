@@ -68,16 +68,15 @@ typedef enum {
 } wc_event_t;
 
 /**
- * This defines the callback type that must be passed to wc_cnx_new() or
- * wc_cnx_new_with_proxy(). It will be called for the events listed in the
- * wc_event_t enum. When triggered, the callback will receive these parameters:
+ * This defines the callback type that must be passed to wc_cnx_new(). It will
+ * be called for the events listed in the wc_event_t enum. When triggered, the
+ * callback will receive these parameters:
  *
  * @param event (mandatory) the event type that was triggered
  * @param cnx (mandatory) the connection on which the event occurred
  * @param data (optional) some additional data about the event
  * @param len (optional) the size of the additional data
- * @param user (optional) some user-defined data, set in wc_cnx_new() or
- * wc_cnx_new_with_proxy()
+ * @param user (optional) some user-defined data, set in wc_cnx_new()
  */
 typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user);
 
