@@ -1,8 +1,35 @@
+/*
+ * This is free and unencumbered software released into the public domain.
+ *
+ * Anyone is free to copy, modify, publish, use, compile, sell, or
+ * distribute this software, either in source code form or as a compiled
+ * binary, for any purpose, commercial or non-commercial, and by any
+ * means.
+ *
+ * In jurisdictions that recognize copyright laws, the author or authors
+ * of this software dedicate any and all copyright interest in the
+ * software to the public domain. We make this dedication for the benefit
+ * of the public at large and to the detriment of our heirs and
+ * successors. We intend this dedication to be an overt act of
+ * relinquishment in perpetuity of all present and future rights to this
+ * software under copyright law.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS BE LIABLE FOR ANY CLAIM, DAMAGES OR
+ * OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE,
+ * ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+ * OTHER DEALINGS IN THE SOFTWARE.
+ *
+ * For more information, please refer to <http://unlicense.org/>
+ *
+ */
+
 #include <webcom-c/webcom.h>
 #include <unistd.h>
 #include <ev.h>
 #include <stdio.h>
-#include <json-c/json.h>
 
 void keepalive_cb(EV_P_ ev_timer *w, int revents);
 void webcom_socket_cb(EV_P_ ev_io *w, int revents);
@@ -79,11 +106,12 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 	struct ev_loop *loop = (struct ev_loop*) user;
 
 	switch (event) {
-		case WC_EVENT_ON_CNX_ESTABLISHED:
+		case WC_EVENT_ON_SERVER_HANDSHAKE:
 			/* called once the connection is successfully established, you
 			 * could start listening to some data path(s) here, e.g.:
 			 *
-			 * wc_listen(cnx, "/your/path/here");
+			 * wc_wc_on_data(cnx, "/your/path/here", data_callback, NULL);
+			 * wc_req_listen(cnx, callback, "/your/path/here");
 			 *
 			 */
 			break;
@@ -97,6 +125,7 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
 			 * {
 			 *     do_something_with_the(msg->u.data.u.push.u.update_put.data);
 			 * }
+			 *
 			 */
 			break;
 		case WC_EVENT_ON_CNX_CLOSED:
