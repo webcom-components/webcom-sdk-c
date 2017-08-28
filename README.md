@@ -14,6 +14,29 @@ If you run it on another platform, kindly let us know so that we can share the
 information. If you made some modifications to make it work on your platform,
 please consider opening a pull request so it gets integrated here.
 
+## General design
+
+This SDK is meant to be used in a event-loop, and does not provide its own
+event loop. This means the SDK users are responsible for implementing the event
+loop (we may provide one in the future). The general steps to follow are:
+
+1. establish a connection to the Webcom server using `wc_cnx_new()`,
+2. query the file descriptor for that connection using `wc_cnx_get_fd()`,
+3. poll that file descriptor in your event loop for write events,
+4. call `wc_cnx_on_readable()` whenever this event occurs; if there is any
+   Webcom service-level event you should be aware of, this will automatically
+   trigger the callback you passed to `wc_cnx_new()` with the relevant
+   informations as parameters.
+
+**Note:** The Webcom server **will close any inactive connection** after a 1
+minute timeout. The event loop is responsible for calling `wc_cnx_keepalive()`
+periodically (e.g. every 50 seconds) to keep the connection alive.
+
+The above-described logic is implemented in the provided examples, using
+**libev** as an event loop. A "boilerplate" project is also available in the
+[examples/cmake-boilerplate-project/](examples/cmake-boilerplate-project/)
+folder, feel free to copy and adapt it to your needs.
+
 ## Get the SDK
 
 There are serveral ways of getting this SDK. The easiest one is to download a
