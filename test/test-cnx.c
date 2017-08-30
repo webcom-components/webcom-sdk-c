@@ -21,7 +21,6 @@
  */
 
 #include <stdio.h>
-#include <stdio_ext.h>
 #include <string.h>
 #include <ev.h>
 #include <webcom-c/webcom.h>

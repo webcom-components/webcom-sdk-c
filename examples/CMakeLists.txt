@@ -7,7 +7,18 @@ find_package(PkgConfig)
 
 pkg_search_module(JSONC REQUIRED json-c)
 pkg_search_module(NCURSES REQUIRED ncurses)
+
+link_directories(
+	${JSONC_LIBRARY_DIRS}
+	${NCURSES_LIBRARY_DIRS}
+	)
+
 find_library(LIBEV ev)
+
+find_path(
+	LIBEV_INCLUDE_DIR
+	ev.h
+	)
 
 set(CMAKE_C_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Wextra")
 
@@ -25,6 +36,7 @@ target_include_directories(
 	PRIVATE
 	${webcom-sdk-c-examples_SOURCE_DIR}/../include
 	${JSONC_INCLUDE_DIRS}
+	${LIBEV_INCLUDE_DIR}
 )
 
 target_link_libraries(

@@ -9,9 +9,18 @@ find_package(PkgConfig)
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
 
+link_directories(
+	${WEBSOCKETS_LIBRARY_DIRS}
+	${JSONC_LIBRARY_DIRS}
+	)
+
 include(CheckIncludeFile)
+include(CheckSymbolExists)
 
 check_include_file("alloca.h" HAVE_ALLOCA_H)
+check_symbol_exists("srand48_r" "stdlib.h" HAVE_RAND48_R)
+check_include_file("endian.h" HAVE_ENDIAN_H)
+check_include_file("sys/endian.h" HAVE_SYS_ENDIAN_H)
 
 configure_file(
 	"${webcom-sdk-c-lib_SOURCE_DIR}/compat.h.in"

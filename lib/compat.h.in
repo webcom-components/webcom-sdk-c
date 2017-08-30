@@ -9,4 +9,35 @@
 #	include <stdlib.h>
 #endif /* HAVE_ALLOCA_H */
 
+#cmakedefine HAVE_ENDIAN_H
+#cmakedefine HAVE_SYS_ENDIAN_H
+
+#if defined(HAVE_ENDIAN_H)
+#	include <endian.h>
+#elif defined(HAVE_SYS_ENDIAN_H)
+#	include <sys/endian.h>
+#endif
+
+#cmakedefine HAVE_RAND48_R
+
+#ifndef HAVE_RAND48_R
+struct drand48_data {
+	union {
+		unsigned short xseed[3];
+		long lseed;
+	} u;
+};
+
+#define srand48_r(seedval, buffer) \
+	do { \
+		(buffer)->u.lseed = (seedval); \
+	} while (0)
+
+#define lrand48_r(buffer, result) \
+	do { \
+		*(result) = nrand48((buffer)->u.xseed); \
+	} while(0)
+
+#endif /* HAVE_RAND48_R */
+
 #endif /* CONFIG_PRIV_H_ */

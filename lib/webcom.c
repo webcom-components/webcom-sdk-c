@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <string.h>
-#include <endian.h>
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom.h"
