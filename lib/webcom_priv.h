@@ -23,6 +23,8 @@
 #ifndef SRC_WEBCOM_PRIV_H_
 #define SRC_WEBCOM_PRIV_H_
 
+#include "compat.h"
+
 #include <stdint.h>
 #include <stdlib.h>
 #include <libwebsockets.h>

@@ -30,7 +30,6 @@
 #include <netdb.h>
 #include <libwebsockets.h>
 #include <assert.h>
-#include <alloca.h>
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom-parser.h"

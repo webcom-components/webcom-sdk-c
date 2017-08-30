@@ -9,6 +9,14 @@ find_package(PkgConfig)
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
 
+include(CheckIncludeFile)
+
+check_include_file("alloca.h" HAVE_ALLOCA_H)
+
+configure_file(
+	"${webcom-sdk-c-lib_SOURCE_DIR}/compat.h.in"
+	"${webcom-sdk-c-lib_SOURCE_DIR}/compat.h")
+
 #### libwebcom-c.so
 
 add_library(

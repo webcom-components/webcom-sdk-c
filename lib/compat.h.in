@@ -1,0 +1,12 @@
+#ifndef CONFIG_PRIV_H_
+#define CONFIG_PRIV_H_
+
+#cmakedefine HAVE_ALLOCA_H
+
+#ifdef HAVE_ALLOCA_H
+#	include <alloca.h>
+#else
+#	include <stdlib.h>
+#endif /* HAVE_ALLOCA_H */
+
+#endif /* CONFIG_PRIV_H_ */
