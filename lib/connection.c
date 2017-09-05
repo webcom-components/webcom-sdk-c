@@ -44,7 +44,7 @@ int wc_process_incoming_message(wc_cnx_t *cnx, wc_msg_t *msg) {
 		int64_t now = wc_now();
 		srand48_r((long int)now, &cnx->pids.rand_buffer);
 		cnx->time_offset = now - msg->u.ctrl.u.handshake.ts;
-		cnx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, cnx, &msg, sizeof(wc_msg_t), cnx->user);
+		cnx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, cnx, msg, sizeof(wc_msg_t), cnx->user);
 		cnx->time_offset = wc_now() - msg->u.ctrl.u.handshake.ts;
 	} else if (msg->type == WC_MSG_DATA
 			&& msg->u.data.type == WC_DATA_MSG_PUSH
