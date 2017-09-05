@@ -110,10 +110,15 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		lwsl_debug("ERROR: %.*s\n", (int)len, (char*)in);
 		break;
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		_wc_process_incoming_data(cnx, (char*)in, len);
+		if (cnx->state != WC_CNX_STATE_CLOSED) {
+			_wc_process_incoming_data(cnx, (char*)in, len);
+		}
 		break;
 	case LWS_CALLBACK_CLOSED:
-		cnx->state = WC_CNX_STATE_CLOSED;
+		if (cnx->state != WC_CNX_STATE_CLOSED) {
+			cnx->state = WC_CNX_STATE_CLOSED;
+			cnx->callback(WC_EVENT_ON_CNX_CLOSED, cnx, NULL, 0, cnx->user);
+		}
 		break;
 	default:
 		break;
