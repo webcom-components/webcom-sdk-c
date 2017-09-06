@@ -223,13 +223,14 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 			ev_io_stop(EV_A_ w);
 			ev_break(EV_A_ EVBREAK_ALL);
 			wc_cnx_close(cnx);
+		} else {
+			text = json_object_new_string(buf);
+			escaped_text = json_object_to_json_string(text);
+			asprintf(&json_str, "{\"name\":%s,\"text\":%s}", escaped_name, escaped_text);
+			wc_req_push(cnx, NULL, "/", json_str);
+			free(json_str);
+			json_object_put(text);
 		}
-		text = json_object_new_string(buf);
-		escaped_text = json_object_to_json_string(text);
-		asprintf(&json_str, "{\"name\":%s,\"text\":%s}", escaped_name, escaped_text);
-		wc_req_push(cnx, NULL, "/", json_str);
-		free(json_str);
-		json_object_put(text);
 	}
 	if (feof(stdin)) {
 		/* quit if EOF on stdin */
