@@ -8,11 +8,12 @@ server, such as the ones operated by the
 
 It is licensed under the LGPL V2.1. We appreciate contributions!
 
-The Webcom C SDK has been developed on and for linux systems, but it might also
-work out of the box on other platforms, or require only little tweaks to do so.
-If you run it on another platform, kindly let us know so that we can share the
-information. If you made some modifications to make it work on your platform,
-please consider opening a pull request so it gets integrated here.
+The Webcom C SDK has been successfully tested on various linux platforms,
+including GLibc-based ones, and musl libc ones. It was also, successfully
+tested on FreeBSD 11.1.  If you run it on another platform, kindly let us know
+so that we can share the information. If you made some modifications to make it
+work on your platform, please consider opening a pull request so it gets
+integrated here.
 
 ## General design
 
