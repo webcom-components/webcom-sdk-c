@@ -133,7 +133,7 @@ int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
 	int sent;
 
 	if (cnx->state != WC_CNX_STATE_READY) {
-		printf("status: %d != %d\n",cnx->state, WC_CNX_STATE_READY);
+		lwsl_debug("status: %d != %d\n",cnx->state, WC_CNX_STATE_READY);
 		return -1;
 	}
 
