@@ -4,7 +4,7 @@ cmake_minimum_required(VERSION 3.0)
 project("boilerplate")
 
 find_library(EV ev)
-find_library(WEBCOM-C webcom-c)
+find_package(webcom-c REQUIRED)
 
 add_executable(
 # XXX set the desired executable name here
@@ -16,8 +16,16 @@ add_executable(
 #	...
 )
 
+target_include_directories(
+	boilerplate
+
+	PRIVATE
+		${WEBCOM_C_INCLUDE_DIRS}
+)
+
 target_link_libraries(
 	boilerplate
-	${WEBCOM-C}
+
+	${WEBCOM_C_LIBRARIES}
 	${EV}
 )
