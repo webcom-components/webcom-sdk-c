@@ -1,0 +1,6 @@
+@PACKAGE_INIT@
+
+include("@PACKAGE_CONFIG_INSTALL_DIR@/webcom-c-targets.cmake")
+
+set(WEBCOM_C_LIBRARIES webcom-c::webcom-c)
+set_and_check(WEBCOM_C_INCLUDE_DIRS "@PACKAGE_INCLUDE_INSTALL_DIR@")

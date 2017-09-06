@@ -35,7 +35,12 @@ periodically (e.g. every 50 seconds) to keep the connection alive.
 The above-described logic is implemented in the provided examples, using
 **libev** as an event loop. A "boilerplate" project is also available in the
 [examples/cmake-boilerplate-project/](examples/cmake-boilerplate-project/)
-folder, feel free to copy and adapt it to your needs.
+folder, feel free to copy and adapt it to your needs. It also shows how the SDK
+can be conveninently used in a CMake project using:
+
+```
+find_package(webcom-c)
+```
 
 ## Get the SDK
 
