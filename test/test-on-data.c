@@ -58,6 +58,11 @@ void ev3(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, v
 	}
 }
 
+void ev4(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+	printf("\tcallback 4: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
+	c |= 0x8;
+}
+
 int main(void)
 {
 	wc_cnx_t cnx;
@@ -84,6 +89,18 @@ int main(void)
 	wc_on_data(&cnx, "/foo/bar/", ev2, (void*)0x20202020);
 	wc_on_data(&cnx, "/foo/bar/baz/", ev3, (void*)0x30303030);
 
+	wc_on_data(&cnx, "/qux/", ev4, NULL);
+
+	wc_off_data(&cnx, "/qux");
+
+	wc_on_data(&cnx, "/qux/", ev4, (void*)1);
+	wc_on_data(&cnx, "/qux/", ev4, (void*)2);
+	wc_on_data(&cnx, "/qux/", ev4, (void*)3);
+	wc_on_data(&cnx, "/qux/", ev4, (void*)3);
+	wc_on_data(&cnx, "/qux/", ev4, (void*)4);
+
+	wc_off_data(&cnx, "/qux/");
+
 	push.type = WC_PUSH_DATA_UPDATE_PUT;
 	push.u.update_put.path = "/foo/bar/baz/qux/";
 	push.u.update_put.data = "{\"aaa\": \"bbb\", \"answer\": 42}";
@@ -93,6 +110,7 @@ int main(void)
 	STFU_TRUE("Callback was called for path /foo/", c & 0x1);
 	STFU_TRUE("Callback was called for path /foo/bar/", c & 0x2);
 	STFU_TRUE("Callback was called for path /foo/bar/baz/", c & 0x4);
+	STFU_TRUE("Callback was never called for path /qux/", !(c & 0x8));
 
 	STFU_SUMMARY();
 

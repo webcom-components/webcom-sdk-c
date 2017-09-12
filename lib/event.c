@@ -126,12 +126,36 @@ void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void 
 	cnx->handlers[slot] = new_h;
 }
 
+void wc_off_data(wc_cnx_t *cnx, char *path) {
+	wc_on_data_handler_t *h, *tmp, **prev;
+	uint32_t slot;
+
+	slot = path_hash(path) % (1 << DATA_HANDLERS_HASH_FACTOR);
+
+	prev = &cnx->handlers[slot];
+	h = *prev;
+
+	while (h) {
+		if (path_eq(h->path, path)) {
+			(*prev) = h->next;
+			tmp = h;
+			h = h->next;
+			free(tmp->path);
+			free(tmp);
+		} else {
+			prev = &(h->next);
+			h = h->next;
+		}
+	}
+}
+
 static void _dispatch_helper(wc_cnx_t *cnx, char *full_path, char *path_chunk, uint32_t hash, ws_on_data_event_t event, char *json_data) {
-	wc_on_data_handler_t *p;
+	wc_on_data_handler_t *p, *next;
 
 	p = cnx->handlers[hash % (1 << DATA_HANDLERS_HASH_FACTOR)];
 
 	while (p != NULL) {
+		next = p->next;
 		if (path_eq(path_chunk, p->path)) {
 			p->callback(cnx,
 					event,
@@ -139,7 +163,7 @@ static void _dispatch_helper(wc_cnx_t *cnx, char *full_path, char *path_chunk, u
 					json_data,
 					p->user);
 		}
-		p = p->next;
+		p = next;
 	}
 }
 
