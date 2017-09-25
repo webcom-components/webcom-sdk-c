@@ -91,15 +91,27 @@ int main(void)
 
 	wc_on_data(&cnx, "/qux/", ev4, NULL);
 
-	wc_off_data(&cnx, "/qux");
+	wc_off_data(&cnx, "/qux", ev2);
+	wc_off_data(&cnx, "/qux", ev4);
 
-	wc_on_data(&cnx, "/qux/", ev4, (void*)1);
-	wc_on_data(&cnx, "/qux/", ev4, (void*)2);
-	wc_on_data(&cnx, "/qux/", ev4, (void*)3);
-	wc_on_data(&cnx, "/qux/", ev4, (void*)3);
+	wc_on_data(&cnx, "/qux/", ev1, (void*)1);
+	wc_on_data(&cnx, "/qux/", ev2, (void*)2);
+	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
 	wc_on_data(&cnx, "/qux/", ev4, (void*)4);
 
-	wc_off_data(&cnx, "/qux/");
+	wc_off_data(&cnx, "/qux/", ev1);
+	wc_off_data(&cnx, "/qux/", ev2);
+	wc_off_data(&cnx, "/qux/", ev3);
+	wc_off_data(&cnx, "/qux/", ev4);
+
+	wc_on_data(&cnx, "/qux/", ev1, (void*)1);
+	wc_on_data(&cnx, "/qux/", ev2, (void*)2);
+	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_on_data(&cnx, "/qux/", ev4, (void*)4);
+
+	wc_off_data(&cnx, "/qux/", NULL);
 
 	push.type = WC_PUSH_DATA_UPDATE_PUT;
 	push.u.update_put.path = "/foo/bar/baz/qux/";

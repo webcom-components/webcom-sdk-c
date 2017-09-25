@@ -126,7 +126,7 @@ void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void 
 	cnx->handlers[slot] = new_h;
 }
 
-void wc_off_data(wc_cnx_t *cnx, char *path) {
+void wc_off_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback) {
 	wc_on_data_handler_t *h, *tmp, **prev;
 	uint32_t slot;
 
@@ -136,7 +136,8 @@ void wc_off_data(wc_cnx_t *cnx, char *path) {
 	h = *prev;
 
 	while (h) {
-		if (path_eq(h->path, path)) {
+		if (path_eq(h->path, path)
+				&& (callback == NULL || callback == h->callback)) {
 			(*prev) = h->next;
 			tmp = h;
 			h = h->next;

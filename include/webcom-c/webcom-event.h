@@ -71,12 +71,15 @@ void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void 
 /**
  * unregister callbacks for data update
  *
- * This function will unregister all the callbacks that were previously
- * registered with wc_on_data() for a given root path.
+ * This function will unregister a given callback that was previously
+ * registered with wc_on_data() for a given root path, or all the callbacks
+ * for the given path.
  * @param cnx the webcom connection
  * @param path the path
+ * @param callback the callback to unregister; pass NULL to unregister all the
+ * callbacks for the given path
  */
-void wc_off_data(wc_cnx_t *cnx, char *path);
+void wc_off_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback);
 
 /**
  * @}
