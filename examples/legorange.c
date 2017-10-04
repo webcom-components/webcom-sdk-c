@@ -38,6 +38,7 @@ typedef enum {
 } legorange_brick_t;
 char *board_name;
 extern const char *bricks[];
+int max_l = 250, max_c = 250;
 static void draw_brick(int x, int y, legorange_brick_t brick);
 static void move_to(int x, int y);
 static void clear_screen();
@@ -68,7 +69,7 @@ int main(int argc, char *argv[]) {
 	 * time */
 	setbuf(stdout, NULL);
 
-	while ((opt = getopt(argc, argv, "b:h")) != -1) {
+	while ((opt = getopt(argc, argv, "b:hl:c:")) != -1) {
 		switch((char)opt) {
 		case 'b':
 			if (*optarg != '/') {
@@ -83,9 +84,17 @@ int main(int argc, char *argv[]) {
 					"Options:\n"
 					"-b BOARDNAME: Use the board BOARDNAME instead of the default board. It MUST\n"
 					"              contain a leading '/', e.g. \"-b /demo\"\n"
+					"-l MAX_LINES: Don't display bricks beyond the MAX_LINES line\n"
+					"-c MAX_COLS : Don't display bricks beyond the MAX_COLS column\n"
 					"-h          : Displays this help message.\n",
 					*argv);
 			exit(0);
+			break;
+		case 'l':
+			max_l = (int) atoi(optarg);
+			break;
+		case 'c':
+			max_c = (int) atoi(optarg);
 			break;
 		}
 
@@ -339,6 +348,9 @@ static void move_to(int x, int y) {
  * Helper function that draws one brick on the terminal.
  */
 static void draw_brick(int x, int y, legorange_brick_t brick) {
+	if (x >= max_c/2 || y >= max_l)
+		return;
+
 	move_to(x, y);
 	fputs(bricks[brick], stdout);
 }
