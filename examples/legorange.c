@@ -40,6 +40,7 @@ char *board_name;
 extern const char *bricks[];
 int max_l = 250, max_c = 250;
 static void draw_brick(int x, int y, legorange_brick_t brick);
+static void draw_rgb_brick(int x, int y, int r, int g, int b);
 static void move_to(int x, int y);
 static void clear_screen();
 void keepalive_cb(EV_P_ ev_timer *w, int revents);
@@ -224,31 +225,40 @@ static void on_brick_update(char *key, json_object *data) {
 	legorange_brick_t brick;
 
 	if (sscanf(key, "%4d-%4d", &x, &y) == 2) {
+		if (x >= max_c/2 || y >= max_l || x < 0 || y < 0) {
+			return;
+		}
 		if (json_object_is_type(data, json_type_null)) {
 			draw_brick(x, y, NO_BRICK);
 		} else {
 			if (json_object_object_get_ex(data, "color", &jcolor)) {
 				scolor = (char *)json_object_get_string(jcolor);
-				if (strcmp("white", scolor) == 0) {
-					brick = WHITE_BRICK;
-				} else if (strcmp("green", scolor) == 0) {
-					brick = GREEN_BRICK;
-				} else if (strcmp("red", scolor) == 0) {
-					brick = RED_BRICK;
-				} else if (strcmp("darkgrey", scolor) == 0) {
-					brick = GREY_BRICK;
-				} else if (strcmp("blue", scolor) == 0) {
-					brick = BLUE_BRICK;
-				} else if (strcmp("yellow", scolor) == 0) {
-					brick = YELLOW_BRICK;
-				} else if (strcmp("brown", scolor) == 0) {
-					brick = BROWN_BRICK;
+				if (*scolor == '#') {
+					int r, g, b;
+					if (sscanf(scolor + 1, "%2x%2x%2x", &r, &g, &b) == 3) {
+						draw_rgb_brick(x, y, r, g, b);
+					}
 				} else {
-					brick = OTHER_BRICK;
-				}
+					if (strcmp("white", scolor) == 0) {
+						brick = WHITE_BRICK;
+					} else if (strcmp("green", scolor) == 0) {
+						brick = GREEN_BRICK;
+					} else if (strcmp("red", scolor) == 0) {
+						brick = RED_BRICK;
+					} else if (strcmp("darkgrey", scolor) == 0) {
+						brick = GREY_BRICK;
+					} else if (strcmp("blue", scolor) == 0) {
+						brick = BLUE_BRICK;
+					} else if (strcmp("yellow", scolor) == 0) {
+						brick = YELLOW_BRICK;
+					} else if (strcmp("brown", scolor) == 0) {
+						brick = BROWN_BRICK;
+					} else {
+						brick = OTHER_BRICK;
+					}
 
-				/* it works */
-				draw_brick(x, y, brick);
+					draw_brick(x, y, brick);
+				}
 			}
 		}
 	}
@@ -348,10 +358,14 @@ static void move_to(int x, int y) {
  * Helper function that draws one brick on the terminal.
  */
 static void draw_brick(int x, int y, legorange_brick_t brick) {
-	if (x >= max_c/2 || y >= max_l)
-		return;
-
 	move_to(x, y);
 	fputs(bricks[brick], stdout);
 }
 
+static void draw_rgb_brick(int x, int y, int r, int g, int b) {
+	int ccode;
+
+	ccode = 16 + 36 * (r/43) + 6 * (g/43) + b/43;
+	move_to(x, y);
+	printf("\033[38;5;%dm ●\033[0m", ccode);
+}
