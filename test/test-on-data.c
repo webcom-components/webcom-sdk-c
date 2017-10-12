@@ -37,35 +37,35 @@ uint32_t djb2(char *str) {
 
 unsigned c = 0;
 
-void ev1(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+void ev1(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
 	printf("\tcallback 1: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
 	if (param == (void*)0x10101010) {
 		c |= 0x1;
 	}
 }
 
-void ev2(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+void ev2(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
 	printf("\tcallback 2: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
 	if (param == (void*)0x20202020) {
 		c |= 0x2;
 	}
 }
 
-void ev3(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+void ev3(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
 	printf("\tcallback 3: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
 	if (param == (void*)0x30303030) {
 		c |= 0x4;
 	}
 }
 
-void ev4(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+void ev4(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
 	printf("\tcallback 4: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
 	c |= 0x8;
 }
 
 int main(void)
 {
-	wc_cnx_t cnx;
+	wc_context_t cnx;
 	wc_push_t push;
 	memset(&cnx, 0, sizeof(cnx));
 

@@ -28,7 +28,7 @@
 
 int main(void)
 {
-	wc_cnx_t cnx;
+	wc_context_t cnx;
 	unsigned char rnd_dat[12];
 	char rnd_str[16];
 	char push_id[20][16];

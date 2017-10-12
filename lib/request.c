@@ -39,7 +39,7 @@ inline static size_t pending_req_hash(int64_t id) {
 }
 
 static void wc_req_store_pending(
-		wc_cnx_t *cnx,
+		wc_context_t *cnx,
 		int64_t id,
 		wc_action_type_t type,
 		wc_on_req_result_t callback)
@@ -58,7 +58,7 @@ static void wc_req_store_pending(
 	cnx->pending_req_table[slot] = trans;
 }
 
-wc_action_trans_t *wc_req_get_pending(wc_cnx_t *cnx, int64_t id) {
+wc_action_trans_t *wc_req_get_pending(wc_context_t *cnx, int64_t id) {
 	wc_action_trans_t *cur, **prev;
 
 	prev = &cnx->pending_req_table[pending_req_hash(id)];
@@ -75,7 +75,7 @@ wc_action_trans_t *wc_req_get_pending(wc_cnx_t *cnx, int64_t id) {
 	return cur;
 }
 
-void wc_req_response_dispatch(wc_cnx_t *cnx, wc_response_t *response) {
+void wc_req_response_dispatch(wc_context_t *cnx, wc_response_t *response) {
 	wc_action_trans_t *trans;
 
 	if ((trans = wc_req_get_pending(cnx, response->r)) != NULL) {
@@ -107,22 +107,22 @@ void wc_free_pending_trans(wc_action_trans_t **table) {
 }
 
 #define DEFINE_REQ_FUNC(__name, __type, ... /* args */)						\
-	int64_t wc_req_ ## __name(wc_cnx_t *cnx, wc_on_req_result_t callback,	\
+	int64_t wc_req_ ## __name(wc_context_t *ctx, wc_on_req_result_t callback,	\
 		## __VA_ARGS__) {													\
 		wc_msg_t msg;														\
 		wc_action_ ## __name ## _t *req;									\
 		int ret;															\
 																			\
-		int64_t reqnum = wc_next_reqnum(cnx);								\
+		int64_t reqnum = wc_next_reqnum(ctx);								\
 		wc_msg_init(&msg);													\
 		msg.type = WC_MSG_DATA;												\
 		msg.u.data.type = WC_DATA_MSG_ACTION;								\
 		msg.u.data.u.action.r = reqnum;										\
 		req = &msg.u.data.u.action.u.__name;								\
 		msg.u.data.u.action.type = (__type);								\
-		wc_req_store_pending(cnx, reqnum, (__type), callback);
+		wc_req_store_pending(ctx, reqnum, (__type), callback);
 #define END_DEFINE_REQ_FUNC													\
-		ret = wc_cnx_send_msg(cnx, &msg);									\
+		ret = wc_context_send_msg(ctx, &msg);								\
 		return ret > 0 ? reqnum : -1l;										\
 	}
 
@@ -166,7 +166,7 @@ DEFINE_REQ_FUNC (on_disc_cancel, WC_ACTION_ON_DISCONNECT_CANCEL, char *path)
 	req->path = path;
 END_DEFINE_REQ_FUNC
 
-int64_t wc_req_push(wc_cnx_t *cnx, wc_on_req_result_t callback, char *path, char *json) {
+int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json) {
 	char *push_path;
 	int64_t ret;
 	size_t path_l;

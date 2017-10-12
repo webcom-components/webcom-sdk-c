@@ -33,10 +33,10 @@
 #include "webcom-c/webcom.h"
 
 typedef enum {
-	WC_CNX_STATE_INIT = 0,
-	WC_CNX_STATE_CREATED,
-	WC_CNX_STATE_READY,
-	WC_CNX_STATE_CLOSED,
+	WC_CNX_STATE_DISCONNECTED = 0,
+	WC_CNX_STATE_CONNECTING,
+	WC_CNX_STATE_CONNECTED,
+	WC_CNX_STATE_DISCONNECTING,
 } wc_cnx_state_t;
 
 struct pushid_state {
@@ -54,12 +54,12 @@ struct pushid_state {
 typedef struct wc_action_trans wc_action_trans_t;
 typedef struct wc_on_data_handler wc_on_data_handler_t;
 
-typedef struct wc_cnx {
-	struct lws_context *lws_context;
+typedef struct wc_context {
+	struct lws_client_connect_info lws_cci;
 	struct lws *lws_conn;
 	wc_on_event_cb_t callback;
+	void *event_struct;
 	void *user;
-	int fd;
 	wc_cnx_state_t state;
 	wc_parser_t *parser;
 	char rxbuf[WC_RX_BUF_LEN];
@@ -68,7 +68,7 @@ typedef struct wc_cnx {
 	int64_t last_req;
 	wc_action_trans_t *pending_req_table[1 << PENDING_ACTION_HASH_FACTOR];
 	wc_on_data_handler_t *handlers[1 << DATA_HANDLERS_HASH_FACTOR];
-} wc_cnx_t;
+} wc_context_t;
 
 static inline int64_t wc_now() {
 	struct timeval tv;
@@ -76,20 +76,20 @@ static inline int64_t wc_now() {
 	return (int64_t) tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-static inline int64_t wc_server_now(wc_cnx_t *cnx) {
+static inline int64_t wc_server_now(wc_context_t *cnx) {
 	return wc_now() - cnx->time_offset;
 }
 
-static inline int64_t wc_next_reqnum(wc_cnx_t *cnx) {
+static inline int64_t wc_next_reqnum(wc_context_t *cnx) {
 	return ++cnx->last_req;
 }
 
-wc_action_trans_t *wc_req_get_pending(wc_cnx_t *cnx, int64_t id);
+wc_action_trans_t *wc_req_get_pending(wc_context_t *cnx, int64_t id);
 void wc_free_pending_trans(wc_action_trans_t **table);
-void wc_req_response_dispatch(wc_cnx_t *cnx, wc_response_t *response);
+void wc_req_response_dispatch(wc_context_t *cnx, wc_response_t *response);
 
 void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
-void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push);
+void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push);
 void wc_free_on_data_handlers(wc_on_data_handler_t **table);
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

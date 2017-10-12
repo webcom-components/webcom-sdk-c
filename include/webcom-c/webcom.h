@@ -82,7 +82,7 @@
  * @param cnx the webcom connection
  * @return the estimated server time in milliseconds since 1970/1/1
  */
-int64_t wc_get_server_time(wc_cnx_t *cnx);
+int64_t wc_get_server_time(wc_context_t *cnx);
 
 /**
  * builds a webcom push id
@@ -113,7 +113,7 @@ int64_t wc_get_server_time(wc_cnx_t *cnx);
  * @param result the address of a (minimum) 20-bytes buffer that will receive
  * the newly created push id
  */
-void wc_get_push_id(wc_cnx_t *cnx, char *result);
+void wc_get_push_id(wc_context_t *cnx, char *result);
 
 /**
  * get the webcom SDK version string

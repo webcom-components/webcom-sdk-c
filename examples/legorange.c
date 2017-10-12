@@ -46,9 +46,8 @@ static void clear_screen();
 void keepalive_cb(EV_P_ ev_timer *w, int revents);
 void webcom_socket_cb(EV_P_ ev_io *w, int revents);
 void stdin_cb (EV_P_ ev_io *w, int revents);
-void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
-		size_t len, void *user);
-static void on_data_update(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
+void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data, size_t len);
+static void on_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
 static void on_brick_update(char *key, json_object *data);
 /*
  * end of boredom
@@ -56,7 +55,7 @@ static void on_brick_update(char *key, json_object *data);
 
 /* Enter here */
 int main(int argc, char *argv[]) {
-	wc_cnx_t *cnx;
+	wc_context_t *cnx;
 	int wc_fd;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
@@ -102,7 +101,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	/* establish the connection to the webcom server */
-	cnx = wc_cnx_new(
+	cnx = wc_context_new(
 			"io.datasync.orange.com",
 			443,
 			"legorange",
@@ -118,7 +117,7 @@ int main(int argc, char *argv[]) {
 	/* get the raw file descriptor of the webcom connection: we need it for
 	 * the event loop
 	 */
-	wc_fd = wc_cnx_get_fd(cnx);
+	wc_fd = wc_context_get_fd(cnx);
 
 	/* let's define 3 events to listen to:
 	 *
@@ -148,7 +147,7 @@ int main(int argc, char *argv[]) {
 /* called by libev on read event on the webcom TCP socket */
 void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 	UNUSED_VAR(loop);
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 
 	/* that's all we must do here: let the webcom SDK handle the data and it
 	 * will call the callback defined when creating the connection if a new
@@ -161,10 +160,10 @@ void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
  * ready", "connection was closed", or "incoming webcom message" occur on the
  * webcom connection.
  */
-void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, UNUSED_PARAM(void *data),
-		UNUSED_PARAM(size_t len), void *user)
+void webcom_service_cb(wc_event_t event, wc_context_t *cnx, UNUSED_PARAM(void *data),
+		UNUSED_PARAM(size_t len))
 {
-	struct ev_loop *loop = (struct ev_loop*) user;
+	struct ev_loop *loop = wc_context_get_user_data(cnx);
 
 	switch (event) {
 		case WC_EVENT_ON_SERVER_HANDSHAKE:
@@ -186,7 +185,7 @@ void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, UNUSED_PARAM(void *data)
 }
 
 static void on_data_update(
-		UNUSED_PARAM(wc_cnx_t *cnx),
+		UNUSED_PARAM(wc_context_t *cnx),
 		UNUSED_PARAM(ws_on_data_event_t event),
 		char *path,
 		char *json_data,
@@ -268,7 +267,7 @@ static void on_brick_update(char *key, json_object *data) {
  */
 void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	UNUSED_VAR(loop);
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 
 	/* just this */
 	wc_cnx_keepalive(cnx);
@@ -279,7 +278,7 @@ void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
  * message to the webcom server if the input matches "x y color"
  */
 void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 	static char buf[2048];
 	int x, y, col;
 	char *col_str, *path, *data, nl;
@@ -309,7 +308,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		puts("Closing...");
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
-		wc_cnx_close(cnx);
+		wc_context_close_cnx(cnx);
 	}
 }
 

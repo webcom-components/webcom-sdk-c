@@ -108,7 +108,7 @@ static uint32_t path_hash(char *path) {
 		free(__path_chunk);                                                           \
 	} while (0)
 
-void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void *user) {
+void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user) {
 	wc_on_data_handler_t *new_h, *tmp;
 	uint32_t slot;
 
@@ -126,7 +126,7 @@ void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void 
 	cnx->handlers[slot] = new_h;
 }
 
-void wc_off_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback) {
+void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) {
 	wc_on_data_handler_t *h, *tmp, **prev;
 	uint32_t slot;
 
@@ -150,7 +150,7 @@ void wc_off_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback) {
 	}
 }
 
-static void _dispatch_helper(wc_cnx_t *cnx, char *full_path, char *path_chunk, uint32_t hash, ws_on_data_event_t event, char *json_data) {
+static void _dispatch_helper(wc_context_t *cnx, char *full_path, char *path_chunk, uint32_t hash, ws_on_data_event_t event, char *json_data) {
 	wc_on_data_handler_t *p, *next;
 
 	p = cnx->handlers[hash % (1 << DATA_HANDLERS_HASH_FACTOR)];
@@ -168,7 +168,7 @@ static void _dispatch_helper(wc_cnx_t *cnx, char *full_path, char *path_chunk, u
 	}
 }
 
-void wc_on_data_dispatch(wc_cnx_t *cnx, wc_push_t *push) {
+void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 	ws_on_data_event_t event;
 	char *updated_path;
 	char *updated_data;

@@ -24,15 +24,26 @@
 #define INCLUDE_WEBCOM_C_WEBCOM_CNX_H_
 
 #include <stddef.h>
+#include <poll.h>
 
 #include "webcom-msg.h"
 
-typedef struct wc_cnx wc_cnx_t;
+typedef struct wc_context wc_context_t;
 
 /**
  * @ingroup webcom-connection
  * @{
  */
+
+#define WC_POLLHUP (POLLHUP|POLLERR)
+#define WC_POLLIN (POLLIN)
+#define WC_POLLOUT (POLLOUT)
+
+struct wc_pollargs {
+	int fd;
+	int events;
+	void *event_struct;
+};
 
 typedef enum {
 	/**
@@ -65,6 +76,12 @@ typedef enum {
 	 * additional error string of size len is given in data.
 	 */
 	WC_EVENT_ON_CNX_ERROR,
+	/**
+	 *
+	 */
+	WC_EVENT_ADD_FD,
+	WC_EVENT_DEL_FD,
+	WC_EVENT_MODIFY_FD,
 } wc_event_t;
 
 /**
@@ -73,12 +90,11 @@ typedef enum {
  * callback will receive these parameters:
  *
  * @param event (mandatory) the event type that was triggered
- * @param cnx (mandatory) the connection on which the event occurred
+ * @param ctx (mandatory) the connection on which the event occurred
  * @param data (optional) some additional data about the event
  * @param len (optional) the size of the additional data
- * @param user (optional) some user-defined data, set in wc_cnx_new()
  */
-typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, size_t len, void *user);
+typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_context_t *ctx, void *data, size_t len);
 
 /**
  * Establishes a direct connection to a webcom server.
@@ -102,16 +118,16 @@ typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_cnx_t *cnx, void *data, s
  * @return a pointer to the newly created connection on success, NULL on
  * failure
  */
-wc_cnx_t *wc_cnx_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user);
+wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user);
 
 /**
  * Frees the resources used by a wc_cnx_t object.
  *
  * This function is to be called once a wc_cnx_t object becomes useless.
  *
- * @param cnx the wc_cnx_t object to free.
+ * @param ctx the wc_cnx_t object to free.
  */
-void wc_cnx_free(wc_cnx_t *cnx);
+void wc_context_free(wc_context_t *ctx);
 
 /**
  * Sends a message to the webcom server.
@@ -121,19 +137,17 @@ void wc_cnx_free(wc_cnx_t *cnx);
  * @return the number of bytes written, otherwise < 0 is returned in case of
  * failure.
  */
-int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg);
+int wc_context_send_msg(wc_context_t *cnx, wc_msg_t *msg);
 
 /**
- * Gets the system-level file descriptor of a successfully established
- * connection.
- *
+ * TODO
  * This is useful to integrate the SDK in some pre-existing or user-defined
  * event-loop (epoll, poll, ..., or abstractions such as libevent, libev, ...).
  *
- * @param cnx the connection
+ * @param ctx the connection
  * @return the file descriptor
  */
-int wc_cnx_get_fd(wc_cnx_t *cnx);
+void *wc_context_get_event(wc_context_t *ctx);
 
 /**
  * This function allows the webcom SDK to process the incoming data on a webcom
@@ -147,9 +161,9 @@ int wc_cnx_get_fd(wc_cnx_t *cnx);
  * calling this function will automatically trigger call(s) to the user-defined
  * wc_on_event_cb_t callback.
  *
- * @param cnx the connection whose incoming data should be processed
+ * @param ctx the connection whose incoming data should be processed
  */
-void wc_cnx_on_readable(wc_cnx_t *cnx);
+void wc_cnx_on_readable(wc_context_t *ctx);
 
 /**
  * Gracefully closes a connection to a webcom server.
@@ -157,9 +171,9 @@ void wc_cnx_on_readable(wc_cnx_t *cnx);
  * Note: the user-defined wc_on_event_cb_t callback will be triggered with a
  * WC_EVENT_ON_CNX_CLOSED event.
  *
- * @param cnx tke connection
+ * @param ctx tke connection
  */
-void wc_cnx_close(wc_cnx_t *cnx);
+void wc_context_close_cnx(wc_context_t *ctx);
 
 /**
  * Function that keeps the connection to the webcom server alive.
@@ -168,9 +182,16 @@ void wc_cnx_close(wc_cnx_t *cnx);
  * from the client in the last 60 seconds. Call this function periodically to
  * avoid this.
  *
- * @param cnx the connection
+ * @param ctx the connection
  */
-int wc_cnx_keepalive(wc_cnx_t *cnx);
+int wc_cnx_keepalive(wc_context_t *ctx);
+
+/**
+ * gets the user data associated to this context
+ *
+ * @return some user-defined data, set in wc_context_new()
+ */
+void *wc_context_get_user_data(wc_context_t *ctx);
 
 /**
  * @}

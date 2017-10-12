@@ -37,7 +37,7 @@ static void on_update_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 
 int got_update = 0;
 
-void on_listen_result(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
+void on_listen_result(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
 	ev_timer_stop(EV_DEFAULT, &ev_listen);
 	if (status == WC_REQ_OK) {
 		printf("\tthe listen request succeeded with status '%s', opt data: %s\n", reason, data);
@@ -59,15 +59,15 @@ void on_listen_result(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_p
 }
 
 static void disc_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 
 	puts("\tnow closing the connection");
 	fflush(stdout);
 
-	wc_cnx_close(cnx);
+	wc_context_close_cnx(cnx);
 }
 
-void on_brick_1_1_data(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+void on_brick_1_1_data(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
 	if(strcmp(path, "/brick/0-0") == 0) {
 		printf("\t%s => %s\n", path, json_data);
 
@@ -89,8 +89,8 @@ static void listen_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	ev_break(EV_A_ EVBREAK_ALL);
 }
 
-void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, UNUSED_PARAM(size_t len), void *user) {
-	struct ev_loop *loop = user;
+void test_cb(wc_event_t event, wc_context_t *cnx, void *data, UNUSED_PARAM(size_t len)) {
+	struct ev_loop *loop = wc_context_get_user_data(cnx);
 	wc_msg_t *msg = (wc_msg_t*) data;
 	switch (event) {
 	case WC_EVENT_ON_SERVER_HANDSHAKE:
@@ -108,7 +108,7 @@ void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, UNUSED_PARAM(size_t le
 		break;
 	case WC_EVENT_ON_CNX_CLOSED:
 		STFU_TRUE("The connection was closed", 1);
-		wc_cnx_free(cnx);
+		wc_context_free(cnx);
 		ev_break(EV_DEFAULT, EVBREAK_ALL);
 		break;
 	default:
@@ -117,7 +117,7 @@ void test_cb(wc_event_t event, wc_cnx_t *cnx, void *data, UNUSED_PARAM(size_t le
 }
 
 static void readable_cb (EV_P_ ev_io *w, int revents) {
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 	wc_cnx_on_readable(cnx);
 }
 
@@ -128,17 +128,17 @@ static void handshake_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 
 int main(void) {
 	struct ev_loop *loop = EV_DEFAULT;
-	wc_cnx_t *cnx1;
+	wc_context_t *cnx1;
 	ev_io ev_wc_readable;
 	int fd;
 
 
 	STFU_TRUE	("Establish a new Connection",
-			cnx1 = (wc_cnx_new("io.datasync.orange.com", 443, "legorange", test_cb, (void *)loop))
+			cnx1 = (wc_context_new("io.datasync.orange.com", 443, "legorange", test_cb, (void *)loop))
 			);
 	if (cnx1 == NULL) goto end;
 
-	fd = wc_cnx_get_fd(cnx1);
+	fd = wc_context_get_fd(cnx1);
 	printf("\tfd = %d\n", fd);
 	STFU_TRUE   ("Obtained the websocket file descriptor", fd >= 0);
 

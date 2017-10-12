@@ -137,11 +137,11 @@ void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	wc_b64ish_encode(buf + 8, s->lastrand, 9);
 }
 
-int64_t wc_get_server_time(wc_cnx_t *cnx) {
+int64_t wc_get_server_time(wc_context_t *cnx) {
 	return wc_server_now(cnx);
 }
 
-void wc_get_push_id(wc_cnx_t *cnx, char *result) {
+void wc_get_push_id(wc_context_t *cnx, char *result) {
 	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), result);
 }
 

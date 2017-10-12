@@ -31,8 +31,7 @@
 void keepalive_cb(EV_P_ ev_timer *w, int revents);
 void webcom_socket_cb(EV_P_ ev_io *w, int revents);
 void stdin_cb (EV_P_ ev_io *w, int revents);
-void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
-		size_t len, void *user);
+void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data, size_t len);
 void print_new_message(json_object *message);
 
 WINDOW *chat, *chatbox;
@@ -41,7 +40,7 @@ char *name = "C-SDK-demo";
 const char *escaped_name;
 
 int main(int argc, char *argv[]) {
-	wc_cnx_t *cnx;
+	wc_context_t *cnx;
 	int wc_fd;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
@@ -68,7 +67,7 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	cnx = wc_cnx_new(
+	cnx = wc_context_new(
 			"io.datasync.orange.com",
 			443,
 			"chat",
@@ -82,7 +81,7 @@ int main(int argc, char *argv[]) {
 	/* get the raw file descriptor of the webcom connection: we need it for
 	 * the event loop
 	 */
-	wc_fd = wc_cnx_get_fd(cnx);
+	wc_fd = wc_context_get_fd(cnx);
 
 	/* let's define 3 events to listen to:
 	 *
@@ -130,7 +129,7 @@ int main(int argc, char *argv[]) {
 /* called by libev on read event on the webcom TCP socket */
 void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 	UNUSED_VAR(loop);
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 
 	wc_cnx_on_readable(cnx);
 
@@ -140,11 +139,11 @@ void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
  * ready", "connection was closed", or "incoming webcom message" occur on the
  * webcom connection.
  */
-void webcom_service_cb(wc_event_t event, wc_cnx_t *cnx, void *data,
-		UNUSED_PARAM(size_t len), void *user)
+void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data,
+		UNUSED_PARAM(size_t len))
 {
 	wc_msg_t *msg = (wc_msg_t*) data;
-	struct ev_loop *loop = (struct ev_loop*) user;
+	struct ev_loop *loop = wc_context_get_user_data(cnx);
 
 	switch (event) {
 		case WC_EVENT_ON_CNX_ESTABLISHED:
@@ -202,7 +201,7 @@ void print_new_message(json_object *message) {
  */
 void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	UNUSED_VAR(loop);
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 
 	/* just this */
 	wc_cnx_keepalive(cnx);
@@ -212,7 +211,7 @@ void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
  * libev callback when data is available on stdin
  */
 void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
-	wc_cnx_t *cnx = (wc_cnx_t *)w->data;
+	wc_context_t *cnx = (wc_context_t *)w->data;
 	static char buf[2048];
 	json_object *text;
 	char *json_str;
@@ -222,7 +221,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		if(strcmp(buf, "/quit") == 0) {
 			ev_io_stop(EV_A_ w);
 			ev_break(EV_A_ EVBREAK_ALL);
-			wc_cnx_close(cnx);
+			wc_context_close_cnx(cnx);
 		} else {
 			text = json_object_new_string(buf);
 			escaped_text = json_object_to_json_string(text);
@@ -236,6 +235,6 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		/* quit if EOF on stdin */
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
-		wc_cnx_close(cnx);
+		wc_context_close_cnx(cnx);
 	}
 }

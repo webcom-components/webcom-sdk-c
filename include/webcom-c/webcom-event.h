@@ -43,7 +43,7 @@ typedef enum {
  * @param json_data a string containing the json encoded data of the event
  * @param param the optional user data passed to wc_on_data()
  */
-typedef void (*wc_on_data_callback_t)(wc_cnx_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
+typedef void (*wc_on_data_callback_t)(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
 
 /**
  * registers a callback for data update
@@ -65,7 +65,7 @@ typedef void (*wc_on_data_callback_t)(wc_cnx_t *cnx, ws_on_data_event_t event, c
  * @param user some optional user data pointer that will be passed to the
  * callback
  */
-void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void *user);
+void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user);
 
 
 /**
@@ -79,7 +79,7 @@ void wc_on_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback, void 
  * @param callback the callback to unregister; pass NULL to unregister all the
  * callbacks for the given path
  */
-void wc_off_data(wc_cnx_t *cnx, char *path, wc_on_data_callback_t callback);
+void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback);
 
 /**
  * @}
