@@ -37,10 +37,10 @@ static void on_update_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 
 int got_update = 0;
 
-void on_listen_result(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason) {
+void on_listen_result(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
 	ev_timer_stop(EV_DEFAULT, &ev_listen);
 	if (status == WC_REQ_OK) {
-		printf("\tthe listen request succeeded with status '%s'\n", reason);
+		printf("\tthe listen request succeeded with status '%s', opt data: %s\n", reason, data);
 
 		if(!got_update) {
 			ev_timer_init(&ev_on_update, on_update_fail_cb, 5, 0);

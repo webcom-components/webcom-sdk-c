@@ -32,7 +32,7 @@ int wc_cnx_send_msg(wc_cnx_t *cnx, wc_msg_t *msg) {
 	if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_ACTION) {
 		resp.r = msg->u.data.u.action.r;
 		resp.status = "ok";
-		resp.data = "fake reply";
+		resp.data = "{\"foo\": \"bar\"";
 		wc_req_response_dispatch(cnx, &resp);
 	}
 	return 42;
@@ -44,21 +44,21 @@ void wc_msg_init(UNUSED_PARAM(wc_msg_t *msg)) {}
 
 int listen_response = 0, put_response = 0, auth_response = 0;
 
-void cb_listen(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason) {
+void cb_listen(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
 	printf("\t[%p:%d:%"PRId64"] %s \"%s\"\n", cnx, type, id, status == WC_REQ_OK ? "WC_REQ_OK" : "WC_REQ_ERROR", reason);
 	if(type == WC_ACTION_LISTEN) {
 		listen_response = 1;
 	}
 }
 
-void cb_put(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason) {
+void cb_put(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
 	printf("\t[%p:%d:%"PRId64"] %s \"%s\"\n", cnx, type, id, status == WC_REQ_OK ? "WC_REQ_OK" : "WC_REQ_ERROR", reason);
 	if(type == WC_ACTION_PUT) {
 		put_response = 1;
 	}
 }
 
-void cb_auth(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason) {
+void cb_auth(wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
 	printf("\t[%p:%d:%"PRId64"] %s \"%s\"\n", cnx, type, id, status == WC_REQ_OK ? "WC_REQ_OK" : "WC_REQ_ERROR", reason);
 	if(type == WC_ACTION_AUTHENTICATE) {
 		auth_response = 1;

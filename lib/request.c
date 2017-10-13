@@ -85,7 +85,8 @@ void wc_req_response_dispatch(wc_cnx_t *cnx, wc_response_t *response) {
 					trans->id,
 					trans->type,
 					strcmp(response->status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
-					response->status);
+					response->status,
+					response->data);
 		}
 		free(trans);
 	}

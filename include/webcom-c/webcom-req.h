@@ -42,8 +42,9 @@ typedef enum {WC_REQ_OK, WC_REQ_ERROR} wc_req_pending_result_t;
  * about
  * @param status did the request succeed (WC_REQ_OK) or failed (WC_REQ_ERROR)
  * @param reason the success or error reason string
+ * @param data some optional JSON data from the server
  */
-typedef void (*wc_on_req_result_t) (wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason);
+typedef void (*wc_on_req_result_t) (wc_cnx_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data);
 
 /**
  * sends a data put request to the webcom server and get notified of the status
