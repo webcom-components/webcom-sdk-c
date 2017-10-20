@@ -167,12 +167,11 @@ DEFINE_REQ_FUNC (on_disc_cancel, WC_ACTION_ON_DISCONNECT_CANCEL, char *path)
 END_DEFINE_REQ_FUNC
 
 int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json) {
-	char *push_path;
 	int64_t ret;
 	size_t path_l;
 
 	path_l = strlen(path);
-	push_path = alloca(path_l + 22);
+	char push_path[path_l + 22];
 
 	memcpy(push_path, path, path_l);
 	push_path[path_l] = '/';

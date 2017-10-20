@@ -61,7 +61,6 @@ link_directories(
 include(CheckIncludeFile)
 include(CheckSymbolExists)
 
-check_include_file("alloca.h" HAVE_ALLOCA_H)
 check_symbol_exists("srand48_r" "stdlib.h" HAVE_RAND48_R)
 check_include_file("endian.h" HAVE_ENDIAN_H)
 check_include_file("sys/endian.h" HAVE_SYS_ENDIAN_H)
