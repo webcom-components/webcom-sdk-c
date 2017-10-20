@@ -48,6 +48,11 @@ static void wc_req_store_pending(
 	size_t slot;
 
 	trans = malloc(sizeof(wc_action_trans_t));
+
+	if (trans == NULL) {
+		return;
+	}
+
 	trans->id = id;
 	trans->type = type;
 	trans->callback = callback;
