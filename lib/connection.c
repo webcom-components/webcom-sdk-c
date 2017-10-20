@@ -240,6 +240,10 @@ wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on
 			+ strlen(application)
 			+ 1 );
 	res->lws_cci.path = malloc(ws_path_l);
+	if (res->lws_cci.path == NULL) {
+		free(res);
+		return NULL;
+	}
 	snprintf((char*)res->lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
 	res->lws_cci.protocol = protocols[0].name;
 	res->lws_cci.ietf_version_or_minus_one = -1;
