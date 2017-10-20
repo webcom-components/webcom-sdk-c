@@ -100,6 +100,10 @@ static int _wc_hlp_get_level1_sorted_json_str(json_object *j, char *key, char **
 			t = json_object_get_object(jtmp);
 			sorted_keys = malloc(t->count * sizeof(struct _wc_hlp_json_keyval));
 
+			if (sorted_keys == NULL) {
+				return 0;
+			}
+
 			it = t->head;
 			for (i = 0; i < t->count ; i++) {
 				sorted_keys[i].key = (char *)it->k;
