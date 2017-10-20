@@ -25,6 +25,7 @@
 #include <unistd.h>
 #include <string.h>
 #include <webcom-c/webcom.h>
+#include <webcom-c/webcom-libev.h>
 #include <ev.h>
 #include <getopt.h>
 #include <json-c/json.h>
@@ -39,14 +40,13 @@ typedef enum {
 char *board_name;
 extern const char *bricks[];
 int max_l = 250, max_c = 250;
+static void on_connected(wc_context_t *ctx, int initial_connection);
+static void on_disconnected(wc_context_t *ctx);
 static void draw_brick(int x, int y, legorange_brick_t brick);
 static void draw_rgb_brick(int x, int y, int r, int g, int b);
 static void move_to(int x, int y);
 static void clear_screen();
-void keepalive_cb(EV_P_ ev_timer *w, int revents);
-void webcom_socket_cb(EV_P_ ev_io *w, int revents);
 void stdin_cb (EV_P_ ev_io *w, int revents);
-void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data, size_t len);
 static void on_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
 static void on_brick_update(char *key, json_object *data);
 /*
@@ -55,12 +55,10 @@ static void on_brick_update(char *key, json_object *data);
 
 /* Enter here */
 int main(int argc, char *argv[]) {
-	wc_context_t *cnx;
-	int wc_fd;
+	wc_context_t *ctx;
+	struct wc_libev_integration eli;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
-	ev_io webcom_watcher;
-	ev_timer ka_timer;
 	int opt;
 
 	board_name = "/brick";
@@ -100,42 +98,26 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	/* establish the connection to the webcom server */
-	cnx = wc_context_new(
+	/*
+	 * as we want to integrate the Webcom SDK with our existing libev event
+	 * loop, let's prepare a few informations to pass to the SDK
+	 */
+	eli.loop = loop; /* the event loop */
+	eli.on_connected = on_connected; /* connection established callback */
+	eli.on_disconnected = on_disconnected; /* disconnected callback */
+
+	/* establish the connection to the webcom server, and let it integrate in
+	 * our libev event loop
+	 */
+	ctx = wc_context_new_with_libev(
 			"io.datasync.orange.com",
 			443,
 			"legorange",
-			webcom_service_cb, /* this is the callback that gets called
-			when a webcom-level event occurs */
-			loop);
+			&eli);
 
-	if (cnx == NULL) {
-		fputs("could not connect\n", stderr);
-		return 1;
-	}
-
-	/* get the raw file descriptor of the webcom connection: we need it for
-	 * the event loop
-	 */
-	wc_fd = wc_context_get_fd(cnx);
-
-	/* let's define 3 events to listen to:
-	 *
-	 * first, if the webcom file descriptor is readable, call
-	 * webcom_socket_cb() */
-	ev_io_init(&webcom_watcher, webcom_socket_cb, wc_fd, EV_READ);
-	webcom_watcher.data = cnx;
-	ev_io_start (loop, &webcom_watcher);
-
-	/* then on a 45s recurring timer, call keepalive_cb() to keep the webcom
-	 * connection alive */
-	ev_timer_init(&ka_timer, keepalive_cb, 45, 45);
-	ka_timer.data = cnx;
-	ev_timer_start(loop, &ka_timer);
-
-	/* finally, if stdin has data to read, call stdin_watcher() */
+	/* if stdin has data to read, call stdin_watcher() */
 	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);
-	stdin_watcher.data = cnx;
+	stdin_watcher.data = ctx;
 	ev_io_start (loop, &stdin_watcher);
 
 	/* enter the event loop */
@@ -144,46 +126,37 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-/* called by libev on read event on the webcom TCP socket */
-void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
-	UNUSED_VAR(loop);
-	wc_context_t *cnx = (wc_context_t *)w->data;
-
-	/* that's all we must do here: let the webcom SDK handle the data and it
-	 * will call the callback defined when creating the connection if a new
-	 * webcom event should be triggered */
-	wc_cnx_on_readable(cnx);
-
-}
-
-/* This callback is called by the webcom SDK when events such as "connection is
- * ready", "connection was closed", or "incoming webcom message" occur on the
- * webcom connection.
+/*
+ * this callback is called by the Webcom SDK once the connection was
+ * established
  */
-void webcom_service_cb(wc_event_t event, wc_context_t *cnx, UNUSED_PARAM(void *data),
-		UNUSED_PARAM(size_t len))
-{
-	struct ev_loop *loop = wc_context_get_user_data(cnx);
+static void on_connected(wc_context_t *ctx, int initial_connection) {
+	/*
+	 * let's configure a route: if some data update happens on the given path,
+	 * we instruct the SDK to call on_data_update()
+	 */
+	wc_on_data(ctx, board_name, on_data_update, NULL);
 
-	switch (event) {
-		case WC_EVENT_ON_SERVER_HANDSHAKE:
-			/* when the connection is established, register to events in the
-			 * BOARD_NAME path
-			 */
-			wc_on_data(cnx, board_name, on_data_update, NULL);
-			wc_req_listen(cnx, NULL, board_name);
-			clear_screen();
-			break;
-		case WC_EVENT_ON_CNX_CLOSED:
-			puts("Connection closed, Bye");
-			ev_break(EV_A_ EVBREAK_ALL);
-			wc_cnx_free(cnx);
-			break;
-		default:
-			break;
-	}
+	/*
+	 * now that the route is configured, let's subscribe to the path
+	 */
+	wc_req_listen(ctx, NULL, board_name);
+
+	clear_screen();
 }
 
+/*
+ * called by the SDK on disconnection
+ */
+static void on_disconnected(wc_context_t *ctx) {
+	clear_screen();
+}
+
+/*
+ * called by the SDK if some data update (put or merge) happens on the
+ * registered path
+ * (we configured it with wc_on_data(..., on_data_update, ...) )
+ */
 static void on_data_update(
 		UNUSED_PARAM(wc_context_t *cnx),
 		UNUSED_PARAM(ws_on_data_event_t event),
@@ -261,16 +234,6 @@ static void on_brick_update(char *key, json_object *data) {
 			}
 		}
 	}
-}
-
-/* libev timer callback, to send keepalives to the webcom server periodically
- */
-void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
-	UNUSED_VAR(loop);
-	wc_context_t *cnx = (wc_context_t *)w->data;
-
-	/* just this */
-	wc_cnx_keepalive(cnx);
 }
 
 /*

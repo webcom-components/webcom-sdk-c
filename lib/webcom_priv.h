@@ -58,7 +58,6 @@ typedef struct wc_context {
 	struct lws_client_connect_info lws_cci;
 	struct lws *lws_conn;
 	wc_on_event_cb_t callback;
-	void *event_struct;
 	void *user;
 	wc_cnx_state_t state;
 	wc_parser_t *parser;

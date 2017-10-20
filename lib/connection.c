@@ -104,21 +104,17 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		wcpa.fd = pa->fd;
 		wcpa.events = pa->events;
 		ctx->callback(WC_EVENT_ADD_FD, ctx, &wcpa, 0);
-		ctx->event_struct = wcpa.event_struct;
 		break;
 	case LWS_CALLBACK_DEL_POLL_FD:
 		pa = in;
 		wcpa.fd = pa->fd;
 		wcpa.events = pa->events;
-		wcpa.event_struct = ctx->event_struct;
 		ctx->callback(WC_EVENT_DEL_FD, ctx, &wcpa, 0);
-		ctx->event_struct = NULL;
 		break;
 	case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
 		pa = in;
 		wcpa.fd = pa->fd;
 		wcpa.events = pa->events;
-		wcpa.event_struct = ctx->event_struct;
 		ctx->callback(WC_EVENT_MODIFY_FD, ctx, &wcpa, 0);
 		break;
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
@@ -186,10 +182,6 @@ void wc_context_close_cnx(wc_context_t *ctx) {
 	}
 }
 
-void *wc_context_get_event(wc_context_t *ctx) {
-	return ctx->event_struct;
-}
-
 struct lws_protocols protocols[] = {
 	{
 		.name = "webcom-protocol",
@@ -247,7 +239,7 @@ wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on
 			+ 4
 			+ strlen(application)
 			+ 1 );
-	res->lws_cci.path = alloca(ws_path_l);
+	res->lws_cci.path = malloc(ws_path_l);
 	snprintf((char*)res->lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
 	res->lws_cci.protocol = protocols[0].name;
 	res->lws_cci.ietf_version_or_minus_one = -1;
@@ -270,6 +262,7 @@ static void _wc_context_connect(wc_context_t *ctx) {
 }
 
 void wc_context_free(wc_context_t *ctx) {
+	if (ctx->lws_cci.path != NULL) free((char*)ctx->lws_cci.path);
 	if (ctx->lws_cci.context != NULL) lws_context_destroy(ctx->lws_cci.context);
 	if (ctx->parser != NULL) wc_parser_free(ctx->parser);
 

@@ -22,14 +22,36 @@ if(PROJECT_VERSION_EXTRA)
 	endif(PROJECT_VERSION_EXTRA STREQUAL "git")
 endif(PROJECT_VERSION_EXTRA)
 
+option(WITH_LIBEV "Enable libev event loop support" OFF)
+option(WITH_LIBUV "Enable libuv event loop support" OFF)
+option(WITH_LIBEVENT "Enable libevent event loop support" OFF)
+
 #### webcom-c library
 
-
+set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(PkgConfig)
 
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
+
+if(${WITH_LIBEV})
+	find_package(Libev REQUIRED)
+	list(APPEND WC_LIB_LIST ${LIBEV_LIBRARIES})
+	list(APPEND WC_SRC_LIST "lib/libev.c")
+endif()
+
+if(${WITH_LIBUV})
+	pkg_search_module(LIBUV REQUIRED libuv)
+	list(APPEND WC_LIB_LIST ${LIBUV_LIBRARIES})
+	list(APPEND WC_SRC_LIST "lib/libuv.c")
+endif()
+
+if(${WITH_LIBEVENT})
+	pkg_search_module(LIBEVENT REQUIRED libevent)
+	list(APPEND WC_LIB_LIST ${LIBEVENT_LIBRARIES})
+	list(APPEND WC_SRC_LIST "lib/libevent.c")
+endif()
 
 link_directories(
 	${WEBSOCKETS_LIBRARY_DIRS}
@@ -65,6 +87,7 @@ add_library(
 	lib/webcom.c
 	lib/request.c
 	lib/event.c
+	${WC_SRC_LIST}
 )
 
 target_compile_options(
@@ -87,8 +110,8 @@ target_link_libraries(
 	webcom-c
 	${WEBSOCKETS_LIBRARIES}
 	${JSONC_LIBRARIES}
+	${WC_LIB_LIST}
 )
-
 
 #### install
 

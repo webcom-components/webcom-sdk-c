@@ -42,7 +42,6 @@ typedef struct wc_context wc_context_t;
 struct wc_pollargs {
 	int fd;
 	int events;
-	void *event_struct;
 };
 
 typedef enum {
@@ -138,16 +137,6 @@ void wc_context_free(wc_context_t *ctx);
  * failure.
  */
 int wc_context_send_msg(wc_context_t *cnx, wc_msg_t *msg);
-
-/**
- * TODO
- * This is useful to integrate the SDK in some pre-existing or user-defined
- * event-loop (epoll, poll, ..., or abstractions such as libevent, libev, ...).
- *
- * @param ctx the connection
- * @return the file descriptor
- */
-void *wc_context_get_event(wc_context_t *ctx);
 
 /**
  * This function allows the webcom SDK to process the incoming data on a webcom
