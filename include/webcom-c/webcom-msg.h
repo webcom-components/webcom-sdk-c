@@ -217,7 +217,8 @@ void wc_msg_free(wc_msg_t *msg);
  *
  * @param msg the webcom message
  *
- * @return a newly malloc'd JSON string (must be manually free'd after use);
+ * @return a newly malloc'd JSON string (must be manually free'd after use), or
+ * NULL if out of memory
  */
 char *wc_msg_to_json_str(wc_msg_t *msg);
 

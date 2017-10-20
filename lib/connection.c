@@ -155,6 +155,9 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	}
 
 	jsonstr = wc_msg_to_json_str(msg);
+	if (jsonstr == NULL) {
+		return -1;
+	}
 	len = strlen(jsonstr);
 
 	buf = malloc (LWS_SEND_BUFFER_PRE_PADDING + len + LWS_SEND_BUFFER_POST_PADDING);
