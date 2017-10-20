@@ -74,40 +74,6 @@ static uint32_t path_hash(char *path) {
 	return hash;
 }
 
-/*
- * calls
- *
- *     __func(wc_cnx_t *__cnx, char *__path, char *__path_chunk, __hash, ...)
- *
- * for each chunk on the given path.
- *
- * Example: if "/aaa/bbb/ccc/" is given as input path, this macro will
- * sequentially call
- *
- * - __func(__cnx, "/aaa/bbb/ccc/", "/aaa/", H("/aaa/"), ...)
- * - __func(__cnx, "/aaa/bbb/ccc/", "/aaa/bbb/", H("/aaa/bbb/"), ...)
- * - __func(__cnx, "/aaa/bbb/ccc/", "/aaa/bbb/ccc/", H("/aaa/bbb/ccc/"), ...)
- *
- */
-#define FOR_EACH_PATH_CHUNK_HASH(__func, __cnx, __path, ...)                          \
-	do {                                                                              \
-		char *__path_ptr = strdup(__path), *__path_chunk = __path_ptr, __bak;         \
-		uint32_t __hash = 177620;                                                     \
-		while (*__path_ptr) {                                                         \
-			while (*__path_ptr == '/') {                                              \
-				__path_ptr++;                                                         \
-			}                                                                         \
-			if (*__path_ptr) {                                                        \
-				__hash = str_hash_update((unsigned char **)&__path_ptr, __hash);      \
-				__bak = *__path_ptr;                                                  \
-				*__path_ptr = '\0';                                                   \
-				__func(__cnx, __path, __path_chunk, __hash, ## __VA_ARGS__);          \
-				*__path_ptr = __bak;                                                  \
-			}                                                                         \
-		}                                                                             \
-		free(__path_chunk);                                                           \
-	} while (0)
-
 void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user) {
 	wc_on_data_handler_t *new_h, *tmp;
 	uint32_t slot;
@@ -170,8 +136,9 @@ static void _dispatch_helper(wc_context_t *cnx, char *full_path, char *path_chun
 
 void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 	ws_on_data_event_t event;
-	char *updated_path;
+	char *updated_path, *copy, *p;
 	char *updated_data;
+	uint32_t hash = 177620;
 
 	if (push->type == WC_PUSH_DATA_UPDATE_PUT) {
 		updated_path = push->u.update_put.path;
@@ -185,9 +152,36 @@ void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 		return;
 	}
 
-	FOR_EACH_PATH_CHUNK_HASH (
-			_dispatch_helper, cnx, updated_path, event, updated_data
-	);
+	copy = strdup(updated_path);
+
+	if (copy == NULL) {
+		return;
+	}
+
+	/*
+	 * calls _dispatch_helper for each chunk of updated_path
+	 *
+	 * Example: if "/aaa/bbb/ccc/" is given as input path, it will call
+	 *
+	 * - _dispatch_helper(cnx, "/aaa/bbb/ccc/", "/aaa/", H("/aaa/"), ...)
+	 * - _dispatch_helper(cnx, "/aaa/bbb/ccc/", "/aaa/bbb/", H("/aaa/bbb/"), ...)
+	 * - _dispatch_helper(cnx, "/aaa/bbb/ccc/", "/aaa/bbb/ccc/", H("/aaa/bbb/ccc/"), ...)
+	 */
+	p = copy;
+	while(*p) {
+		while(*p == '/') p++;
+		if (*p) {
+			char bak;
+
+			hash = str_hash_update((unsigned char **)&p, hash);
+			bak = *p;
+			*p = 0;
+			_dispatch_helper(cnx, updated_path, copy, hash, event, updated_data);
+			*p = bak;
+		}
+	}
+
+	free(copy);
 }
 
 void wc_free_on_data_handlers(wc_on_data_handler_t **table) {
