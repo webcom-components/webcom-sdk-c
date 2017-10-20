@@ -56,9 +56,9 @@ static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 		uv_poll_init(lid->eli.loop, &lid->con_watcher, pollargs->fd);
 		lid->con_watcher.data = ctx;
 		uv_poll_start(&lid->con_watcher,
-				(pollargs->events & WC_POLLIN ? UV_READABLE : 0)
-					| (pollargs->events & WC_POLLOUT ? UV_WRITABLE : 0)
-					| (pollargs->events & WC_POLLHUP ? UV_DISCONNECT : 0),
+				((pollargs->events & WC_POLLIN) ? UV_READABLE : 0)
+					| ((pollargs->events & WC_POLLOUT) ? UV_WRITABLE : 0)
+					| ((pollargs->events & WC_POLLHUP) ? UV_DISCONNECT : 0),
 				_wc_on_readable_libuv_cb);
 		break;
 
@@ -69,10 +69,10 @@ static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 	case WC_EVENT_MODIFY_FD:
 		pollargs = data;
 		uv_poll_start(&lid->con_watcher,
-						(pollargs->events & WC_POLLIN ? UV_READABLE : 0)
-							| (pollargs->events & WC_POLLOUT ? UV_WRITABLE : 0)
-							| (pollargs->events & WC_POLLHUP ? UV_DISCONNECT : 0),
-						_wc_on_readable_libuv_cb);
+				((pollargs->events & WC_POLLIN) ? UV_READABLE : 0)
+					| ((pollargs->events & WC_POLLOUT) ? UV_WRITABLE : 0)
+					| ((pollargs->events & WC_POLLHUP) ? UV_DISCONNECT : 0),
+				_wc_on_readable_libuv_cb);
 		break;
 
 	case WC_EVENT_ON_SERVER_HANDSHAKE:

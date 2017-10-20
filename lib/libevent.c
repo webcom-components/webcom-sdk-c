@@ -57,8 +57,8 @@ static void _wc_libevent_cb (wc_event_t event, wc_context_t *ctx, void *data, UN
 	case WC_EVENT_ADD_FD:
 		pollargs = data;
 		event_assign(&lid->con_watcher, lid->eli.loop, pollargs->fd,
-				(pollargs->events & (WC_POLLIN | WC_POLLHUP) ? EV_READ : 0)
-					| (pollargs->events & WC_POLLOUT ? EV_WRITE : 0)
+				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
+					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0)
 					| EV_PERSIST,
 				_wc_on_readable_libevent_cb, ctx);
 		event_add(&lid->con_watcher, NULL);
@@ -72,8 +72,8 @@ static void _wc_libevent_cb (wc_event_t event, wc_context_t *ctx, void *data, UN
 		pollargs = data;
 		event_del(&lid->con_watcher);
 		event_assign(&lid->con_watcher, lid->eli.loop, pollargs->fd,
-				(pollargs->events & (WC_POLLIN | WC_POLLHUP) ? EV_READ : 0)
-					| (pollargs->events & WC_POLLOUT ? EV_WRITE : 0)
+				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
+					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0)
 					| EV_PERSIST,
 				_wc_on_readable_libevent_cb, ctx);
 		event_add(&lid->con_watcher, NULL);

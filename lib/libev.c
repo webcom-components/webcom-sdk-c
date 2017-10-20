@@ -57,8 +57,8 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 	case WC_EVENT_ADD_FD:
 		pollargs = data;
 		ev_io_init(&lid->con_watcher, _wc_on_readable_libev_cb, pollargs->fd,
-						(pollargs->events & (WC_POLLIN | WC_POLLHUP) ? EV_READ : 0)
-							| (pollargs->events & WC_POLLOUT ? EV_WRITE : 0));
+				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
+					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0));
 		lid->con_watcher.data = ctx;
 		ev_io_start(lid->eli.loop, &lid->con_watcher);
 		break;
@@ -71,8 +71,8 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 		pollargs = data;
 		ev_io_stop(lid->eli.loop, &lid->con_watcher);
 		ev_io_init(&lid->con_watcher, _wc_on_readable_libev_cb, pollargs->fd,
-						(pollargs->events & (WC_POLLIN | WC_POLLHUP) ? EV_READ : 0)
-							| (pollargs->events & WC_POLLOUT ? EV_WRITE : 0));
+				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
+					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0));
 		lid->con_watcher.data = ctx;
 		ev_io_start(lid->eli.loop, &lid->con_watcher);
 		break;
