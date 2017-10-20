@@ -80,6 +80,10 @@ void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, v
 
 	new_h = malloc(sizeof(wc_on_data_handler_t));
 
+	if (new_h == NULL) {
+		return;
+	}
+
 	new_h->path = strdup(path);
 	new_h->callback = callback;
 	new_h->user = user;
