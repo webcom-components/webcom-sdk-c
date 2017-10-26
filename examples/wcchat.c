@@ -23,29 +23,30 @@
 #define _GNU_SOURCE
 #include <string.h>
 #include <getopt.h>
+#include <unistd.h>
 #include <webcom-c/webcom.h>
+#include <webcom-c/webcom-libev.h>
 #include <ev.h>
 #include <ncurses.h>
 #include <json-c/json.h>
 
-void keepalive_cb(EV_P_ ev_timer *w, int revents);
-void webcom_socket_cb(EV_P_ ev_io *w, int revents);
+static void on_connected(wc_context_t *ctx, int initial_connection);
+static void on_disconnected(wc_context_t *ctx);
 void stdin_cb (EV_P_ ev_io *w, int revents);
-void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data, size_t len);
 void print_new_message(json_object *message);
+void process_message_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
 
 WINDOW *chat, *chatbox;
 WINDOW *input, *inputbox;
-char *name = "C-SDK-demo";
+char *name = NULL;
 const char *escaped_name;
 
 int main(int argc, char *argv[]) {
-	wc_context_t *cnx;
+	wc_context_t *ctx;
 	int wc_fd;
+	struct wc_libev_integration eli;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
-	ev_io webcom_watcher;
-	ev_timer ka_timer;
 	int opt;
 	json_object *json_name;
 
@@ -67,39 +68,28 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
-	cnx = wc_context_new(
+	if (name == NULL) {
+		name = calloc(17,1);
+		getlogin_r(name, 16);
+	}
+
+	eli.loop = loop; /* the event loop */
+	eli.on_connected = on_connected; /* connection established callback */
+	eli.on_disconnected = on_disconnected; /* disconnected callback */
+
+	ctx = wc_context_new_with_libev(
 			"io.datasync.orange.com",
 			443,
 			"chat",
-			webcom_service_cb,
-			loop);
+			&eli);
 
-	if (cnx == NULL) {
+	if (ctx == NULL) {
 		return 1;
 	}
 
-	/* get the raw file descriptor of the webcom connection: we need it for
-	 * the event loop
-	 */
-	wc_fd = wc_context_get_fd(cnx);
-
-	/* let's define 3 events to listen to:
-	 *
-	 * first, if the webcom file descriptor is readable, call
-	 * webcom_socket_cb() */
-	ev_io_init(&webcom_watcher, webcom_socket_cb, wc_fd, EV_READ);
-	webcom_watcher.data = cnx;
-	ev_io_start (loop, &webcom_watcher);
-
-	/* then on a 45s recurring timer, call keepalive_cb() to keep the webcom
-	 * connection alive */
-	ev_timer_init(&ka_timer, keepalive_cb, 45, 45);
-	ka_timer.data = cnx;
-	ev_timer_start(loop, &ka_timer);
-
-	/* finally, if stdin has data to read, call stdin_watcher() */
+	/* if stdin has data to read, call stdin_watcher() */
 	ev_io_init(&stdin_watcher, stdin_cb, fileno(stdin), EV_READ);
-	stdin_watcher.data = cnx;
+	stdin_watcher.data = ctx;
 	ev_io_start (loop, &stdin_watcher);
 
 	initscr();
@@ -126,59 +116,44 @@ int main(int argc, char *argv[]) {
 	return 0;
 }
 
-/* called by libev on read event on the webcom TCP socket */
-void webcom_socket_cb(EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
-	UNUSED_VAR(loop);
-	wc_context_t *cnx = (wc_context_t *)w->data;
+/*
+ * this callback is called by the Webcom SDK once the connection was
+ * established
+ */
+static void on_connected(wc_context_t *ctx, int initial_connection) {
 
-	wc_cnx_on_readable(cnx);
+	wc_on_data(ctx, "/", process_message_data_update, NULL);
+	wc_req_listen(ctx, NULL, "/");
 
 }
 
-/* This callback is called by the webcom SDK when events such as "connection is
- * ready", "connection was closed", or "incoming webcom message" occur on the
- * webcom connection.
+/*
+ * called by the SDK on disconnection
  */
-void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data,
-		UNUSED_PARAM(size_t len))
+static void on_disconnected(wc_context_t *ctx) {
+	puts("Disconnected");
+	exit(1);
+}
+
+void process_message_data_update(
+		UNUSED_PARAM(wc_context_t *cnx),
+		UNUSED_PARAM(ws_on_data_event_t event),
+		char *path,
+		char *json_data,
+		UNUSED_PARAM(void *param))
 {
-	wc_msg_t *msg = (wc_msg_t*) data;
-	struct ev_loop *loop = wc_context_get_user_data(cnx);
-
-	switch (event) {
-		case WC_EVENT_ON_CNX_ESTABLISHED:
-
-			wc_req_listen(cnx, NULL, "/");
-
-			break;
-		case WC_EVENT_ON_MSG_RECEIVED:
-
-			if (msg->type == WC_MSG_DATA
-					&& msg->u.data.type == WC_DATA_MSG_PUSH
-					&& msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT)
-			{
-				json_object *json = json_tokener_parse(msg->u.data.u.push.u.update_put.data);
-				if (json != NULL) {
-					if(strcmp(msg->u.data.u.push.u.update_put.path, "/") == 0) {
-						json_object_object_foreach(json, key, val) {
-							UNUSED_VAR(key);
-							print_new_message(val);
-						}
-					} else {
-						print_new_message(json);
-					}
-				}
-				json_object_put(json);
+	json_object *json = json_tokener_parse(json_data);
+	if (json != NULL) {
+		if(strcmp(path, "/") == 0) {
+			json_object_object_foreach(json, key, val) {
+				UNUSED_VAR(key);
+				print_new_message(val);
 			}
-
-			break;
-		case WC_EVENT_ON_CNX_CLOSED:
-			ev_break(EV_A_ EVBREAK_ALL);
-			wc_cnx_free(cnx);
-			break;
-		default:
-			break;
+		} else {
+			print_new_message(json);
+		}
 	}
+	json_object_put(json);
 }
 
 void print_new_message(json_object *message) {
@@ -195,16 +170,6 @@ void print_new_message(json_object *message) {
 	wrefresh(chat);
 	werase(input);
 	wrefresh(input);
-}
-
-/* libev timer callback, to send keepalives to the webcom server periodically
- */
-void keepalive_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
-	UNUSED_VAR(loop);
-	wc_context_t *cnx = (wc_context_t *)w->data;
-
-	/* just this */
-	wc_cnx_keepalive(cnx);
 }
 
 /*
