@@ -21,6 +21,7 @@
  */
 
 #include <stdlib.h>
+#include <poll.h>
 
 #include "webcom-c/webcom-libev.h"
 #include "webcom-c/webcom-utils.h"
@@ -31,13 +32,15 @@ struct wc_libev_integration_data {
 	struct ev_timer ka_timer;
 };
 
-static inline void _wc_on_readable_libev_cb (
+static inline void _wc_on_fd_event_libev_cb (
 		UNUSED_PARAM(struct ev_loop *loop),
 		ev_io *w,
 		UNUSED_PARAM(int revents))
 {
 	wc_context_t *ctx = w->data;
-	wc_cnx_on_readable(ctx);
+	wc_handle_fd_events(ctx, w->fd, ((revents&EV_READ) ? POLLIN : 0)
+			| ((revents&EV_WRITE) ? POLLOUT : 0)
+			);
 }
 
 static inline void _wc_on_ka_timer_libev_cb (
@@ -56,7 +59,7 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 	switch(event) {
 	case WC_EVENT_ADD_FD:
 		pollargs = data;
-		ev_io_init(&lid->con_watcher, _wc_on_readable_libev_cb, pollargs->fd,
+		ev_io_init(&lid->con_watcher, _wc_on_fd_event_libev_cb, pollargs->fd,
 				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
 					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0));
 		lid->con_watcher.data = ctx;
@@ -70,7 +73,7 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 	case WC_EVENT_MODIFY_FD:
 		pollargs = data;
 		ev_io_stop(lid->eli.loop, &lid->con_watcher);
-		ev_io_init(&lid->con_watcher, _wc_on_readable_libev_cb, pollargs->fd,
+		ev_io_init(&lid->con_watcher, _wc_on_fd_event_libev_cb, pollargs->fd,
 				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
 					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0));
 		lid->con_watcher.data = ctx;

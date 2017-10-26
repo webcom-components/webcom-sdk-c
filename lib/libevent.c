@@ -30,13 +30,17 @@ struct wc_libevent_integration_data {
 	struct event ka_timer;
 };
 
-static inline void _wc_on_readable_libevent_cb (
+static inline void _wc_on_fd_event_libevent_cb (
 		UNUSED_PARAM(evutil_socket_t fd),
 		UNUSED_PARAM(short revents),
 		void *data)
 {
+
 	wc_context_t *ctx = data;
-	wc_cnx_on_readable(ctx);
+	wc_handle_fd_events(ctx, fd,
+			((revents&EV_READ) ? POLLIN : 0)
+					| ((revents&EV_WRITE) ? POLLOUT : 0)
+					);
 }
 
 static inline void _wc_on_ka_timer_libevent_cb (
@@ -60,7 +64,7 @@ static void _wc_libevent_cb (wc_event_t event, wc_context_t *ctx, void *data, UN
 				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
 					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0)
 					| EV_PERSIST,
-				_wc_on_readable_libevent_cb, ctx);
+				_wc_on_fd_event_libevent_cb, ctx);
 		event_add(&lid->con_watcher, NULL);
 		break;
 
@@ -75,7 +79,7 @@ static void _wc_libevent_cb (wc_event_t event, wc_context_t *ctx, void *data, UN
 				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
 					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0)
 					| EV_PERSIST,
-				_wc_on_readable_libevent_cb, ctx);
+				_wc_on_fd_event_libevent_cb, ctx);
 		event_add(&lid->con_watcher, NULL);
 		break;
 

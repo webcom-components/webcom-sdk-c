@@ -32,13 +32,21 @@ struct wc_libuv_integration_data {
 	uv_timer_t ka_timer;
 };
 
-static inline void _wc_on_readable_libuv_cb (
+static inline void _wc_on_fd_event_libuv_cb (
 		uv_poll_t* handle,
 		UNUSED_PARAM(int status),
-		UNUSED_PARAM(int events))
+		int events)
 {
 	wc_context_t *ctx = handle->data;
-	wc_cnx_on_readable(ctx);
+	int fd;
+
+	if (uv_fileno((uv_handle_t*)handle, &fd) == 0) {
+		wc_handle_fd_events(ctx, fd,
+				((events&UV_READABLE) ? POLLIN : 0)
+				| ((events&UV_WRITABLE) ? POLLOUT : 0)
+				| ((events&UV_DISCONNECT) ? POLLIN : 0)
+		);
+	}
 }
 
 static inline void _wc_on_ka_timer_libuv_cb (uv_timer_t *handle) {
@@ -59,7 +67,7 @@ static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 				((pollargs->events & WC_POLLIN) ? UV_READABLE : 0)
 					| ((pollargs->events & WC_POLLOUT) ? UV_WRITABLE : 0)
 					| ((pollargs->events & WC_POLLHUP) ? UV_DISCONNECT : 0),
-				_wc_on_readable_libuv_cb);
+				_wc_on_fd_event_libuv_cb);
 		break;
 
 	case WC_EVENT_DEL_FD:
@@ -72,7 +80,7 @@ static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 				((pollargs->events & WC_POLLIN) ? UV_READABLE : 0)
 					| ((pollargs->events & WC_POLLOUT) ? UV_WRITABLE : 0)
 					| ((pollargs->events & WC_POLLHUP) ? UV_DISCONNECT : 0),
-				_wc_on_readable_libuv_cb);
+				_wc_on_fd_event_libuv_cb);
 		break;
 
 	case WC_EVENT_ON_SERVER_HANDSHAKE:

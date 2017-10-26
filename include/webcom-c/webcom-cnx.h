@@ -41,7 +41,7 @@ typedef struct wc_context wc_context_t;
 
 struct wc_pollargs {
 	int fd;
-	int events;
+	short events;
 };
 
 typedef enum {
@@ -76,10 +76,23 @@ typedef enum {
 	 */
 	WC_EVENT_ON_CNX_ERROR,
 	/**
-	 *
+	 * This event indicates that a new file descriptor should be polled for
+	 * some given events. `data` is a pointer to a `struct wc_pollargs` object
+	 * that contains the details on the descriptor and events.
 	 */
 	WC_EVENT_ADD_FD,
+	/**
+	 * This event indicates that a file descriptor should be removed from the
+	 * poll set. `data` is a pointer to a `struct wc_pollargs` object that
+	 * contains the details on the descriptor.
+	 */
 	WC_EVENT_DEL_FD,
+	/**
+	 * This event indicates that the events to poll for an already polled file
+	 * file descriptor must be changed. `data` is a pointer to a
+	 * `struct wc_pollargs` object that contains the details on the descriptor
+	 * and events.
+	 */
 	WC_EVENT_MODIFY_FD,
 } wc_event_t;
 
@@ -89,24 +102,27 @@ typedef enum {
  * callback will receive these parameters:
  *
  * @param event (mandatory) the event type that was triggered
- * @param ctx (mandatory) the connection on which the event occurred
+ * @param ctx (mandatory) the context on which the event occurred
  * @param data (optional) some additional data about the event
  * @param len (optional) the size of the additional data
  */
 typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_context_t *ctx, void *data, size_t len);
 
 /**
- * Establishes a direct connection to a webcom server.
+ * Create a webcom context.
  *
- * This function establishes a new direct connection to a webcom server host.
+ * This function creates a new Webcom context, an initiates the connection
+ * towards the server.
  * If the **http_proxy** environment variable is set, the connection will be
  * established through this HTTP proxy.
  *
- * Note: this function is synchronous, it will return once the connection has
- * been established or once it failed to be established.
+ * @note this function is partly synchronous and returns once the DNS lookup
+ * and TCP handshake have succeeded or failed. The user `callback` with event
+ * WC_EVENT_ON_SERVER_HANDSHAKE or WC_EVENT_ON_CNX_ERROR will the be called
+ * asynchronously to indicate if the connection  to the Webcom service
+ * succeeded or not.
  *
  * @param host the webcom server host name
- *
  * @param port the webcom server port
  * @param application the name of the webcom application to tie to (e.g.
  * "legorange", "chat", ...)
@@ -115,14 +131,14 @@ typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_context_t *ctx, void *dat
  * @param user some optional user-data that will be passed to the callback for
  * every event occurring on this connection
  * @return a pointer to the newly created connection on success, NULL on
- * failure
+ * failure to create the context
  */
 wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user);
 
 /**
- * Frees the resources used by a wc_cnx_t object.
+ * Frees the resources used by a wc_context_t object.
  *
- * This function is to be called once a wc_cnx_t object becomes useless.
+ * This function is to be called once a wc_context_t object becomes useless.
  *
  * @param ctx the wc_cnx_t object to free.
  */
@@ -131,36 +147,20 @@ void wc_context_free(wc_context_t *ctx);
 /**
  * Sends a message to the webcom server.
  *
- * @param cnx the connection to the server
+ * @param ctx the context
  * @param msg the webcom message to send
  * @return the number of bytes written, otherwise < 0 is returned in case of
  * failure.
  */
-int wc_context_send_msg(wc_context_t *cnx, wc_msg_t *msg);
-
-/**
- * This function allows the webcom SDK to process the incoming data on a webcom
- * connection.
- *
- * This function must be called either frequently and periodically (not
- * ideal), or systematically when there is data to read on the file descriptor
- * obtained with wc_cnx_get_fd().
- *
- * If there is a webcom-level event related to the read and processed data,
- * calling this function will automatically trigger call(s) to the user-defined
- * wc_on_event_cb_t callback.
- *
- * @param ctx the connection whose incoming data should be processed
- */
-void wc_cnx_on_readable(wc_context_t *ctx);
+int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg);
 
 /**
  * Gracefully closes a connection to a webcom server.
  *
- * Note: the user-defined wc_on_event_cb_t callback will be triggered with a
- * WC_EVENT_ON_CNX_CLOSED event.
+ * @note the user-defined wc_on_event_cb_t callback will be triggered with a
+ * WC_EVENT_ON_CNX_CLOSED event once the connection has been closed
  *
- * @param ctx tke connection
+ * @param ctx the context
  */
 void wc_context_close_cnx(wc_context_t *ctx);
 
@@ -171,7 +171,10 @@ void wc_context_close_cnx(wc_context_t *ctx);
  * from the client in the last 60 seconds. Call this function periodically to
  * avoid this.
  *
- * @param ctx the connection
+ * @note If you use one of the libev/libuv/libevent integration, you don't need
+ * to call this function.
+ *
+ * @param ctx the context
  */
 int wc_cnx_keepalive(wc_context_t *ctx);
 
@@ -181,6 +184,21 @@ int wc_cnx_keepalive(wc_context_t *ctx);
  * @return some user-defined data, set in wc_context_new()
  */
 void *wc_context_get_user_data(wc_context_t *ctx);
+
+/**
+ * informs the SDK of some event happening on one of its file descriptors
+ *
+ * This function is to be called by the event loop logic to make the Webcom SDK
+ * handle any pending event on one of its file descriptor.
+ *
+ * @note If you use one of the libev/libuv/libevent integration, you don't need
+ * to call this function.
+ *
+ * @param ctx the context
+ * @param fd the file descriptor
+ * @param revents the events to handle: combination of POLLIN and POLLOUT
+ */
+void wc_handle_fd_events(wc_context_t *ctx, int fd, short revents);
 
 /**
  * @}

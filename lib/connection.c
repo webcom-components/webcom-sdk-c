@@ -30,6 +30,7 @@
 #include <netdb.h>
 #include <libwebsockets.h>
 #include <assert.h>
+#include <poll.h>
 
 #include "webcom_priv.h"
 #include "webcom-c/webcom-parser.h"
@@ -61,8 +62,13 @@ static int _wc_process_incoming_message(wc_context_t *ctx, wc_msg_t *msg) {
 	return 1;
 }
 
-void wc_cnx_on_readable(wc_context_t *ctx) {
-	lws_service(ctx->lws_cci.context, 100);
+void wc_handle_fd_events(wc_context_t *ctx, int fd, short revents) {
+	struct lws_pollfd pfd;
+
+	pfd.fd = fd;
+	pfd.events = revents;
+	pfd.revents = revents;
+	lws_service_fd(ctx->lws_cci.context, &pfd);
 }
 
 void _wc_process_incoming_data(wc_context_t *ctx, char *buf, size_t len) {
@@ -131,10 +137,12 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		}
 		break;
 	case LWS_CALLBACK_CLOSED:
-		if (ctx->state != WC_CNX_STATE_DISCONNECTING) {
-			ctx->state = WC_CNX_STATE_DISCONNECTED;
-			ctx->callback(WC_EVENT_ON_CNX_CLOSED, ctx, NULL, 0);
-			_wc_context_connect(ctx);
+		ctx->state = WC_CNX_STATE_DISCONNECTED;
+		ctx->callback(WC_EVENT_ON_CNX_CLOSED, ctx, NULL, 0);
+		break;
+	case LWS_CALLBACK_CLIENT_WRITEABLE:
+		if (ctx->state == WC_CNX_STATE_DISCONNECTING) {
+			return -1;
 		}
 		break;
 	default:
@@ -176,8 +184,7 @@ void wc_context_close_cnx(wc_context_t *ctx) {
 	case WC_CNX_STATE_CONNECTED:
 	case WC_CNX_STATE_CONNECTING:
 		ctx->state = WC_CNX_STATE_DISCONNECTING;
-		lws_context_destroy(ctx->lws_cci.context);
-		ctx->lws_cci.context = NULL;
+		lws_callback_on_writable(ctx->lws_conn);
 		break;
 	case WC_CNX_STATE_DISCONNECTING:
 	case WC_CNX_STATE_DISCONNECTED:
@@ -211,7 +218,7 @@ wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on
 	 * XXX: logging configuration
 	lws_set_log_level(0xffffffff, NULL);
 	 */
-	lws_set_log_level(0, NULL);
+	lws_set_log_level(~0, NULL);
 	lws_ctx_creation_nfo.port = CONTEXT_PORT_NO_LISTEN;
 	lws_ctx_creation_nfo.protocols = protocols;
 #if defined(LWS_LIBRARY_VERSION_MAJOR) && LWS_LIBRARY_VERSION_MAJOR >= 2
