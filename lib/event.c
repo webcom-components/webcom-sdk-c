@@ -162,6 +162,8 @@ void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 		return;
 	}
 
+	_dispatch_helper(cnx, updated_path, "/", hash, event, updated_data);
+
 	/*
 	 * calls _dispatch_helper for each chunk of updated_path
 	 *

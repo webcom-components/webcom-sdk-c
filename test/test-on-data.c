@@ -63,6 +63,16 @@ void ev4(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_dat
 	c |= 0x8;
 }
 
+void ev5(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+	printf("\tcallback 5: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
+	c |= 0x10;
+}
+
+void ev6(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+	printf("\tcallback 6: [%p:%d:%p] %s => %s\n", cnx, event, param, path, json_data);
+	c |= 0x20;
+}
+
 int main(void)
 {
 	wc_context_t cnx;
@@ -70,6 +80,9 @@ int main(void)
 	memset(&cnx, 0, sizeof(cnx));
 
 	STFU_TRUE("Webcom path hash is djb2 hash", path_hash("/foo/bar/bazqux/") == djb2("/foo/bar/bazqux/"));
+	STFU_TRUE("Empty path is djb2('/')", path_hash("/") == djb2("/"));
+	STFU_TRUE("Empty path is djb2('/')", path_hash("") == djb2("/"));
+	STFU_TRUE("Empty path is djb2('/')", path_hash("///") == djb2("/"));
 	STFU_TRUE("Extra inner slashes are not significant for hashing", path_hash("/foo//////bar//bazqux/") == djb2("/foo/bar/bazqux/"));
 	STFU_TRUE("Extra leading slashes are not significant for hashing", path_hash("/////foo/bar/bazqux/") == djb2("/foo/bar/bazqux/"));
 	STFU_TRUE("Extra trailing slashes are not significant for hashing", path_hash("/foo/bar/bazqux/////") == djb2("/foo/bar/bazqux/"));
@@ -123,6 +136,14 @@ int main(void)
 	STFU_TRUE("Callback was called for path /foo/bar/", c & 0x2);
 	STFU_TRUE("Callback was called for path /foo/bar/baz/", c & 0x4);
 	STFU_TRUE("Callback was never called for path /qux/", !(c & 0x8));
+
+	wc_on_data(&cnx, "/foo/bar/baz/qux/", ev5, (void*)5);
+	wc_on_data(&cnx, "/", ev6, (void*)6);
+
+	wc_on_data_dispatch(&cnx, &push);
+
+	STFU_TRUE("Callback was called for path /foo/bar/baz/qux/", c & 0x10);
+	STFU_TRUE("Callback was called for path /", c & 0x20);
 
 	STFU_SUMMARY();
 
