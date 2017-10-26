@@ -24,6 +24,7 @@
 #include <string.h>
 #include <ev.h>
 #include <webcom-c/webcom.h>
+#include <webcom-c/webcom-libev.h>
 #include <inttypes.h>
 
 #include "stfu.h"
@@ -89,36 +90,20 @@ static void listen_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	ev_break(EV_A_ EVBREAK_ALL);
 }
 
-void test_cb(wc_event_t event, wc_context_t *cnx, void *data, UNUSED_PARAM(size_t len)) {
-	struct ev_loop *loop = wc_context_get_user_data(cnx);
-	wc_msg_t *msg = (wc_msg_t*) data;
-	switch (event) {
-	case WC_EVENT_ON_SERVER_HANDSHAKE:
-		ev_timer_stop(loop, &ev_handshake);
-		printf("\tserver [%s], version [%s], timestamp[%"PRId64"]\n", msg->u.ctrl.u.handshake.server, msg->u.ctrl.u.handshake.version, msg->u.ctrl.u.handshake.ts);
-		STFU_TRUE("The sever sent the handshake", 1);
+static void on_connected(wc_context_t *ctx, int initial_connection) {
+	ev_timer_stop(EV_DEFAULT, &ev_handshake);
+	STFU_TRUE("The sever sent the handshake", 1);
 
-		wc_on_data(cnx, "/brick/0-0", on_brick_1_1_data, loop);
-		wc_req_listen(cnx, on_listen_result, "/brick/0-0");
+	wc_on_data(ctx, "/brick/0-0", on_brick_1_1_data, EV_DEFAULT);
+	wc_req_listen(ctx, on_listen_result, "/brick/0-0");
 
-		ev_timer_init(&ev_listen, listen_fail_cb, 5, 0);
-		ev_listen.data = (void *)cnx;
-		ev_timer_start(loop, &ev_listen);
-
-		break;
-	case WC_EVENT_ON_CNX_CLOSED:
-		STFU_TRUE("The connection was closed", 1);
-		wc_context_free(cnx);
-		ev_break(EV_DEFAULT, EVBREAK_ALL);
-		break;
-	default:
-		break;
-	}
+	ev_timer_init(&ev_listen, listen_fail_cb, 5, 0);
+	ev_timer_start(EV_DEFAULT, &ev_listen);
 }
-
-static void readable_cb (EV_P_ ev_io *w, int revents) {
-	wc_context_t *cnx = (wc_context_t *)w->data;
-	wc_cnx_on_readable(cnx);
+static void on_disconnected(wc_context_t *ctx) {
+	STFU_TRUE("The connection was closed", 1);
+	wc_context_free(ctx);
+	ev_break(EV_DEFAULT, EVBREAK_ALL);
 }
 
 static void handshake_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
@@ -128,27 +113,22 @@ static void handshake_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 
 int main(void) {
 	struct ev_loop *loop = EV_DEFAULT;
+	struct wc_libev_integration eli;
 	wc_context_t *cnx1;
 	ev_io ev_wc_readable;
-	int fd;
 
+	eli.loop = loop;
+	eli.on_connected = on_connected;
+	eli.on_disconnected = on_disconnected;
 
 	STFU_TRUE	("Establish a new Connection",
-			cnx1 = (wc_context_new("io.datasync.orange.com", 443, "legorange", test_cb, (void *)loop))
+			cnx1 = (wc_context_new_with_libev("io.datasync.orange.com", 443, "legorange", &eli))
 			);
 	if (cnx1 == NULL) goto end;
 
-	fd = wc_context_get_fd(cnx1);
-	printf("\tfd = %d\n", fd);
-	STFU_TRUE   ("Obtained the websocket file descriptor", fd >= 0);
-
 	puts("\tprocessing the event loop...");
-	ev_io_init(&ev_wc_readable, readable_cb, fd, EV_READ);
-	ev_wc_readable.data = (void *)cnx1;
-	ev_io_start(loop, &ev_wc_readable);
 
 	ev_timer_init(&ev_handshake, handshake_fail_cb, 5, 0);
-	ev_handshake.data = (void *)cnx1;
 	ev_timer_start(loop, &ev_handshake);
 
 
