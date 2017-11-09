@@ -33,7 +33,7 @@
 
 struct wc_libuv_integration {
 	uv_loop_t *loop;
-	void (*on_connected)(wc_context_t *ctx, int initial_connection);
+	void (*on_connected)(wc_context_t *ctx);
 	void (*on_disconnected)(wc_context_t *ctx);
 };
 

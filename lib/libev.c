@@ -85,7 +85,7 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 		lid->ka_timer.data = ctx;
 		ev_timer_start(lid->eli.loop, &lid->ka_timer);
 
-		lid->eli.on_connected(ctx, 1);
+		lid->eli.on_connected(ctx);
 		break;
 
 	case WC_EVENT_ON_CNX_CLOSED:

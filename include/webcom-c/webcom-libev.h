@@ -33,7 +33,7 @@
 
 struct wc_libev_integration {
 	struct ev_loop *loop;
-	void (*on_connected)(wc_context_t *ctx, int initial_connection);
+	void (*on_connected)(wc_context_t *ctx);
 	void (*on_disconnected)(wc_context_t *ctx);
 };
 

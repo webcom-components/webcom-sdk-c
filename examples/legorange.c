@@ -40,7 +40,7 @@ typedef enum {
 char *board_name;
 extern const char *bricks[];
 int max_l = 250, max_c = 250;
-static void on_connected(wc_context_t *ctx, int initial_connection);
+static void on_connected(wc_context_t *ctx);
 static void on_disconnected(wc_context_t *ctx);
 static void draw_brick(int x, int y, legorange_brick_t brick);
 static void draw_rgb_brick(int x, int y, int r, int g, int b);
@@ -130,7 +130,7 @@ int main(int argc, char *argv[]) {
  * this callback is called by the Webcom SDK once the connection was
  * established
  */
-static void on_connected(wc_context_t *ctx, int initial_connection) {
+static void on_connected(wc_context_t *ctx) {
 	/*
 	 * let's configure a route: if some data update happens on the given path,
 	 * we instruct the SDK to call on_data_update()

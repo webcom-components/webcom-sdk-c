@@ -33,7 +33,7 @@
 
 struct wc_libevent_integration {
 	struct event_base *loop;
-	void (*on_connected)(wc_context_t *ctx, int initial_connection);
+	void (*on_connected)(wc_context_t *ctx);
 	void (*on_disconnected)(wc_context_t *ctx);
 };
 

@@ -87,7 +87,7 @@ static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 		uv_timer_init(lid->eli.loop, &lid->ka_timer);
 		lid->ka_timer.data = ctx;
 		uv_timer_start(&lid->ka_timer, _wc_on_ka_timer_libuv_cb,50000, 50000);
-		lid->eli.on_connected(ctx, 1);
+		lid->eli.on_connected(ctx);
 		break;
 
 	case WC_EVENT_ON_CNX_CLOSED:

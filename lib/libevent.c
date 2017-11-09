@@ -88,7 +88,7 @@ static void _wc_libevent_cb (wc_event_t event, wc_context_t *ctx, void *data, UN
 		tv.tv_usec = 0;
 		event_assign(&lid->ka_timer, lid->eli.loop, -1, EV_PERSIST, _wc_on_ka_timer_libevent_cb, ctx);
 		event_add(&lid->ka_timer, &tv);
-		lid->eli.on_connected(ctx, 1);
+		lid->eli.on_connected(ctx);
 		break;
 
 	case WC_EVENT_ON_CNX_CLOSED:
