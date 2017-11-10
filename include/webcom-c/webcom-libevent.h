@@ -23,6 +23,7 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_LIBEVENT_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_LIBEVENT_H_
 
+
 #include "webcom-config.h"
 
 #ifdef WITH_LIBEVENT
@@ -31,13 +32,47 @@
 
 #include <event.h>
 
+
+/**
+ * @ingroup webcom-libevent
+ * @{
+ */
+
 struct wc_libevent_integration {
 	struct event_base *loop;
 	void (*on_connected)(wc_context_t *ctx);
 	void (*on_disconnected)(wc_context_t *ctx);
 };
 
+/**
+ * @}
+ * @ingroup webcom-libevent
+ * @{
+ * Create a webcom context using libevent.
+ *
+ * This function creates a new Webcom context, an initiates the connection
+ * towards the server. All the underlying I/O and timer events will be taken
+ * care of by **libevent**.
+ *
+ * If the **http_proxy** environment variable is set, the connection will be
+ * established through this HTTP proxy.
+ *
+ * @note this function is partly synchronous and returns once the DNS lookup
+ * and TCP handshake have succeeded or failed.
+ *
+ * @param host the webcom server host name
+ * @param port the webcom server port
+ * @param application the name of the webcom application to tie to (e.g.
+ * "legorange", "chat", ...)
+ * @param eli a pointer to a struct wc_libevent_integration object
+ * @return a pointer to the newly created connection on success, NULL on
+ * failure to create the context
+ */
 wc_context_t *wc_context_new_with_libevent(char *host, uint16_t port, char *application, struct wc_libevent_integration *eli);
+
+/**
+ * @}
+ */
 
 #endif /* WITH_LIBEVENT */
 

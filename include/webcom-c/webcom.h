@@ -21,25 +21,131 @@
  */
 
 /**
- * @mainpage Webcom C SDK Index Page
+ * @mainpage Webcom C SDK Documentation Page
  *
- * This SDK offers an easy access to the Orange Flexible Datasync service
- * to C/C++ programmer.
+ * This is the documentation for the Webcom C SDK, a SDK that allows
+ * connecting to, and interacting with a Webcom server.
+ *
+ * # What is Webcom?
+ *
+ * Webcom is a Backend As A Service platform offering
+ *
+ * - a data sync service,
+ * - an authentication service.
+ *
+ * Orange operates a Webcom-based service named [Orange Flexible Datasync]
+ * (https://io.datasync.orange.com). Create an account on
+ * https://io.datasync.orange.com/u/signup to start using webcom.
+ *
+ * # Get the C SDK
+ *
+ * The SDK is published on GitHub: https://github.com/webcom-components/webcom-sdk-c
+ *
+ * You'll find informations on the supported platforms, building or getting
+ * binary versions in the README.md document.
+ *
+ * # Use the SDK
+ *
+ * Browse the [modules](modules.html) page to get informations on the API.
+ *
+ * - the straightforward: @ref hilev
+ * - the internals: @ref lolev
+ *
+ * # Show me the code!
+ *
+ * OK.
+ *
+ * 	@code{c}
+ * // the generic include
+ * #include <webcom-c/webcom.h>
+ *
+ * // must be included explicitly if you plan to use an event lib integration
+ * #include <webcom-c/webcom-libuv.h>
+ *
+ * int main(void) {
+ * 	struct wc_libuv_integration eli;
+ * 	wc_context_t *ctx;
+ *
+ *	// get a new libuv loop instance
+ * 	uv_loop_init(&eli.loop);
+ *
+ *	// set the connected/disconnected callbacks
+ * 	eli.on_connected = on_connected;
+ * 	eli.on_disconnected = on_disconnected;
+ *
+ *	// open a webcom context using libuv
+ * 	ctx = wc_context_new_with_libuv(
+ * 		"io.datasync.orange.com",
+ * 		443,
+ *  		"myapp",
+ * 		&eli);
+ *
+ *	// finally, run the loop
+ * 	uv_run(&eli.loop, UV_RUN_DEFAULT);
+ * 	return 0;
+ * }
+ *
+ * static void on_connected(wc_context_t *ctx) {
+ *	// register some data routes
+ * 	wc_on_data(ctx, "/foo/bar", my_bar_callback, NULL);
+ * 	wc_on_data(ctx, "/foo/baz", my_baz_callback, NULL);
+ *
+ *	// subscribe to the "/foo" path
+ * 	wc_req_listen(ctx, NULL, "/foo");
+ * }
+ *
+ * static void on_disconnected(wc_context_t *ctx) {
+ * 	exit(0);
+ * }
+ *
+ * void my_bar_callback(...) { ... }
+ * void my_baz_callback(...) { ... }
+ * 	@endcode
  */
 
 /**
- * @defgroup hilev		Higher level functions
+ * @defgroup hilev 	Easy interface
  * @{
- * 	@defgroup webcom-general		Webcom general functions
- * 	@defgroup webcom-connection 	Connect a client to a Webcom server
- * 	@defgroup webcom-requests		Send Webcom client to server request
- *	@defgroup webcom-event			Register callback on Webcom events
+ * 	This section describes the easiest way to build an application using the webcom
+ * 	data-sync service. First you pass a reference to a event lib loop object to the
+ * 	SDK to open a context, then you can use the "high level" functions to send
+ * 	requests and get notified of data events.
+ *
+ * 	@defgroup webcom-evloop			Connect with an existing event loop
+ * 	@{
+ * 		This SDK is designed using an asynchronous, event-based approach, and is
+ * 		perfectly suited to be used in a mono-threaded application.
+ *
+ * 		To greatly relieve the burden of registering to, and handling all the I/O and
+ * 		timer events the SDK must be aware of, and if you don't mind making your
+ * 		application rely on either **libev**, **libuv**, or **libevent**, we've already
+ * 		taken care of everything.
+ *
+ * 		The key idea is to call the corresponding `wc_context_new_with_libXXX()`
+ * 		function, and pass :
+ *
+ * 		- the reference to your event loop
+ * 		- a couple of callbacks to be notified when the connection is
+ * 		established/closed
+ *
+ * 		@defgroup webcom-libev			Integrate with libev
+ * 		@defgroup webcom-libuv			Integrate with libuv
+ * 		@defgroup webcom-libevent		Integrate with libevent
+ * 	@}
+ * 	@defgroup webcom-requests		Send requests: subscribe to data change, send data, ...
+ *	@defgroup webcom-event			Route data events to callbacks
+ *
  * @}
- * @defgroup lolev		Lower level functions (you may not need them)
+ * @defgroup lolev		Lower level interface
  * @{
- * 	@defgroup webcom-messages	Webcom protocol data types, messages manipulation
- * 	@defgroup webcom-parser 	Webcom protocol parsing functions
- * 	@defgroup webcom-utils 	Some utility macros, functions, ...
+ * 	This section contains details about functions and data structures used by the "Easy"
+ * 	interface. You mays not use most of them directly.
+ *
+ * 	@defgroup webcom-connection 	Lower-level context and connection management functions
+ * 	@defgroup webcom-messages		Webcom protocol data types, messages manipulation
+ * 	@defgroup webcom-parser 		Webcom protocol parsing functions
+ * 	@defgroup webcom-general		General Webcom SDK functions
+ * 	@defgroup webcom-utils 			Some utility macros, functions, ...
  * @}
  */
 
