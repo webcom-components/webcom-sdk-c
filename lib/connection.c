@@ -20,6 +20,8 @@
  *
  */
 
+#define LOCAL_LOG_FACILITY WC_LOG_CONNECTION
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -102,25 +104,28 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 	struct wc_pollargs wcpa;
 	struct lws_pollargs *pa;
 
-	lwsl_debug("EVENT %d, user %p, in %p, %zu\n", reason, user, in, len);
+	WL_EXDBG("EVENT %d, user %p, in %p, %zu", reason, user, in, len);
 
 	switch (reason) {
 	case LWS_CALLBACK_ADD_POLL_FD:
 		pa = in;
 		wcpa.fd = pa->fd;
 		wcpa.events = pa->events;
+		WL_DBG("request to add fd %d to poll set for events %hd", wcpa.fd, wcpa.events);
 		ctx->callback(WC_EVENT_ADD_FD, ctx, &wcpa, 0);
 		break;
 	case LWS_CALLBACK_DEL_POLL_FD:
 		pa = in;
 		wcpa.fd = pa->fd;
 		wcpa.events = pa->events;
+		WL_DBG("request to remove fd %d from poll set", wcpa.fd);
 		ctx->callback(WC_EVENT_DEL_FD, ctx, &wcpa, 0);
 		break;
 	case LWS_CALLBACK_CHANGE_MODE_POLL_FD:
 		pa = in;
 		wcpa.fd = pa->fd;
 		wcpa.events = pa->events;
+		WL_DBG("request to modify fd %d from events %d to %hd", wcpa.fd, pa->prev_events, wcpa.events);
 		ctx->callback(WC_EVENT_MODIFY_FD, ctx, &wcpa, 0);
 		break;
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
@@ -129,7 +134,7 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		ctx->state = WC_CNX_STATE_DISCONNECTED;
 		ctx->callback(WC_EVENT_ON_CNX_ERROR, ctx, in, len);
-		lwsl_debug("ERROR: %.*s\n", (int)len, (char*)in);
+		WL_ERR("connection error \"%.*s\"", (int)len, (char*)in);
 		break;
 	case LWS_CALLBACK_CLIENT_RECEIVE:
 		if (ctx->state != WC_CNX_STATE_DISCONNECTING) {
@@ -158,7 +163,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	int sent;
 
 	if (ctx->state != WC_CNX_STATE_CONNECTED) {
-		lwsl_debug("status: %d != %d\n",ctx->state, WC_CNX_STATE_CONNECTED);
+		WL_WARN("message not sent, the context is not connected (state %d)", ctx->state);
 		return -1;
 	}
 
@@ -173,7 +178,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	memcpy(buf + LWS_SEND_BUFFER_PRE_PADDING, jsonstr, len);
 
 	sent = lws_write(ctx->lws_conn, buf + LWS_SEND_BUFFER_PRE_PADDING, len, LWS_WRITE_TEXT);
-	lwsl_debug("*** [%d] sent %s\n", sent, jsonstr);
+	WL_DBG("%d bytes sent:\n\t%s", sent, jsonstr);
 	free(jsonstr);
 	free(buf);
 	return sent;
@@ -214,11 +219,6 @@ wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on
 		return NULL;
 	}
 
-	/*
-	 * XXX: logging configuration
-	lws_set_log_level(0xffffffff, NULL);
-	 */
-	lws_set_log_level(~0, NULL);
 	lws_ctx_creation_nfo.port = CONTEXT_PORT_NO_LISTEN;
 	lws_ctx_creation_nfo.protocols = protocols;
 #if defined(LWS_LIBRARY_VERSION_MAJOR) && LWS_LIBRARY_VERSION_MAJOR >= 2
@@ -292,7 +292,11 @@ int wc_cnx_keepalive(wc_context_t *ctx) {
 
 	keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING] = '0';
 	sent = lws_write(ctx->lws_conn, &(keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING]), 1, LWS_WRITE_TEXT);
-	lwsl_debug("*** [%d] keepalive sent\n", sent);
+	if (sent) {
+		WL_DBG("keepalive frame sent", sent);
+	} else {
+		WL_ERR("error sending keepalive frame", sent);
+	}
 
 	return sent;
 }

@@ -64,6 +64,14 @@ include(CheckSymbolExists)
 check_symbol_exists("srand48_r" "stdlib.h" HAVE_RAND48_R)
 check_include_file("endian.h" HAVE_ENDIAN_H)
 check_include_file("sys/endian.h" HAVE_SYS_ENDIAN_H)
+check_include_file("syslog.h" WITH_SYSLOG)
+check_include_file("systemd/sd-journal.h" WITH_JOURNALD)
+
+if(${WITH_JOURNALD})
+	pkg_search_module(SYSTEMD REQUIRED libsystemd)
+	list(APPEND WC_LIB_LIST ${SYSTEMD_LIBRARIES})
+endif()
+
 
 configure_file(
 	"${webcom-sdk-c_SOURCE_DIR}/lib/compat.h.in"
@@ -86,6 +94,7 @@ add_library(
 	lib/webcom.c
 	lib/request.c
 	lib/event.c
+	lib/log.c
 	${WC_SRC_LIST}
 )
 

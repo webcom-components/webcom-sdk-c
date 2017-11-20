@@ -106,6 +106,11 @@ int main(int argc, char *argv[]) {
 	eli.on_connected = on_connected; /* connection established callback */
 	eli.on_disconnected = on_disconnected; /* disconnected callback */
 
+	wc_log_use_stderr();
+	wc_set_log_level(WC_LOG_APPLICATION, WC_LOG_INFO);
+
+	APP_INFO("Starting legorange");
+
 	/* establish the connection to the webcom server, and let it integrate in
 	 * our libev event loop
 	 */

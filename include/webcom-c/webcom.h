@@ -165,6 +165,7 @@
 #	define WEBCOM_SDK_VERSION_STR WC_XSTR(WEBCOM_SDK_MAJOR) "." WC_XSTR(WEBCOM_SDK_MINOR) "." WC_XSTR(WEBCOM_SDK_PATCH)
 #endif
 
+#include "webcom-log.h"
 #include "webcom-msg.h"
 #include "webcom-parser.h"
 #include "webcom-cnx.h"

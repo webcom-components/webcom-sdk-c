@@ -40,5 +40,7 @@
 #cmakedefine WITH_LIBEV
 #cmakedefine WITH_LIBUV
 #cmakedefine WITH_LIBEVENT
+#cmakedefine WITH_SYSLOG
+#cmakedefine WITH_JOURNALD
 
 #endif /* SRC_WEBCOM_CONFIG_H_ */
