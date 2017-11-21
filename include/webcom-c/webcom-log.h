@@ -23,6 +23,8 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_LOG_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_LOG_H_
 
+#include "webcom-config.h"
+
 #ifdef WITH_SYSLOG
 #	include <syslog.h>
 #endif
