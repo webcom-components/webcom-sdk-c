@@ -38,24 +38,24 @@ static enum wc_log_backend {
 } backend = be_stderr;
 
 char *wc_log_facility_names[] = {
-	"websocket",
-	"parser",
-	"connection",
-	"message",
-	"general",
-	"application",
+	"LWS",
+	"PRS",
+	"CNX",
+	"MSG",
+	"GEN",
+	"APP",
 };
 
 char *wc_log_level_names[] = {
-	"EMERG",
-	"ALERT",
-	"CRIT",
-	"ERR",
-	"WARNING",
+	" EMERG",
+	" ALERT",
+	"CRITIC",
+	" ERROR",
+	"WARNIN",
 	"NOTICE",
-	"INFO",
-	"DEBUG",
-	"EXTRADEBUG",
+	"  INFO",
+	" DEBUG",
+	"EXTDBG",
 };
 
 static inline const char *_basename(const char *in) {
