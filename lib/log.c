@@ -27,6 +27,16 @@
 
 #include "webcom-c/webcom.h"
 
+static enum wc_log_backend {
+	be_stderr,
+#ifdef WITH_SYSLOG
+	be_syslog,
+#endif
+#ifdef WITH_JOURNALD
+	be_journald,
+#endif
+} backend = be_stderr;
+
 char *wc_log_facility_names[] = {
 	"websocket",
 	"parser",
@@ -48,12 +58,17 @@ char *wc_log_level_names[] = {
 	"EXTRADEBUG",
 };
 
-static void _log_stderr(enum wc_log_facility f, enum wc_log_level l, const char *fmt, va_list args) {
-	fprintf(stderr, "[%s] %s: ", wc_log_level_names[l], wc_log_facility_names[f]);
-	vfprintf(stderr, fmt, args);
+static inline const char *_basename(const char *in) {
+	const char *ret = in, *p = in;
+	while (*p) {
+		if (*p++ == '/') ret = p;
+	}
+	return ret;
 }
 
-static void (*log_f) (enum wc_log_facility f, enum wc_log_level l, const char *fmt, va_list args) = _log_stderr;
+static void _log_stderr(enum wc_log_facility f, enum wc_log_level l, const char *file, int line,  const char *message) {
+	fprintf(stderr, "[%s] (%s:%d) %s: %s", wc_log_level_names[l], _basename(file), line, wc_log_facility_names[f], message);
+}
 
 enum wc_log_level wc_log_levels[WC_LOG_ALL] = {
 	[WC_LOG_WEBSOCKET]   = WC_LOG_ERR,
@@ -65,7 +80,7 @@ enum wc_log_level wc_log_levels[WC_LOG_ALL] = {
 };
 
 void wc_lws_log_adapter(int level, const char *line) {
-	enum wc_log_level l;
+	enum wc_log_level l = WC_LOG_EXTRADEBUG;
 
 	switch(level) {
 	case LLL_ERR:
@@ -92,7 +107,7 @@ void wc_lws_log_adapter(int level, const char *line) {
 		break;
 	}
 
-	wc_log(WC_LOG_WEBSOCKET, l, "%s", line);
+	wc_log(WC_LOG_WEBSOCKET, l, "libwebsockets.so", "N/A", 0, "%s", line);
 }
 
 void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l) {
@@ -136,56 +151,68 @@ void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l) {
 }
 
 void wc_log_use_stderr(void) {
+	backend = be_stderr;
 	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 
 #ifdef WITH_SYSLOG
 #include <syslog.h>
-static void _log_syslog(enum wc_log_facility f, enum wc_log_level l, const char *fmt, va_list args) {
-	va_list _args;
-	va_copy(_args, args);
-	int msg_len = vsnprintf(NULL, 0, fmt, args);
-	char msg[msg_len + 1];
-	vsnprintf(msg, msg_len + 1, fmt, _args);
-	va_end(_args);
+static void _log_syslog(enum wc_log_facility f, enum wc_log_level l, const char *file, int line,  const char *message) {
 	syslog(l == WC_LOG_EXTRADEBUG ? WC_LOG_DEBUG : l,
-			"%s: %s", wc_log_facility_names[f], msg);
+			"(%s:%d) %s: %s", _basename(file), line, wc_log_facility_names[f], message);
 }
 
 void wc_log_use_syslog(const char *ident, int option, int facility) {
 	openlog(ident, option, facility);
-	log_f = _log_syslog;
+	backend = be_syslog;
 	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 #endif /* WITH_SYSLOG */
 
 #ifdef WITH_JOURNALD
+#define SD_JOURNAL_SUPPRESS_LOCATION
 #include <systemd/sd-journal.h>
-static void _log_journald(enum wc_log_facility f, enum wc_log_level l, const char *fmt, va_list args) {
-	va_list _args;
-	va_copy(_args, args);
-	int msg_len = vsnprintf(NULL, 0, fmt, args);
-	char msg[msg_len + 1];
-	vsnprintf(msg, msg_len + 1, fmt, _args);
-	va_end(_args);
-
+static void _log_journald(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line,  const char *message) {
 	sd_journal_send(
-			"MESSAGE=%s: %s", wc_log_facility_names[f], msg,
+			"CODE_FILE=%s", file,
+			"CODE_LINE=%d", line,
+			"CODE_FUNC=%s", func,
+			"MESSAGE=%s: %s", wc_log_facility_names[f], message,
 			"PRIORITY=%d", l,
 			"WC_FACILITY=%s", wc_log_facility_names[f],
 			NULL);
 }
 
 void wc_log_use_journald(void) {
-	log_f = _log_journald;
+	backend = be_journald;
 	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 #endif /* WITH_JOURNALD */
 
-inline void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *fmt, ...) {
-	va_list args;
+void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...) {
+	va_list args, _args;
 
 	va_start(args, fmt);
-	log_f(f, l, fmt, args);
+	va_copy(_args, args);
+	int msg_len = vsnprintf(NULL, 0, fmt, args);
+	char msg[msg_len + 1];
+	vsnprintf(msg, msg_len + 1, fmt, _args);
+	va_end(_args);
 	va_end(args);
+
+	switch (backend) {
+	case be_stderr:
+		_log_stderr(f, l, file, line, msg);
+		break;
+#ifdef WITH_SYSLOG
+	case be_syslog:
+		_log_syslog(f, l, file, line, msg);
+		break;
+#endif
+#ifdef WITH_JOURNALD
+	case be_journald:
+		_log_journald(f, l, file, func, line, msg);
+		break;
+#endif
+	}
 }

@@ -41,7 +41,6 @@ enum wc_log_facility {
 };
 
 enum wc_log_level {
-	WC_LOG_DISABLED = -1,
 	WC_LOG_EMERG,
 	WC_LOG_ALERT,
 	WC_LOG_CRIT,
@@ -51,22 +50,23 @@ enum wc_log_level {
 	WC_LOG_INFO,
 	WC_LOG_DEBUG,
 	WC_LOG_EXTRADEBUG,
+	WC_LOG_DISABLED,
 };
 
 void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l);
 void wc_log_use_syslog(const char *ident, int option, int facility);
 void wc_log_use_journald(void);
 void wc_log_use_stderr(void);
-void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *fmt, ...);
+void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...);
 
 extern enum wc_log_level wc_log_levels[WC_LOG_ALL];
 
 #define W_LOG(_facility, _level, _fmt, ...) \
-	do { \
-		if (wc_log_levels[(_facility)] >= 0 && (_level) <= wc_log_levels[(_facility)]) { \
-			wc_log((_facility), (_level), _fmt"\n", ## __VA_ARGS__); \
-		} \
-	} while(0)
+	if ((_level) <= wc_log_levels[(_facility)]) { \
+		wc_log((_facility), (_level), \
+				__FILE__, __func__, __LINE__, \
+				_fmt"\n", ## __VA_ARGS__); \
+	}
 
 #define W_EXDBG(_facility, _fmt, ...)	W_LOG((_facility), WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
 #define W_DBG(  _facility, _fmt, ...)	W_LOG((_facility), WC_LOG_DEBUG,      _fmt, ## __VA_ARGS__)
