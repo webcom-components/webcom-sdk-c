@@ -59,9 +59,13 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 	switch(event) {
 	case WC_EVENT_ADD_FD:
 		pollargs = data;
+/* ignoring some GCC warnings issued for libev, see
+ * https://www.mail-archive.com/libev@lists.schmorp.de/msg00428.html */
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 		ev_io_init(&lid->con_watcher, _wc_on_fd_event_libev_cb, pollargs->fd,
 				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
 					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0));
+#pragma GCC diagnostic warning "-Wstrict-aliasing"
 		lid->con_watcher.data = ctx;
 		ev_io_start(lid->eli.loop, &lid->con_watcher);
 		break;
@@ -73,15 +77,19 @@ static void _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 	case WC_EVENT_MODIFY_FD:
 		pollargs = data;
 		ev_io_stop(lid->eli.loop, &lid->con_watcher);
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 		ev_io_init(&lid->con_watcher, _wc_on_fd_event_libev_cb, pollargs->fd,
 				((pollargs->events & (WC_POLLIN | WC_POLLHUP)) ? EV_READ : 0)
 					| ((pollargs->events & WC_POLLOUT) ? EV_WRITE : 0));
+#pragma GCC diagnostic warning "-Wstrict-aliasing"
 		lid->con_watcher.data = ctx;
 		ev_io_start(lid->eli.loop, &lid->con_watcher);
 		break;
 
 	case WC_EVENT_ON_SERVER_HANDSHAKE:
+#pragma GCC diagnostic ignored "-Wstrict-aliasing"
 		ev_timer_init(&lid->ka_timer, _wc_on_ka_timer_libev_cb, 50, 50);
+#pragma GCC diagnostic warning "-Wstrict-aliasing"
 		lid->ka_timer.data = ctx;
 		ev_timer_start(lid->eli.loop, &lid->ka_timer);
 
