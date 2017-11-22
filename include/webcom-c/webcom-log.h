@@ -82,27 +82,29 @@ extern enum wc_log_level wc_log_levels[WC_LOG_ALL];
 #	define LOCAL_LOG_FACILITY WC_LOG_GENERAL
 #endif
 
-#define WL_EXDBG(_fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
-#define WL_DBG(  _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_DEBUG,      _fmt, ## __VA_ARGS__)
-#define WL_INFO( _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
-#define WL_NOT(  _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_NOTICE,     _fmt, ## __VA_ARGS__)
-#define WL_WARN( _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
-#define WL_ERR(  _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_ERR,        _fmt, ## __VA_ARGS__)
-#define WL_CRIT( _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_CRIT,       _fmt, ## __VA_ARGS__)
-#define WL_ALRT( _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_ALERT,      _fmt, ## __VA_ARGS__)
-#define WL_EMRG( _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, WC_LOG_EMERG,      _fmt, ## __VA_ARGS__)
+#define WL_LOG(_level, _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, (_level), _fmt, ## __VA_ARGS__)
+
+#define WL_EXDBG(_fmt, ...)	WL_LOG(WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
+#define WL_DBG(  _fmt, ...)	WL_LOG(WC_LOG_DEBUG,      _fmt, ## __VA_ARGS__)
+#define WL_INFO( _fmt, ...)	WL_LOG(WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
+#define WL_NOT(  _fmt, ...)	WL_LOG(WC_LOG_NOTICE,     _fmt, ## __VA_ARGS__)
+#define WL_WARN( _fmt, ...)	WL_LOG(WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
+#define WL_ERR(  _fmt, ...)	WL_LOG(WC_LOG_ERR,        _fmt, ## __VA_ARGS__)
+#define WL_CRIT( _fmt, ...)	WL_LOG(WC_LOG_CRIT,       _fmt, ## __VA_ARGS__)
+#define WL_ALRT( _fmt, ...)	WL_LOG(WC_LOG_ALERT,      _fmt, ## __VA_ARGS__)
+#define WL_EMRG( _fmt, ...)	WL_LOG(WC_LOG_EMERG,      _fmt, ## __VA_ARGS__)
 
 
 #define APP_LOG(_level, _fmt, ...) W_LOG(WC_LOG_APPLICATION, (_level), _fmt, ## __VA_ARGS__)
 
-#define APP_EXDBG(_fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
-#define APP_DBG(  _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_DEBUG,      _fmt, ## __VA_ARGS__)
-#define APP_INFO( _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
-#define APP_NOT(  _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_NOTICE,     _fmt, ## __VA_ARGS__)
-#define APP_WARN( _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
-#define APP_ERR(  _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_ERR,        _fmt, ## __VA_ARGS__)
-#define APP_CRIT( _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_CRIT,       _fmt, ## __VA_ARGS__)
-#define APP_ALRT( _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_ALERT,      _fmt, ## __VA_ARGS__)
-#define APP_EMRG( _fmt, ...)	W_LOG(WC_LOG_APPLICATION, WC_LOG_EMERG,      _fmt, ## __VA_ARGS__)
+#define APP_EXDBG(_fmt, ...)	APP_LOG(WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
+#define APP_DBG(  _fmt, ...)	APP_LOG(WC_LOG_DEBUG,      _fmt, ## __VA_ARGS__)
+#define APP_INFO( _fmt, ...)	APP_LOG(WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
+#define APP_NOT(  _fmt, ...)	APP_LOG(WC_LOG_NOTICE,     _fmt, ## __VA_ARGS__)
+#define APP_WARN( _fmt, ...)	APP_LOG(WC_LOG_INFO,       _fmt, ## __VA_ARGS__)
+#define APP_ERR(  _fmt, ...)	APP_LOG(WC_LOG_ERR,        _fmt, ## __VA_ARGS__)
+#define APP_CRIT( _fmt, ...)	APP_LOG(WC_LOG_CRIT,       _fmt, ## __VA_ARGS__)
+#define APP_ALRT( _fmt, ...)	APP_LOG(WC_LOG_ALERT,      _fmt, ## __VA_ARGS__)
+#define APP_EMRG( _fmt, ...)	APP_LOG(WC_LOG_EMERG,      _fmt, ## __VA_ARGS__)
 
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_LOG_H_ */
