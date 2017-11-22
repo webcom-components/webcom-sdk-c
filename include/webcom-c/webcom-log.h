@@ -162,7 +162,7 @@ extern enum wc_log_level wc_log_levels[WC_LOG_ALL];
 #define W_LOG(_facility, _level, _fmt, ...) \
 	wc_log((_facility), (_level), \
 			__FILE__, __func__, __LINE__, \
-			_fmt"\n", ## __VA_ARGS__); \
+			_fmt"\n", ## __VA_ARGS__);
 
 #define W_EXDBG(_facility, _fmt, ...)	W_LOG((_facility), WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
 #define W_DBG(  _facility, _fmt, ...)	W_LOG((_facility), WC_LOG_DEBUG,      _fmt, ## __VA_ARGS__)
