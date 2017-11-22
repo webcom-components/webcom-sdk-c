@@ -162,8 +162,6 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
  * @}
  */
 
-extern enum wc_log_level wc_log_levels[WC_LOG_ALL];
-
 #define W_LOG(_facility, _level, _fmt, ...) \
 	wc_log((_facility), (_level), \
 			__FILE__, __func__, __LINE__, \

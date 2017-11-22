@@ -70,7 +70,7 @@ static void _log_stderr(enum wc_log_facility f, enum wc_log_level l, const char 
 	fprintf(stderr, "[%s] (%s:%d) %s: %s", wc_log_level_names[l], _basename(file), line, wc_log_facility_names[f], message);
 }
 
-enum wc_log_level wc_log_levels[WC_LOG_ALL] = {
+static enum wc_log_level wc_log_levels[WC_LOG_ALL] = {
 	[WC_LOG_WEBSOCKET]   = WC_LOG_ERR,
 	[WC_LOG_PARSER]      = WC_LOG_ERR,
 	[WC_LOG_CONNECTION]  = WC_LOG_ERR,
