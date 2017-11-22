@@ -192,6 +192,9 @@ void wc_log_use_journald(void) {
 void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...) {
 	va_list args, _args;
 
+	/* discard messages with too low priority */
+	if (l > wc_log_levels[f]) return;
+
 	va_start(args, fmt);
 	va_copy(_args, args);
 	int msg_len = vsnprintf(NULL, 0, fmt, args);
