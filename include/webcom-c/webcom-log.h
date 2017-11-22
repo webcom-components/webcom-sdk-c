@@ -142,13 +142,18 @@ void wc_log_use_stderr(void);
 /**
  * Send a formatted message to the log backend
  *
- * This function send a formatted
- * @param f
- * @param l
- * @param file
- * @param func
- * @param line
- * @param fmt
+ * This function sends a message to the previously chosen log backend (default
+ * stderror). It is not meant to be used directly, but through the various
+ * **W_LOG()** macros and its derivatives, that automatically populates the
+ * source file, line and function arguments.
+ *
+ * @param f the facility
+ * @param l the log level
+ * @param file the source code file name this log comes from
+ * @param func the function name
+ * @param line the line number in the source file
+ * @param fmt a printf-like format string for the log message, the following
+ * arguments are the format string arguments
  */
 void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...)
 	__attribute__ ((format (printf, 6, 7)));
