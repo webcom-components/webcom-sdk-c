@@ -83,7 +83,8 @@ enum wc_log_level {
  * wc_set_log_level(WC_LOG_PARSER, WC_LOG_ERR);
  * @endcode
  * only the log messages with priority  **WC_LOG_EMERG**, **WC_LOG_ALERT**,
- * **WC_LOG_CRIT** and **WC_LOG_ERR** are going to show up int he logs.
+ * **WC_LOG_CRIT** and **WC_LOG_ERR** are going to show up in the logs for
+ * the **WC_LOG_PARSER** facility.
  *
  * @param f the facility
  * @param l the log level (priority)
@@ -162,6 +163,31 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
  * @}
  */
 
+/**
+ * @ingroup webcom-log
+ * Logs a formatted message
+ *
+ * This macro sends a message to the previously chosen log backend, and
+ * automatically sets the source file, line and function to the local
+ * value.
+ *
+ * @remark several other macros are defined from this one to avoid specifying
+ * the log level as an argument:
+ * - `W_EXDBG(_facility, _fmt, ...)`
+ * - `W_DBG(_facility, _fmt, ...)`
+ * - `W_INFO(_facility, _fmt, ...)`
+ * - `W_NOT(_facility, _fmt, ...)`
+ * - `W_WARN(_facility, _fmt, ...)`
+ * - `W_ERR(_facility, _fmt, ...)`
+ * - `W_CRIT(_facility, _fmt, ...)`
+ * - `W_ALRT(_facility, _fmt, ...)`
+ * - `W_EMRG(_facility, _fmt, ...)`
+ *
+ * @param _facility the facility
+ * @param _level the log level
+ * @param _fmt a **literal** format string (a newline will automatically be
+ * appended), the following arguments are the format string arguments
+ */
 #define W_LOG(_facility, _level, _fmt, ...) \
 	wc_log((_facility), (_level), \
 			__FILE__, __func__, __LINE__, \
@@ -182,6 +208,48 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
 #	define LOCAL_LOG_FACILITY WC_LOG_GENERAL
 #endif
 
+/**
+ * @ingroup webcom-log
+ * Logs a formatted message in the local facility
+ *
+ * Helper macro to avoid manually mentioning the log facility in a compilation
+ * unit, useful if almost every log message in this unit goes to the same
+ * faciliy.
+ *
+ * You must define the **LOCAL_LOG_FACILITY** macro to the desired enum
+ * wc_log_facility value **before** including webcom-log.h to set the local
+ * facility, otherwise **WC_LOG_GENERAL** will be used.
+ *
+ * **Example:**
+ * @code{c}
+ * #define LOCAL_LOG_FACILITY WC_LOG_PARSER
+ *
+ * #include <webcom-c/webcom.h> // includes webcom-log.h
+ *
+ * int foo(void) {
+ *     ...
+ *     WL_LOG(WC_LOG_INFO, "Entering foo, %d", 42); // will be written in the WC_LOG_PARSER facility
+ *     ...
+ * }
+ * @endcode
+ *
+ * @remark several other macros are defined from this one to avoid specifying
+ * the log level as an argument:
+ * - `WL_EXDBG(_fmt, ...)`
+ * - `WL_DBG(_fmt, ...)`
+ * - `WL_INFO(_fmt, ...)`
+ * - `WL_NOT(_fmt, ...)`
+ * - `WL_WARN(_fmt, ...)`
+ * - `WL_ERR(_fmt, ...)`
+ * - `WL_CRIT(_fmt, ...)`
+ * - `WL_ALRT(_fmt, ...)`
+ * - `WL_EMRG(_fmt, ...)`
+ *
+ * @param _level the log level
+ *
+ * @param _fmt a **literal** format string (a newline will automatically be
+ * appended), the following arguments are the format string arguments
+ */
 #define WL_LOG(_level, _fmt, ...)	W_LOG(LOCAL_LOG_FACILITY, (_level), _fmt, ## __VA_ARGS__)
 
 #define WL_EXDBG(_fmt, ...)	WL_LOG(WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
@@ -194,7 +262,30 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
 #define WL_ALRT( _fmt, ...)	WL_LOG(WC_LOG_ALERT,      _fmt, ## __VA_ARGS__)
 #define WL_EMRG( _fmt, ...)	WL_LOG(WC_LOG_EMERG,      _fmt, ## __VA_ARGS__)
 
-
+/**
+ * @ingroup webcom-log
+ * Logs a formatted message in the application's facility
+ *
+ * This macro should be used by the application code using the SDK. All
+ * messages written with this macro will be routed to the
+ * **WC_LOG_APPLICATION** facility.
+ *
+ * @remark several other macros are defined from this one to avoid specifying
+ * the log level as an argument:
+ * - `APP_EXDBG(_fmt, ...)`
+ * - `APP_DBG(_fmt, ...)`
+ * - `APP_INFO(_fmt, ...)`
+ * - `APP_NOT(_fmt, ...)`
+ * - `APP_WARN(_fmt, ...)`
+ * - `APP_ERR(_fmt, ...)`
+ * - `APP_CRIT(_fmt, ...)`
+ * - `APP_ALRT(_fmt, ...)`
+ * - `APP_EMRG(_fmt, ...)`
+ *
+ * @param _level the log level
+ * @param _fmt a **literal** format string (a newline will automatically be
+ * appended), the following arguments are the format string arguments
+ */
 #define APP_LOG(_level, _fmt, ...) W_LOG(WC_LOG_APPLICATION, (_level), _fmt, ## __VA_ARGS__)
 
 #define APP_EXDBG(_fmt, ...)	APP_LOG(WC_LOG_EXTRADEBUG, _fmt, ## __VA_ARGS__)
