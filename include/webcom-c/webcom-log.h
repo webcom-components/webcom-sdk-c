@@ -57,7 +57,8 @@ void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l);
 void wc_log_use_syslog(const char *ident, int option, int facility);
 void wc_log_use_journald(void);
 void wc_log_use_stderr(void);
-void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...);
+void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...)
+	__attribute__ ((format (printf, 6, 7)));
 
 extern enum wc_log_level wc_log_levels[WC_LOG_ALL];
 

@@ -293,9 +293,9 @@ int wc_cnx_keepalive(wc_context_t *ctx) {
 	keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING] = '0';
 	sent = lws_write(ctx->lws_conn, &(keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING]), 1, LWS_WRITE_TEXT);
 	if (sent) {
-		WL_DBG("keepalive frame sent", sent);
+		WL_DBG("keepalive frame sent");
 	} else {
-		WL_ERR("error sending keepalive frame", sent);
+		WL_ERR("error sending keepalive frame");
 	}
 
 	return sent;
