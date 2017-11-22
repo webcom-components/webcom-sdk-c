@@ -134,6 +134,7 @@
  * 	@}
  * 	@defgroup webcom-requests		Send requests: subscribe to data change, send data, ...
  *	@defgroup webcom-event			Route data events to callbacks
+ *	@defgroup webcom-log			Logging functions
  *
  * @}
  * @defgroup lolev		Lower level interface

@@ -25,40 +25,137 @@
 
 #include "webcom-config.h"
 
+/**
+ * @addtogroup webcom-log
+ * @{
+ */
+
+/**
+ * The SDK defines several facilities ("channels") in which logs can be
+ * written. This enum allows to specify to which facility a log message is
+ * targeted.
+ */
+enum wc_log_facility {
+	WC_LOG_WEBSOCKET,   //!< libwebsockets logs
+	WC_LOG_PARSER,      //!< Webcom protocol (JSON-based) parser logs
+	WC_LOG_CONNECTION,  //!< Webcom server connection logs
+	WC_LOG_MESSAGE,     //!< Webcom messages activity logs
+	WC_LOG_GENERAL,     //!< Other logs
+	WC_LOG_APPLICATION, //!< Reserved for the application's logs
+
+	WC_LOG_ALL          //!< Special value used to set a priority on all facilities
+};
+
+/**
+ * This emum defines the different possible priorities for a log message. They
+ * mimic those found in syslog.h, plus two other special values
+ */
+enum wc_log_level {
+	WC_LOG_EMERG,     //!< see syslog.h's LOG_EMERG
+	WC_LOG_ALERT,     //!< see syslog.h's LOG_ALERT
+	WC_LOG_CRIT,      //!< see syslog.h's LOG_CRIT
+	WC_LOG_ERR,       //!< see syslog.h's LOG_ERR
+	WC_LOG_WARNING,   //!< see syslog.h's LOG_WARNING
+	WC_LOG_NOTICE,    //!< see syslog.h's LOG_NOTICE
+	WC_LOG_INFO,      //!< see syslog.h's LOG_INFO
+	WC_LOG_DEBUG,     //!< see syslog.h's LOG_DEBUG
+	WC_LOG_EXTRADEBUG,/**< this extra debug level is for those extremely
+	                       verbose and frequent messages that tend to make the
+	                       logs almost unreadable */
+	WC_LOG_DISABLED,  /**< use this priority in  wc_set_log_level() to
+	                       completely disable logging in a facility */
+};
+
+/**
+ * Sets the log verbosity for a facility
+ *
+ * This function allows to filter the log messages being written to a facility
+ * based on their priority (see `enum wc_log_level`).
+ *
+ * All the messages whose priority is higher or equal to the one given as
+ * parameter are being logged, the other ones are being discarded. Using the
+ * special priority WC_LOG_DISABLED will discard all the logs for the facility.
+ *
+ * **Example:**
+ *
+ * After this statement is executed
+ * @code{c}
+ * wc_set_log_level(WC_LOG_PARSER, WC_LOG_ERR);
+ * @endcode
+ * only the log messages with priority  **WC_LOG_EMERG**, **WC_LOG_ALERT**,
+ * **WC_LOG_CRIT** and **WC_LOG_ERR** are going to show up int he logs.
+ *
+ * @param f the facility
+ * @param l the log level (priority)
+ */
+void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l);
+
 #ifdef WITH_SYSLOG
-#	include <syslog.h>
+#include <syslog.h> /* for options flags */
+
+/**
+ * Use syslog as the log backend
+ *
+ * After calling this functions, every log message produces by the SDK will be
+ * sent to syslog. The parameters are the same as those from **openlog(3)**.
+ *
+ * @see Details for options flags and facilities in `man 3 openlog`.
+ * @note If you switch from this backend to another backend, during the
+ * lifetime of your application, you should call **closelog()** to close the
+ * connection to syslog.
+ *
+ * @param ident _The string pointed to by ident is prepended to every message,
+ * and is typically set to the program name.  If ident is NULL, the program
+ * name is used._
+ * @param option _The option argument specifies flags which control the
+ * operation of openlog() and subsequent calls to syslog()._
+ * @param facility _The facility argument establishes a default to be used if
+ * none is specified in subsequent calls to syslog()._
+ */
+void wc_log_use_syslog(const char *ident, int option, int facility);
 #endif
 
-enum wc_log_facility {
-	WC_LOG_WEBSOCKET,
-	WC_LOG_PARSER,
-	WC_LOG_CONNECTION,
-	WC_LOG_MESSAGE,
-	WC_LOG_GENERAL,
-	WC_LOG_APPLICATION,
-
-	WC_LOG_ALL /* must be the last one */
-};
-
-enum wc_log_level {
-	WC_LOG_EMERG,
-	WC_LOG_ALERT,
-	WC_LOG_CRIT,
-	WC_LOG_ERR,
-	WC_LOG_WARNING,
-	WC_LOG_NOTICE,
-	WC_LOG_INFO,
-	WC_LOG_DEBUG,
-	WC_LOG_EXTRADEBUG,
-	WC_LOG_DISABLED,
-};
-
-void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l);
-void wc_log_use_syslog(const char *ident, int option, int facility);
+#ifdef WITH_JOURNALD
+/**
+ * Use journald as the log backend
+ *
+ * After calling this functions, every log message produces by the SDK will be
+ * sent to journals using the native journald interface. The journal entries
+ * will have some additional custom properties set, when the log macros are
+ * being used, to help with filtering and diagnostic:
+ *
+ * - **CODE_FILE**: the C source file the log comes from
+ * - **CODE_LINE**: the line in the source code
+ * - **CODE_FUNC**: the function name
+ * - **PRIORITY**: a number representing the log level (**WC_LOG_EMERG**=0,
+ * **WC_LOG_EXTRADEBUG**=8)
+ * - **WC_FACILITY**: the facility the log was sent to
+ */
 void wc_log_use_journald(void);
+#endif
+
+/**
+ * Use stderror as the log backend (default)
+ */
 void wc_log_use_stderr(void);
+
+/**
+ * Send a formatted message to the log backend
+ *
+ * This function send a formatted
+ * @param f
+ * @param l
+ * @param file
+ * @param func
+ * @param line
+ * @param fmt
+ */
 void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *fmt, ...)
 	__attribute__ ((format (printf, 6, 7)));
+
+/**
+ * @}
+ */
 
 extern enum wc_log_level wc_log_levels[WC_LOG_ALL];
 
