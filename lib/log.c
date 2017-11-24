@@ -216,6 +216,8 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
 	case be_journald:
 		_log_journald(f, l, file, func, line, msg);
 		break;
+#else
+		UNUSED_VAR(func);
 #endif
 	}
 }
