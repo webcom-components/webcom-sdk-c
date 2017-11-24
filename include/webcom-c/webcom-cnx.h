@@ -52,13 +52,6 @@ typedef enum {
 	 */
 	WC_EVENT_ON_CNX_CLOSED,
 	/**
-	 * This event indicates that the websocket connection to the webcom server,
-	 * passed as cnx to the callback, was successfully established.
-	 *
-	 * Note: this does not mean the server handshake was received yet.
-	 */
-	WC_EVENT_ON_CNX_ESTABLISHED,
-	/**
 	 * This event indicates that the webcom server has sent its handshake
 	 * message. From this point, it's safe to start sending requests to the
 	 * webcom server through this connection.
@@ -199,6 +192,21 @@ void *wc_context_get_user_data(wc_context_t *ctx);
  * @param revents the events to handle: combination of POLLIN and POLLOUT
  */
 void wc_handle_fd_events(wc_context_t *ctx, int fd, short revents);
+
+
+/**
+ * Reconnects a disconnected Webcom context
+ *
+ * This function tries to re-establish a connection to a Webcom server for a
+ * context whose connection is disconnected. This is the case when the
+ * following Webcom events have been dispatched to the user callback:
+ *
+ * - **WC_EVENT_ON_CNX_CLOSED**
+ * - **WC_EVENT_ON_CNX_ERROR**
+ *
+ * @param ctx the context
+ */
+void wc_context_reconnect(wc_context_t *ctx);
 
 /**
  * @}

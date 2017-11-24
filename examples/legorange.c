@@ -41,7 +41,8 @@ char *board_name;
 extern const char *bricks[];
 int max_l = 250, max_c = 250;
 static void on_connected(wc_context_t *ctx);
-static void on_disconnected(wc_context_t *ctx);
+static int on_disconnected(wc_context_t *ctx);
+static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len);
 static void draw_brick(int x, int y, legorange_brick_t brick);
 static void draw_rgb_brick(int x, int y, int r, int g, int b);
 static void move_to(int x, int y);
@@ -56,7 +57,6 @@ static void on_brick_update(char *key, json_object *data);
 /* Enter here */
 int main(int argc, char *argv[]) {
 	wc_context_t *ctx;
-	struct wc_libev_integration eli;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	int opt;
@@ -99,15 +99,15 @@ int main(int argc, char *argv[]) {
 	}
 
 	/*
-	 * as we want to integrate the Webcom SDK with our existing libev event
-	 * loop, let's prepare a few informations to pass to the SDK
+	 * let's prepare a few informations to pass to the SDK
 	 */
-	eli.loop = loop; /* the event loop */
-	eli.on_connected = on_connected; /* connection established callback */
-	eli.on_disconnected = on_disconnected; /* disconnected callback */
+	struct wc_eli_callbacks cb = {
+			.on_connected = on_connected,
+			.on_disconnected = on_disconnected,
+			.on_error = on_error,
+	};
 
 	wc_log_use_stderr();
-	wc_set_log_level(WC_LOG_APPLICATION, WC_LOG_INFO);
 
 	APP_INFO("Starting legorange");
 
@@ -118,7 +118,8 @@ int main(int argc, char *argv[]) {
 			"io.datasync.orange.com",
 			443,
 			"legorange",
-			&eli);
+			loop,
+			&cb);
 
 	/* if stdin has data to read, call stdin_watcher() */
 	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);
@@ -153,10 +154,17 @@ static void on_connected(wc_context_t *ctx) {
 /*
  * called by the SDK on disconnection
  */
-static void on_disconnected(wc_context_t *ctx) {
+static int on_disconnected(wc_context_t *ctx) {
+	APP_INFO("on disconnect");
 	clear_screen();
+	return 1;
 }
 
+
+static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
+	APP_INFO("connection error in ctx %p, %.*s, next attempt in: %u seconds", ctx, error_len, error, next_try);
+	return 1;
+}
 /*
  * called by the SDK if some data update (put or merge) happens on the
  * registered path

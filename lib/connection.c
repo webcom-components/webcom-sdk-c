@@ -129,12 +129,12 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		ctx->callback(WC_EVENT_MODIFY_FD, ctx, &wcpa, 0);
 		break;
 	case LWS_CALLBACK_CLIENT_ESTABLISHED:
-		ctx->callback(WC_EVENT_ON_CNX_ESTABLISHED, ctx, NULL, 0);
+		WL_DBG("client websocket established for context %p", ctx);
 		break;
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		ctx->state = WC_CNX_STATE_DISCONNECTED;
-		ctx->callback(WC_EVENT_ON_CNX_ERROR, ctx, in, len);
 		WL_ERR("connection error \"%.*s\"", (int)len, (char*)in);
+		ctx->callback(WC_EVENT_ON_CNX_ERROR, ctx, in, len);
 		break;
 	case LWS_CALLBACK_CLIENT_RECEIVE:
 		if (ctx->state != WC_CNX_STATE_DISCONNECTING) {
@@ -163,7 +163,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	int sent;
 
 	if (ctx->state != WC_CNX_STATE_CONNECTED) {
-		WL_WARN("message not sent, the context is not connected (state %d)", ctx->state);
+		WL_WARN("message not sent, the context %p is not connected (state %d)", ctx, ctx->state);
 		return -1;
 	}
 
@@ -193,6 +193,7 @@ void wc_context_close_cnx(wc_context_t *ctx) {
 		break;
 	case WC_CNX_STATE_DISCONNECTING:
 	case WC_CNX_STATE_DISCONNECTED:
+		WL_WARN("wc_context_close_cnx called for already closing/ed connection in context %p", ctx);
 		break;
 	}
 }
@@ -268,10 +269,16 @@ wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on
 }
 
 static void _wc_context_connect(wc_context_t *ctx) {
+	ctx->state = WC_CNX_STATE_CONNECTING;
+	ctx->lws_conn = lws_client_connect_via_info(&ctx->lws_cci);
+	lws_service(ctx->lws_cci.context, 0);
+}
+
+void wc_context_reconnect(wc_context_t *ctx) {
 	if (ctx->state == WC_CNX_STATE_DISCONNECTED) {
-		ctx->state = WC_CNX_STATE_CONNECTING;
-		ctx->lws_conn = lws_client_connect_via_info(&ctx->lws_cci);
-		lws_service(ctx->lws_cci.context, 100);
+		_wc_context_connect(ctx);
+	} else {
+		WL_WARN("called wc_context_reconnect() on not disconnected connection in context %p", ctx);
 	}
 }
 
