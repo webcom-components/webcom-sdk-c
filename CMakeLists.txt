@@ -9,7 +9,7 @@ project("webcom-sdk-c"
 # set to "false" to disable
 # set to "git" to use the current git revision abbbreviated hash
 # set to anything else to specify anything else
-set(PROJECT_VERSION_EXTRA pre1)
+set(PROJECT_VERSION_EXTRA false)
 
 
 if(PROJECT_VERSION_EXTRA)
