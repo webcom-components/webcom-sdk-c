@@ -79,6 +79,12 @@ static enum wc_log_level wc_log_levels[WC_LOG_ALL] = {
 	[WC_LOG_APPLICATION] = WC_LOG_WARNING,
 };
 
+/* capture logs from libwebsockets */
+__attribute__((constructor))
+static void libwebcom_c_init() {
+   wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
+}
+
 void wc_lws_log_adapter(int level, const char *line) {
 	enum wc_log_level l = WC_LOG_EXTRADEBUG;
 
@@ -152,7 +158,6 @@ void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l) {
 
 void wc_log_use_stderr(void) {
 	backend = be_stderr;
-	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 
 #ifdef WITH_SYSLOG
@@ -165,7 +170,6 @@ static void _log_syslog(enum wc_log_facility f, enum wc_log_level l, const char 
 void wc_log_use_syslog(const char *ident, int option, int facility) {
 	openlog(ident, option, facility);
 	backend = be_syslog;
-	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 #endif /* WITH_SYSLOG */
 
@@ -185,7 +189,6 @@ static void _log_journald(enum wc_log_facility f, enum wc_log_level l, const cha
 
 void wc_log_use_journald(void) {
 	backend = be_journald;
-	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 #endif /* WITH_JOURNALD */
 
