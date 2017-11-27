@@ -25,8 +25,8 @@
 #include <unistd.h>
 #include <string.h>
 #include <webcom-c/webcom.h>
-#include <webcom-c/webcom-libev.h>
-#include <ev.h>
+#include <webcom-c/webcom-libuv.h>
+#include <uv.h>
 #include <getopt.h>
 #include <json-c/json.h>
 
@@ -47,7 +47,7 @@ static void draw_brick(int x, int y, legorange_brick_t brick);
 static void draw_rgb_brick(int x, int y, int r, int g, int b);
 static void move_to(int x, int y);
 static void clear_screen();
-void stdin_cb (EV_P_ ev_io *w, int revents);
+void stdin_cb (uv_poll_t* handle, int status, int events);
 static void on_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
 static void on_brick_update(char *key, json_object *data);
 /*
@@ -57,8 +57,8 @@ static void on_brick_update(char *key, json_object *data);
 /* Enter here */
 int main(int argc, char *argv[]) {
 	wc_context_t *ctx;
-	struct ev_loop *loop = EV_DEFAULT;
-	ev_io stdin_watcher;
+	uv_loop_t loop;
+	uv_poll_t stdin_watcher;
 	int opt;
 
 	board_name = "/brick";
@@ -98,62 +98,39 @@ int main(int argc, char *argv[]) {
 
 	}
 
-	/*
-	 * let's prepare a few informations to pass to the SDK
-	 */
+	APP_INFO("Starting legorange");
+	uv_loop_init(&loop);
 	struct wc_eli_callbacks cb = {
 			.on_connected = on_connected,
 			.on_disconnected = on_disconnected,
 			.on_error = on_error,
 	};
 
-	wc_log_use_stderr();
-
-	APP_INFO("Starting legorange");
-
-	/* establish the connection to the webcom server, and let it integrate in
-	 * our libev event loop
-	 */
-	ctx = wc_context_new_with_libev(
+	/* establish the connection to the webcom server */
+	ctx = wc_context_new_with_libuv(
 			"io.datasync.orange.com",
 			443,
 			"legorange",
-			loop,
+			&loop,
 			&cb);
 
 	/* if stdin has data to read, call stdin_watcher() */
-	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);
+	uv_poll_init(&loop, &stdin_watcher, STDIN_FILENO);
 	stdin_watcher.data = ctx;
-	ev_io_start (loop, &stdin_watcher);
+	uv_poll_start(&stdin_watcher, UV_READABLE, stdin_cb);
 
 	/* enter the event loop */
-	ev_run(loop, 0);
+	uv_run(&loop, UV_RUN_DEFAULT);
 
 	return 0;
 }
 
-/*
- * this callback is called by the Webcom SDK once the connection was
- * established
- */
 static void on_connected(wc_context_t *ctx) {
-	/*
-	 * let's configure a route: if some data update happens on the given path,
-	 * we instruct the SDK to call on_data_update()
-	 */
 	wc_on_data(ctx, board_name, on_data_update, NULL);
-
-	/*
-	 * now that the route is configured, let's subscribe to the path
-	 */
 	wc_req_listen(ctx, NULL, board_name);
-
 	clear_screen();
 }
 
-/*
- * called by the SDK on disconnection
- */
 static int on_disconnected(wc_context_t *ctx) {
 	APP_INFO("on disconnect");
 	clear_screen();
@@ -165,11 +142,6 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 	return 1;
 }
 
-/*
- * called by the SDK if some data update (put or merge) happens on the
- * registered path
- * (we configured it with wc_on_data(..., on_data_update, ...) )
- */
 static void on_data_update(
 		UNUSED_PARAM(wc_context_t *cnx),
 		UNUSED_PARAM(ws_on_data_event_t event),
@@ -253,8 +225,8 @@ static void on_brick_update(char *key, json_object *data) {
  * libev callback when data is available on stdin: parse it and send a put
  * message to the webcom server if the input matches "x y color"
  */
-void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
-	wc_context_t *cnx = (wc_context_t *)w->data;
+void stdin_cb (uv_poll_t* handle, int status, int events) {
+	wc_context_t *cnx = (wc_context_t *)handle->data;
 	static char buf[2048];
 	int x, y, col;
 	char *col_str, *path, *data, nl;
@@ -282,8 +254,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		clear_screen();
 		move_to(0, 0);
 		puts("Closing...");
-		ev_io_stop(EV_A_ w);
-		ev_break(EV_A_ EVBREAK_ALL);
+		uv_stop(handle->loop);
 		wc_context_close_cnx(cnx);
 	}
 }
