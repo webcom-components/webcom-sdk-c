@@ -27,23 +27,11 @@
 
 #ifdef WITH_LIBUV
 
-#include "webcom-cnx.h"
+#include "webcom-eli.h"
 
 #include <uv.h>
 
 /**
- * @ingroup webcom-libuv
- * @{
- */
-
-struct wc_libuv_integration {
-	uv_loop_t *loop; /**< a reference to the libuv event loop */
-	void (*on_connected)(wc_context_t *ctx); /**< callback when the connection to the server is up */
-	void (*on_disconnected)(wc_context_t *ctx); /**< callback when the connection to the server is down */
-};
-
-/**
- * @}
  * @ingroup webcom-libuv
  * @{
  * Create a webcom context using libuv.
@@ -62,11 +50,13 @@ struct wc_libuv_integration {
  * @param port the webcom server port
  * @param application the name of the webcom application to tie to (e.g.
  * "legorange", "chat", ...)
- * @param eli a pointer to a struct wc_libuv_integration object
+ * @param loop a pointer to a libuv loop object
+ * @param callbacks a structure containing the callbacks to trigger for various
+ * events
  * @return a pointer to the newly created connection on success, NULL on
  * failure to create the context
  */
-wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *application, struct wc_libuv_integration *eli);
+wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *application, uv_loop_t *loop, struct wc_eli_callbacks *callbacks);
 
 /**
  * @}

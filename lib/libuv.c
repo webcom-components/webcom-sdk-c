@@ -25,11 +25,15 @@
 
 #include "webcom-c/webcom-libuv.h"
 #include "webcom-c/webcom-utils.h"
+#include "webcom-c/webcom-log.h"
 
 struct wc_libuv_integration_data {
-	struct wc_libuv_integration eli;
+	uv_loop_t *loop;
+	struct wc_eli_callbacks callbacks;
 	uv_poll_t con_watcher;
 	uv_timer_t ka_timer;
+	uv_timer_t recon_timer;
+	unsigned next_try;
 };
 
 static inline void _wc_on_fd_event_libuv_cb (
@@ -54,14 +58,22 @@ static inline void _wc_on_ka_timer_libuv_cb (uv_timer_t *handle) {
 	wc_cnx_keepalive(ctx);
 }
 
+static inline void _wc_on_recon_timer_libuv_cb (uv_timer_t *handle) {
+	wc_context_t *ctx = handle->data;
+	W_DBG(WC_LOG_CONNECTION, "reconnect callback triggered for context %p", ctx);
+	uv_timer_stop(handle);
+	wc_context_reconnect(ctx);
+}
+
 static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSED_PARAM(size_t len)) {
 	struct wc_libuv_integration_data *lid = wc_context_get_user_data(ctx);
 	struct wc_pollargs *pollargs;
+	int reconnect = 0;
 
 	switch(event) {
 	case WC_EVENT_ADD_FD:
 		pollargs = data;
-		uv_poll_init(lid->eli.loop, &lid->con_watcher, pollargs->fd);
+		uv_poll_init(lid->loop, &lid->con_watcher, pollargs->fd);
 		lid->con_watcher.data = ctx;
 		uv_poll_start(&lid->con_watcher,
 				((pollargs->events & WC_POLLIN) ? UV_READABLE : 0)
@@ -84,24 +96,48 @@ static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSE
 		break;
 
 	case WC_EVENT_ON_SERVER_HANDSHAKE:
-		uv_timer_init(lid->eli.loop, &lid->ka_timer);
+		uv_timer_init(lid->loop, &lid->ka_timer);
 		lid->ka_timer.data = ctx;
-		uv_timer_start(&lid->ka_timer, _wc_on_ka_timer_libuv_cb,50000, 50000);
-		lid->eli.on_connected(ctx);
+		uv_timer_start(&lid->ka_timer, _wc_on_ka_timer_libuv_cb, 50000, 50000);
+		if (lid->next_try) {
+			uv_timer_stop(&lid->recon_timer);
+			lid->next_try = 0;
+		}
+		lid->callbacks.on_connected(ctx);
 		break;
 
 	case WC_EVENT_ON_CNX_CLOSED:
 		uv_timer_stop(&lid->ka_timer);
-		lid->eli.on_disconnected(ctx);
+		reconnect = lid->callbacks.on_disconnected(ctx);
 		break;
-
+	case WC_EVENT_ON_CNX_ERROR:
+		reconnect = lid->callbacks.on_error(ctx, lid->next_try, data, len);
+		break;
 	default:
 		break;
 	}
 
+	if (reconnect) {
+		uint64_t in = 1000 * lid->next_try;
+
+		if (lid->next_try == 0) {
+			lid->next_try = 1;
+		} else if (lid->next_try < 128) {
+			lid->next_try <<= 1;
+		}
+
+		uv_timer_init(lid->loop, &lid->recon_timer);
+		lid->recon_timer.data = ctx;
+		uv_timer_start(&lid->recon_timer, _wc_on_recon_timer_libuv_cb, in, 0);
+		W_DBG(WC_LOG_CONNECTION, "automatic reconnection attempt in %lu millisec", (unsigned long)in);
+	} else {
+		if (lid->next_try != 0) {
+			lid->next_try = 0;
+		}
+	}
 }
 
-wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *application, struct wc_libuv_integration *eli){
+wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *application, uv_loop_t *loop, struct wc_eli_callbacks *callbacks) {
 	struct wc_libuv_integration_data *integration_data;
 	wc_context_t *ret = NULL;
 
@@ -110,7 +146,9 @@ wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *applica
 		return NULL;
 	}
 
-	integration_data->eli = *eli;
+	integration_data->callbacks = *callbacks;
+	integration_data->loop = loop;
+	integration_data->next_try = 0;
 
 	ret = wc_context_new(host, port, application, _wc_libuv_cb, integration_data);
 

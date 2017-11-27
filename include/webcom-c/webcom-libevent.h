@@ -23,29 +23,15 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_LIBEVENT_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_LIBEVENT_H_
 
-
 #include "webcom-config.h"
 
 #ifdef WITH_LIBEVENT
 
-#include "webcom-cnx.h"
+#include "webcom-eli.h"
 
 #include <event.h>
 
-
 /**
- * @ingroup webcom-libevent
- * @{
- */
-
-struct wc_libevent_integration {
-	struct event_base *loop;
-	void (*on_connected)(wc_context_t *ctx);
-	void (*on_disconnected)(wc_context_t *ctx);
-};
-
-/**
- * @}
  * @ingroup webcom-libevent
  * @{
  * Create a webcom context using libevent.
@@ -64,11 +50,13 @@ struct wc_libevent_integration {
  * @param port the webcom server port
  * @param application the name of the webcom application to tie to (e.g.
  * "legorange", "chat", ...)
- * @param eli a pointer to a struct wc_libevent_integration object
+ * @param loop a pointer to a libevent loop object
+ * @param callbacks a structure containing the callbacks to trigger for various
+ * events
  * @return a pointer to the newly created connection on success, NULL on
  * failure to create the context
  */
-wc_context_t *wc_context_new_with_libevent(char *host, uint16_t port, char *application, struct wc_libevent_integration *eli);
+wc_context_t *wc_context_new_with_libevent(char *host, uint16_t port, char *application, struct event_base *loop, struct wc_eli_callbacks *callbacks);
 
 /**
  * @}
