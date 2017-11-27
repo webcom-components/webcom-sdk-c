@@ -100,10 +100,17 @@ static void on_connected(wc_context_t *ctx, int initial_connection) {
 	ev_timer_init(&ev_listen, listen_fail_cb, 5, 0);
 	ev_timer_start(EV_DEFAULT, &ev_listen);
 }
-static void on_disconnected(wc_context_t *ctx) {
+static int on_disconnected(wc_context_t *ctx) {
 	STFU_TRUE("The connection was closed", 1);
 	wc_context_free(ctx);
 	ev_break(EV_DEFAULT, EVBREAK_ALL);
+	return 0;
+}
+
+static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
+	STFU_TRUE("Connection error", 0);
+	printf("\terror: %.*s", error_len, error);
+	return 0;
 }
 
 static void handshake_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
@@ -113,16 +120,17 @@ static void handshake_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 
 int main(void) {
 	struct ev_loop *loop = EV_DEFAULT;
-	struct wc_libev_integration eli;
 	wc_context_t *cnx1;
 	ev_io ev_wc_readable;
 
-	eli.loop = loop;
-	eli.on_connected = on_connected;
-	eli.on_disconnected = on_disconnected;
+	struct wc_eli_callbacks cb = {
+			.on_connected = on_connected,
+			.on_disconnected = on_disconnected,
+			.on_error = on_error,
+	};
 
 	STFU_TRUE	("Establish a new Connection",
-			cnx1 = (wc_context_new_with_libev("io.datasync.orange.com", 443, "legorange", &eli))
+			cnx1 = wc_context_new_with_libev("io.datasync.orange.com", 443, "legorange", loop, &cb)
 			);
 	if (cnx1 == NULL) goto end;
 
