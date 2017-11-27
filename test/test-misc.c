@@ -34,7 +34,12 @@ int main(void)
 	char push_id[20][16];
 	int i, sorted;
 
-	printf("\twebcom version: \"%s\" maj: %d, min: %d, patch: %d, extra: "WEBCOM_SDK_EXTRA", full:0x%06x\n",
+	printf("\twebcom version: \"%s\" maj: %d, min: %d, patch: %d, "
+#ifdef WEBCOM_SDK_EXTRA
+
+			"extra: "WEBCOM_SDK_EXTRA", "
+#endif
+			"full:0x%06x\n",
 			wc_version(), WEBCOM_SDK_MAJOR, WEBCOM_SDK_MINOR, WEBCOM_SDK_PATCH, WEBCOM_SDK_VERSION);
 
 	memset(&cnx, 0, sizeof(cnx));
