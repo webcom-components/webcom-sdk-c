@@ -63,25 +63,28 @@
  * #include <webcom-c/webcom-libuv.h>
  *
  * int main(void) {
- * 	struct wc_libuv_integration eli;
  * 	wc_context_t *ctx;
+ * 	uv_loop_t loop;
  *
  *	// get a new libuv loop instance
- * 	uv_loop_init(&eli.loop);
+ * 	uv_loop_init(&loop);
  *
  *	// set the connected/disconnected callbacks
- * 	eli.on_connected = on_connected;
- * 	eli.on_disconnected = on_disconnected;
+ * 	struct wc_eli_callbacks cb = {
+ * 		.on_connected = on_connected,
+ * 		.on_disconnected = on_disconnected,
+ * 		.on_error = on_error,
+ * 	};
  *
  *	// open a webcom context using libuv
  * 	ctx = wc_context_new_with_libuv(
  * 		"io.datasync.orange.com",
  * 		443,
- *  		"myapp",
+ * 		"myapp",
  * 		&eli);
  *
  *	// finally, run the loop
- * 	uv_run(&eli.loop, UV_RUN_DEFAULT);
+ * 	uv_run(&loop, UV_RUN_DEFAULT);
  * 	return 0;
  * }
  *
@@ -94,8 +97,11 @@
  * 	wc_req_listen(ctx, NULL, "/foo");
  * }
  *
- * static void on_disconnected(wc_context_t *ctx) {
- * 	exit(0);
+ * static int on_disconnected(wc_context_t *ctx) {
+ * 	return 0; // = don't try to reconnect
+ * }
+ * static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
+ * 	return 1; // = try to reconnect
  * }
  *
  * void my_bar_callback(...) { ... }

@@ -25,6 +25,10 @@
 
 #include "webcom-cnx.h"
 
+/**
+ * Callbacks to pass to the event loop integration. Every function pointer must
+ * be valid, passing NULL in on of the pointers is not supported.
+ */
 struct wc_eli_callbacks {
 	/** callback when the connection to the server is up */
 	void (*on_connected)(wc_context_t *ctx);

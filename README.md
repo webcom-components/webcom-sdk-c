@@ -15,19 +15,89 @@ so that we can share the information. If you made some modifications to make it
 work on your platform, please consider opening a pull request so it gets
 integrated here.
 
+## Documentation
+
+The doxygen documentation for the master branch is published at this address:
+
+https://webcom-components.github.io/webcom-sdk-c/
+
 ## General design
 
 This SDK is meant to be used in a event-loop, and does not provide its own
-event loop. This means the SDK users are responsible for implementing the event
-loop (we may provide one in the future). The general steps to follow are:
+event loop.
 
-1. establish a connection to the Webcom server using `wc_cnx_new()`,
-2. query the file descriptor for that connection using `wc_cnx_get_fd()`,
+### Using an event library
+
+Integrations with libev, libuv and libevent are provided in the SDK. These
+integrations take care of all the complicated tasks, dealing with the sockets
+I/O events, and the various timers (keepalive packet timer, reconnect timer).
+For example with libuv:
+
+```c
+#include <webcom-c/webcom.h>
+// must be included explicitly if you plan to use an event lib integration
+#include <webcom-c/webcom-libuv.h>
+
+int main(void) {
+    wc_context_t *ctx;
+    uv_loop_t loop;
+    // get a new libuv loop instance
+    uv_loop_init(&loop);
+    // set the connected/disconnected callbacks
+    struct wc_eli_callbacks cb = {
+        .on_connected = on_connected,
+        .on_disconnected = on_disconnected,
+        .on_error = on_error,
+    };
+    // open a webcom context using libuv
+    ctx = wc_context_new_with_libuv(
+        "io.datasync.orange.com",
+        443,
+        "myapp",
+        &eli);
+    // finally, run the loop
+    uv_run(&loop, UV_RUN_DEFAULT);
+    return 0;
+}
+
+static void on_connected(wc_context_t *ctx) {
+    // register some data routes
+    wc_on_data(ctx, "/foo/bar", my_bar_callback, NULL);
+    wc_on_data(ctx, "/foo/baz", my_baz_callback, NULL);
+    // subscribe to the "/foo" path
+    wc_req_listen(ctx, NULL, "/foo");
+}
+
+static int on_disconnected(wc_context_t *ctx) {
+    return 0; // = don't try to reconnect
+}
+
+static int on_error(wc_context_t *ctx,
+                    unsigned next_try,
+                    const char *error,
+                    int error_len)
+{
+    return 1; // = try to reconnect
+}
+
+void my_bar_callback(...) { ... }
+void my_baz_callback(...) { ... }
+```
+
+### Without any provided event library integration
+
+If you don't rely on one of the evnet library integration, there is more to de
+don on your side:
+
+1. establish a connection to the Webcom server using `wc_context_new()`, pass
+   a function pointer that will receive the "low level" events to handle,
+2. wait for `WC_EVENT_*_FD` events to know which file descriptors to add,
+   remove, or modify in your select/poll/epoll set
 3. poll that file descriptor in your event loop for write events,
-4. call `wc_cnx_on_readable()` whenever this event occurs; if there is any
-   Webcom service-level event you should be aware of, this will automatically
-   trigger the callback you passed to `wc_cnx_new()` with the relevant
-   informations as parameters.
+4. call `wc_handle_fd_events()` whenever event occur on the descriptor; if
+   there is any Webcom service-level event you should be aware of, this will
+   automatically trigger the callback you passed to `wc_cnx_new()` with the
+   relevant informations as parameters.
 
 **Note:** The Webcom server **will close any inactive connection** after a 1
 minute timeout. The event loop is responsible for calling `wc_cnx_keepalive()`
@@ -157,7 +227,7 @@ examples, documentation, and the test programs.
 $ sudo make install
 ```
 
-## Documentation
+## Man pages / HTML documentation
 
 The documentation is produced by doxygen (the public .h files contain the
 documentation). The binary packages and manual installation do install the
