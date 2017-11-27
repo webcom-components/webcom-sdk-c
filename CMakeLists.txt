@@ -173,7 +173,7 @@ configure_package_config_file(
 write_basic_package_version_file(
 	webcom-c-config-version.cmake
 	COMPATIBILITY
-		SameMajorVersion
+		ExactVersion
 )
 
 install(
