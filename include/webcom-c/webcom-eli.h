@@ -44,7 +44,7 @@ struct wc_eli_callbacks {
 	 * @param ctx the context
 	 * @param next_try delay, in seconds, before the next automatic
 	 * reconnection attempt, 0 if no next attempt
-	 * @param a string describing the error (may not be null terminated)
+	 * @param error a string describing the error (may not be null terminated)
 	 * @param error_len the error string length
 	 * @return return anything but 0 to let the SDK reconnect automatically
 	 */
