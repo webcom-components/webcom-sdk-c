@@ -30,8 +30,9 @@
 #include <ncurses.h>
 #include <json-c/json.h>
 
-static void on_connected(wc_context_t *ctx, int initial_connection);
-static void on_disconnected(wc_context_t *ctx);
+static void on_connected(wc_context_t *ctx);
+static int on_disconnected(wc_context_t *ctx);
+static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len);
 void stdin_cb (EV_P_ ev_io *w, int revents);
 void print_new_message(json_object *message);
 void process_message_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
@@ -44,7 +45,6 @@ const char *escaped_name;
 int main(int argc, char *argv[]) {
 	wc_context_t *ctx;
 	int wc_fd;
-	struct wc_libev_integration eli;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	int opt;
@@ -73,15 +73,18 @@ int main(int argc, char *argv[]) {
 		getlogin_r(name, 16);
 	}
 
-	eli.loop = loop; /* the event loop */
-	eli.on_connected = on_connected; /* connection established callback */
-	eli.on_disconnected = on_disconnected; /* disconnected callback */
+	struct wc_eli_callbacks cb = {
+			.on_connected = on_connected,
+			.on_disconnected = on_disconnected,
+			.on_error = on_error,
+	};
 
 	ctx = wc_context_new_with_libev(
 			"io.datasync.orange.com",
 			443,
 			"chat",
-			&eli);
+			loop,
+			&cb);
 
 	if (ctx == NULL) {
 		return 1;
@@ -120,19 +123,25 @@ int main(int argc, char *argv[]) {
  * this callback is called by the Webcom SDK once the connection was
  * established
  */
-static void on_connected(wc_context_t *ctx, int initial_connection) {
+static void on_connected(wc_context_t *ctx) {
 
 	wc_on_data(ctx, "/", process_message_data_update, NULL);
 	wc_req_listen(ctx, NULL, "/");
 
+	wprintw(chat, "*** [INFO] Connected\n");
+	wrefresh(chat);
+
 }
 
-/*
- * called by the SDK on disconnection
- */
-static void on_disconnected(wc_context_t *ctx) {
-	puts("Disconnected");
-	exit(1);
+static int on_disconnected(wc_context_t *ctx) {
+	wprintw(chat, "*** [INFO] Disconnected (connection closed)\n");
+	wrefresh(chat);
+	return 1;
+}
+
+static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
+	wprintw(chat, "*** [INFO] Disconnected (%.*s)\n", error_len, error);
+	return 1;
 }
 
 void process_message_data_update(
