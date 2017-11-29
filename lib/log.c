@@ -58,8 +58,8 @@ char *wc_log_level_names[] = {
 	"EXTDBG",
 };
 
-static inline const char *_basename(const char *in) {
-	const char *ret = in, *p = in;
+static inline const char *_basename(const char *p) {
+	const char *ret = p;
 	while (*p) {
 		if (*p++ == '/') ret = p;
 	}
