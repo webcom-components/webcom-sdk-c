@@ -128,22 +128,22 @@ void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l) {
 			switch (l) {
 			case WC_LOG_EXTRADEBUG:
 				lws_level |= LLL_EXT | LLL_PARSER | LLL_LATENCY;
-				/* no break */
+				/* FALLTHRU */
 			case WC_LOG_DEBUG:
 				lws_level |= LLL_DEBUG | LLL_CLIENT;
-				/* no break */
+				/* FALLTHRU */
 			case WC_LOG_INFO:
 				lws_level |= LLL_INFO;
-				/* no break */
+				/* FALLTHRU */
 			case WC_LOG_NOTICE:
 				lws_level |= LLL_NOTICE;
-				/* no break */
+				/* FALLTHRU */
 			case WC_LOG_WARNING:
 				lws_level |= LLL_WARN;
-				/* no break */
+				/* FALLTHRU */
 			case WC_LOG_ERR:
 				lws_level |= LLL_ERR;
-				/* no break */
+				/* FALLTHRU */
 			case WC_LOG_CRIT:
 			case WC_LOG_ALERT:
 			case WC_LOG_EMERG:
