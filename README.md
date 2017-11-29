@@ -54,7 +54,8 @@ int main(void) {
         "io.datasync.orange.com",
         443,
         "myapp",
-        &eli);
+        &loop,
+        &cb);
     // finally, run the loop
     uv_run(&loop, UV_RUN_DEFAULT);
     return 0;
