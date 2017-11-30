@@ -8,7 +8,7 @@ RUN apt-get -y install git
 RUN apt-get -y install gcc cmake make pkg-config
 
 # SDK build dependencies
-RUN apt-get -y install libjson-c-dev libwebsockets-dev
+RUN apt-get -y install libjson-c-dev libwebsockets-dev libsystemd-dev
 
 # examples build dependencies
 RUN apt-get -y install libev-dev libncurses5-dev
