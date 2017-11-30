@@ -106,6 +106,13 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 
 	WL_EXDBG("EVENT %d, user %p, in %p, %zu", reason, user, in, len);
 
+#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER < 2000000
+	/* in LWS < 2, lws_client_connect_via_info() can call the callback  for
+	 * the LWS_CALLBACK_CHANGE_MODE_POLL_FD event, with a bogus fd, before the
+	 * user data has been saved in the wsi structure */
+	if (ctx == NULL) return 0;
+#endif
+
 	switch (reason) {
 	case LWS_CALLBACK_ADD_POLL_FD:
 		pa = in;
