@@ -8,7 +8,10 @@ RUN yum install -y git
 RUN yum install -y cmake3 gcc make pkgconfig
 
 # SDK build dependencies
-RUN yum install -y json-c-devel libwebsockets-devel openssl-devel
+RUN yum install -y json-c-devel libwebsockets-devel openssl-devel systemd-devel
+
+# event loop integrations
+RUN yum install -y libev-devel libuv-devel libevent-devel
 
 # examples build dependencies
 RUN yum install -y libev-devel ncurses-devel
@@ -26,4 +29,4 @@ ENV package_flavour centos7
 
 VOLUME /tmp/webcom-package/
 
-CMD /var/build/build.sh
+CMD /var/build/build.sh -DWITH_LIBEV=ON -DWITH_LIBUV=ON -DWITH_LIBEVENT=ON

@@ -8,7 +8,10 @@ RUN apt-get -y install git
 RUN apt-get -y install gcc cmake make pkg-config
 
 # SDK build dependencies
-RUN apt-get -y install libjson-c-dev libwebsockets-dev
+RUN apt-get -y install libjson-c-dev libwebsockets-dev libsystemd-dev
+
+# event loop integrations
+RUN apt -y install libev-dev libuv1-dev libevent-dev
 
 # examples build dependencies
 RUN apt-get -y install libev-dev libncurses5-dev
@@ -26,4 +29,4 @@ ENV package_flavour ubuntu16.04
 
 VOLUME /tmp/webcom-package/
 
-CMD /var/build/build.sh
+CMD /var/build/build.sh -DWITH_LIBEV=ON -DWITH_LIBUV=ON -DWITH_LIBEVENT=ON

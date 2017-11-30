@@ -13,6 +13,9 @@ RUN apt-get -y install libjson-c-dev libwebsockets-dev
 # examples build dependencies
 RUN apt-get -y install libev-dev libncurses5-dev
 
+# event loop integrations
+RUN apt -y install libev-dev libuv1-dev libevent-dev
+
 # documentation build dependencies
 RUN apt-get -y install doxygen
 
@@ -26,4 +29,4 @@ ENV package_flavour debian9
 
 VOLUME /tmp/webcom-package/
 
-CMD /var/build/build.sh
+CMD /var/build/build.sh -DWITH_LIBEV=ON -DWITH_LIBUV=ON -DWITH_LIBEVENT=ON
