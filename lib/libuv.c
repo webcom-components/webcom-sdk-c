@@ -27,6 +27,11 @@
 #include "webcom-c/webcom-utils.h"
 #include "webcom-c/webcom-log.h"
 
+#if UV_VERSION_HEX < 0x010900
+/* UV_DISCONNECT was introduced in libuv 1.9.0, fallback to UV_READABLE */
+# define UV_DISCONNECT UV_READABLE
+#endif
+
 struct wc_libuv_integration_data {
 	uv_loop_t *loop;
 	struct wc_eli_callbacks callbacks;
