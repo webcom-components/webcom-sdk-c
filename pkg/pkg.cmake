@@ -31,6 +31,11 @@ if(PACKAGE_FLAVOUR)
 		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets8, libjson-c3, libssl1.0.0, libev4, libuv1, libevent-2.0-5, libncurses5, libc6, ca-certificates")
 		set(CPACK_SYSTEM_NAME "zesty")
 
+	elseif(PACKAGE_FLAVOUR STREQUAL "ubuntu17.10")
+		set(CPACK_GENERATOR "DEB")
+		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets8, libjson-c3, libssl1.0.0, libev4, libuv1, libevent-2.1-6, libncurses5, libc6, ca-certificates")
+		set(CPACK_SYSTEM_NAME "artful")
+
 	elseif(PACKAGE_FLAVOUR STREQUAL "centos7")
 		set(CPACK_GENERATOR "RPM")
 		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, libuv, libevent, ncurses-libs")
@@ -50,6 +55,11 @@ if(PACKAGE_FLAVOUR)
 		set(CPACK_GENERATOR "RPM")
 		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, libuv, libevent, ncurses-libs")
 		set(CPACK_SYSTEM_NAME "fc26")
+
+	elseif(PACKAGE_FLAVOUR STREQUAL "fedora27")
+		set(CPACK_GENERATOR "RPM")
+		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, libuv, libevent, ncurses-libs")
+		set(CPACK_SYSTEM_NAME "fc27")
 
 	else()
 		message(FATAL_ERROR "unknown flavour ${PACKAGE_FLAVOUR}")
