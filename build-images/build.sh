@@ -39,6 +39,6 @@ git merge "origin/$git_ref"
 
 cd build
 
-"$CMAKE" .. "-DTARGET_PACKAGE_FLAVOUR=${package_flavour}" "-DCPACK_OUTPUT_FILE_PREFIX=$PACKAGE_DEST"
+"$CMAKE" .. "-DPACKAGE_FLAVOUR=${package_flavour}" "-DCPACK_OUTPUT_FILE_PREFIX=$PACKAGE_DEST" "$@"
 make clean all
 make package
