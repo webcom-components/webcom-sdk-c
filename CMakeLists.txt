@@ -22,7 +22,7 @@ if(PROJECT_VERSION_EXTRA)
 	endif(PROJECT_VERSION_EXTRA STREQUAL "git")
 endif(PROJECT_VERSION_EXTRA)
 
-option(WITH_LIBEV "Enable libev event loop support" OFF)
+option(WITH_LIBEV "Enable libev event loop support" ON)
 option(WITH_LIBUV "Enable libuv event loop support" OFF)
 option(WITH_LIBEVENT "Enable libevent event loop support" OFF)
 
@@ -30,7 +30,8 @@ option(WITH_LIBEVENT "Enable libevent event loop support" OFF)
 
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
-find_package(PkgConfig)
+find_package(PkgConfig REQUIRED)
+include(FindCURL REQUIRED)
 
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
@@ -56,6 +57,7 @@ endif()
 link_directories(
 	${WEBSOCKETS_LIBRARY_DIRS}
 	${JSONC_LIBRARY_DIRS}
+	${CURL_LIBRARY_DIRS}
 	)
 
 include(CheckIncludeFile)
@@ -95,6 +97,7 @@ add_library(
 	lib/request.c
 	lib/event.c
 	lib/log.c
+	lib/auth.c
 	${WC_SRC_LIST}
 )
 
@@ -111,6 +114,7 @@ target_include_directories(
 	PRIVATE
 	${JSONC_INCLUDE_DIRS}
 	${WEBSOCKETS_INCLUDE_DIRS}
+	${CURL_INCLUDE_DIRS}
 	${webcom-sdk-c_SOURCE_DIR}/include
 )
 
@@ -118,6 +122,7 @@ target_link_libraries(
 	webcom-c
 	${WEBSOCKETS_LIBRARIES}
 	${JSONC_LIBRARIES}
+	${CURL_LIBRARIES}
 	${WC_LIB_LIST}
 )
 

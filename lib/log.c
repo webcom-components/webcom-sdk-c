@@ -44,6 +44,7 @@ char *wc_log_facility_names[] = {
 	"MSG",
 	"GEN",
 	"APP",
+	"AUT",
 };
 
 char *wc_log_level_names[] = {

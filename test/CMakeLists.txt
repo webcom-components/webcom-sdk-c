@@ -156,3 +156,28 @@ add_test(
 	NAME "misc"
 	COMMAND webcom-test-misc
 )
+
+## auth
+
+add_executable(
+	webcom-test-auth
+	test-auth.c
+)
+
+target_include_directories(
+	webcom-test-auth
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+	${LIBEV_INCLUDE_DIR}
+)
+
+target_link_libraries(
+	webcom-test-auth
+	webcom-c
+	${LIBEV}
+)
+
+add_test(
+	NAME auth
+	COMMAND webcom-test-auth
+)

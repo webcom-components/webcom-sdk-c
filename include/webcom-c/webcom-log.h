@@ -42,6 +42,7 @@ enum wc_log_facility {
 	WC_LOG_MESSAGE,     //!< Webcom messages activity logs
 	WC_LOG_GENERAL,     //!< Other logs
 	WC_LOG_APPLICATION, //!< Reserved for the application's logs
+	WC_LOG_AUTH,        //!< Authentication-related logs
 
 	WC_LOG_ALL          //!< Special value used to set a priority on all facilities
 };

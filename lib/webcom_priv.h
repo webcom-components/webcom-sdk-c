@@ -29,6 +29,8 @@
 #include <stdlib.h>
 #include <libwebsockets.h>
 #include <sys/time.h>
+#include <json-c/json.h>
+#include <curl/curl.h>
 
 #include "webcom-c/webcom.h"
 
@@ -67,6 +69,16 @@ typedef struct wc_context {
 	int64_t last_req;
 	wc_action_trans_t *pending_req_table[1 << PENDING_ACTION_HASH_FACTOR];
 	wc_on_data_handler_t *handlers[1 << DATA_HANDLERS_HASH_FACTOR];
+	char *app_name;
+	char *host;
+	uint16_t port;
+	unsigned ws_next_reconnect_timer;
+	char *auth_url;
+	CURL *auth_curl_handle;
+	CURLM *auth_curl_multi_handle;
+	json_tokener *auth_parser;
+	char auth_error[CURL_ERROR_SIZE];
+	char *auth_form_data;
 } wc_context_t;
 
 static inline int64_t wc_now() {

@@ -140,6 +140,7 @@
  * 		@defgroup webcom-libevent		Integrate with libevent
  * 	@}
  * 	@defgroup webcom-requests		Send requests: subscribe to data change, send data, ...
+ * 	@defgroup webcom-auth			Retrieve authentication tokens from the Webcom server
  *	@defgroup webcom-event			Route data events to callbacks
  *	@defgroup webcom-log			Logging functions
  *
@@ -180,6 +181,7 @@
 #include "webcom-req.h"
 #include "webcom-utils.h"
 #include "webcom-event.h"
+#include "webcom-auth.h"
 
 /**
  * @ingroup webcom-general

@@ -134,6 +134,8 @@ int64_t wc_req_unlisten(wc_context_t *cnx, wc_on_req_result_t callback, char *pa
  * @param cred a string containing the secret token
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
+ *
+ * @see wc_auth_with_password()
  */
 int64_t wc_req_auth(wc_context_t *cnx, wc_on_req_result_t callback, char *cred);
 
