@@ -31,7 +31,7 @@
 typedef struct wc_context wc_context_t;
 
 /**
- * @ingroup webcom-connection
+ * @addtogroup webcom-connection
  * @{
  */
 
@@ -39,9 +39,43 @@ typedef struct wc_context wc_context_t;
 #define WC_POLLIN (POLLIN)
 #define WC_POLLOUT (POLLOUT)
 
+/**
+ * the origin of a poll event
+ */
+enum wc_pollsrc {
+	WC_POLL_DATASYNC,           //!< the event relates to the datasync socket
+	WC_POLL_AUTH,               //!< the event relates to the authentication socket
+
+	_WC_POLL_MAX /* keep last *///!< special value, holds the actual number of possible socket event sources
+};
+
+/**
+ * the origin of a timer event
+ */
+enum wc_timersrc {
+	WC_TIMER_DATASYNC_KEEPALIVE, //!< the event relates to the datasync socket keepalive
+	WC_TIMER_DATASYNC_RECONNECT, //!< the event relates to the datasync reconnection timer
+	WC_TIMER_AUTH,               //!< the event relates to the authentication HTTP request handling
+
+	_WC_TIMER_MAX /* keep last *///!< special value, holds the actual number of possible timers
+};
+
+/**
+ * arguments to poll events
+ */
 struct wc_pollargs {
-	int fd;
-	short events;
+	int fd;              //!< file descriptor
+	short events;        //!< a mask of events (WC_POLL* macros)
+	enum wc_pollsrc src; //!< the origin of this event
+};
+
+/**
+ * arguments to timer events
+ */
+struct wc_timerargs {
+	long ms;                //!< timer delay in milliseconds
+	enum wc_timersrc timer; //!< the origin of this event
+	int repeat;             //!< 1 if this timer should be recurring, 0 otherwise (only relevant for the WC_EVENT_SET_TIMER event)
 };
 
 typedef enum {
@@ -55,6 +89,8 @@ typedef enum {
 	 * This event indicates that the webcom server has sent its handshake
 	 * message. From this point, it's safe to start sending requests to the
 	 * webcom server through this connection.
+	 *
+	 * Return 1 to trigger automatic reconnection.
 	 */
 	WC_EVENT_ON_SERVER_HANDSHAKE,
 	/**
@@ -66,6 +102,8 @@ typedef enum {
 	/**
 	 * This event indicates that an error occurred on the given connection. An
 	 * additional error string of size len is given in data.
+	 *
+	 * Return 1 to trigger automatic reconnection.
 	 */
 	WC_EVENT_ON_CNX_ERROR,
 	/**
@@ -87,6 +125,24 @@ typedef enum {
 	 * and events.
 	 */
 	WC_EVENT_MODIFY_FD,
+	/**
+	 * This event instructs that a timer whose properties are passed in data as
+	 * a pointer to a `struct wc_timerargs` object must be set and armed. When
+	 * the timer fires, you must call the wc_handle_timer() function, with the
+	 * appropriate wc_timersrc argument set.
+	 */
+	WC_EVENT_SET_TIMER,
+	/**
+	 * This event instructs that the timer whose identity is passed in data as
+	 * a pointer to a `enum wc_timersrc` must be cancelled.
+	 */
+	WC_EVENT_DEL_TIMER,
+	/**
+	 * This event indicates that a reply to an authentication request is
+	 * available. The details about the result is passed in data as a pointer
+	 * to a `struct wc_auth_info`.
+	 */
+	WC_AUTH_ON_AUTH_REPLY,
 } wc_event_t;
 
 /**
@@ -98,8 +154,9 @@ typedef enum {
  * @param ctx (mandatory) the context on which the event occurred
  * @param data (optional) some additional data about the event
  * @param len (optional) the size of the additional data
+ * @return a value to return to the C SDK
  */
-typedef void (*wc_on_event_cb_t) (wc_event_t event, wc_context_t *ctx, void *data, size_t len);
+typedef int (*wc_on_event_cb_t) (wc_event_t event, wc_context_t *ctx, void *data, size_t len);
 
 /**
  * Create a webcom context.
@@ -188,11 +245,21 @@ void *wc_context_get_user_data(wc_context_t *ctx);
  * to call this function.
  *
  * @param ctx the context
- * @param fd the file descriptor
- * @param revents the events to handle: combination of POLLIN and POLLOUT
+ * @param pa a pointer to a structure describing the event (file descriptor,
+ * events [WC_POLLHUP, WC_POLLIN, WC_POLLOUT], and source [WC_POLL_DATASYNC,
+ * WC_POLL_AUTH])
  */
-void wc_handle_fd_events(wc_context_t *ctx, int fd, short revents);
+void wc_handle_fd_events(wc_context_t *ctx, struct wc_pollargs *pa);
 
+/**
+ * informs the SDK that some timer has fired
+ *
+ * You need to call this function once a timer armed because of a
+ * **WC_EVENT_SET_TIMER** event has fired.
+ * @param ctx the context
+ * @param timer the timer identifier
+ */
+void wc_handle_timer(wc_context_t *ctx, enum wc_timersrc timer);
 
 /**
  * Reconnects a disconnected Webcom context

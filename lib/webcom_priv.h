@@ -90,5 +90,6 @@ void wc_req_response_dispatch(wc_context_t *cnx, wc_response_t *response);
 void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
 void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push);
 void wc_free_on_data_handlers(wc_on_data_handler_t **table);
+void wc_auth_event_action(wc_context_t *ctx, int fd);
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

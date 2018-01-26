@@ -24,23 +24,26 @@
 #define INCLUDE_WEBCOM_C_WEBCOM_ELI_H_
 
 #include "webcom-cnx.h"
+#include "webcom-auth.h"
 
 /**
- * Callbacks to pass to the event loop integration. Every function pointer must
- * be valid, passing NULL in on of the pointers is not supported.
+ * Callbacks to pass to the event loop integration. You can set one callback to
+ * NULL if you are not interested in the event.
  */
 struct wc_eli_callbacks {
-	/** callback when the connection to the server is up */
+	/** called when the connection to the server is up
+	 * @param ctx the context
+	 */
 	void (*on_connected)(wc_context_t *ctx);
 
-	/** callback when the connection to the server is closed
+	/** called when the connection to the server is closed
 	 * @param ctx the context
 	 * @param error NULL if no error occurred, an error string on error
 	 * @return return anything but 0 to let the SDK reconnect automatically
 	 */
 	int (*on_disconnected)(wc_context_t *ctx);
 
-	/** callback when the connection to the server is close on error
+	/** called when the connection to the server is close on error
 	 * @param ctx the context
 	 * @param next_try delay, in seconds, before the next automatic
 	 * reconnection attempt, 0 if no next attempt
@@ -49,6 +52,20 @@ struct wc_eli_callbacks {
 	 * @return return anything but 0 to let the SDK reconnect automatically
 	 */
 	int (*on_error)(wc_context_t *ctx, unsigned next_try, const char *error, int error_len);
+
+	/**
+	 * called on success reply from the authentication server
+	 * @param ctx the context
+	 * @param ai a structure bearing the informations about the authentication
+	 */
+	void (*on_auth_success)(wc_context_t *ctx, struct wc_auth_info* ai);
+
+	/**
+	 * called on error reply from the authentication server
+	 * @param ctx
+	 * @param error
+	 */
+	void (*on_auth_error)(wc_context_t *ctx, char* error);
 };
 
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_ELI_H_ */
