@@ -260,7 +260,7 @@ int wc_auth_with_password(wc_context_t *ctx, const char *email, const char *pass
 		curl_multi_setopt(ctx->auth_curl_multi_handle, CURLMOPT_TIMERFUNCTION, curl_timer_cb);
 		curl_multi_setopt(ctx->auth_curl_multi_handle, CURLMOPT_TIMERDATA, ctx);
 		api_path_l =
-				9 /* 'https://' */
+				8 /* 'https://' */
 				+ strlen(ctx->host)
 				+ 7 /* ':' + port + '/' */
 				+ sizeof(WEBCOM_AUTH_API_PATH_BEGIN) - 1

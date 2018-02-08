@@ -39,7 +39,7 @@
  */
 struct wc_auth_info {
 	char *token; /**< the webcom token */
-	uint64_t expires; /**< the token expiration timestamp */
+	uint64_t expires; /**< the token expiration timestamp, in seconds */
 	char *provider_uid; /**< the User ID according to the provider */
 	char *uid; /**< the User ID according to the Webcom platform */
 	char *error; /**< not NULL f an error occurred */

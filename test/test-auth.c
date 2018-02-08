@@ -72,7 +72,7 @@ void wc_on_ws_auth_response(wc_context_t *ctx, int64_t id, wc_action_type_t type
 		STFU_TRUE("Successful authentication on the datasync websocket", 1);
 		if (read_path) {
 			wc_on_data(ctx, read_path, on_data, NULL);
-			wc_req_listen(ctx, NULL, read_path);
+			wc_req_listen(ctx, wc_on_ws_listen_response, read_path);
 		} else {
 			ev_break(EV_DEFAULT, EVBREAK_ALL);
 		}
