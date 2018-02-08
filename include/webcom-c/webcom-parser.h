@@ -96,6 +96,20 @@ int wc_parse_msg(char *str, wc_msg_t *res);
 void wc_parser_free(wc_parser_t *parser);
 
 /**
+ * Compares two strings using the Webcom key order:
+ *
+ * - Keys that are parsable as integers are ordered before others.
+ * - Integer keys are ordered following natural order on integers.
+ * - Other keys are considered as strings and ordered in lexicographical order.
+ *
+ * **Example:** `"0" < "1" < "9" < "72" < "521" < "1000" < "aa" < "bb"`
+ * @param sa first string
+ * @param sb second string
+ * @return a negative number if sa < sb, positive number if sa > sb, 0 if equal
+ */
+int wc_key_cmp(const char *sa, const char *sb);
+
+/**
  * @}
  */
 

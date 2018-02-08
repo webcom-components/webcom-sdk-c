@@ -81,8 +81,39 @@ struct _wc_hlp_json_keyval {
 	json_object *val;
 };
 
+int wc_key_cmp(const char *sa, const char *sb) {
+	int64_t ia;
+	int64_t ib;
+	int read, ret = 0;
+
+	char status = 0;
+
+	if (sscanf(sa, "%"SCNi64"%n", &ia, &read) == 1 && read == (int)strlen(sa)) {
+		status |= 1;
+	}
+	if (sscanf(sb, "%"SCNi64"%n", &ib, &read) == 1 && read == (int)strlen(sb)) {
+		status |= 2;
+	}
+
+	switch (status) {
+	case 0:
+		ret = strcmp(sa, sb);
+		break;
+	case 1:
+		ret = -1;
+		break;
+	case 2:
+		ret = 1;
+		break;
+	case 3:
+		ret = (ia - ib < 0) ? -1 : ((ia - ib > 0) ? 1 : 0);
+	}
+
+	return ret;
+}
+
 static int cmp_json_keys(const void *a, const void *b) {
-	return strcmp(
+	return wc_key_cmp(
 			((struct _wc_hlp_json_keyval *)a)->key,
 			((struct _wc_hlp_json_keyval *)b)->key);
 }

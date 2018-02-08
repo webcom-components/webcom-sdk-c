@@ -28,6 +28,15 @@
 int main(void) {
 	wc_msg_t msg1, msg2, msg3, msg4, msg5, msg6, msg7, msg8;
 
+	STFU_TRUE	("Key order: '123456' < '111foo'", wc_key_cmp("123456", "111foo") < 0);
+	STFU_TRUE	("Key order: '123text' > '0123'", wc_key_cmp("123text", "122") > 0);
+	STFU_TRUE	("Key order: '-456789' > '-567890'", wc_key_cmp("-456789", "-567890") > 0);
+	STFU_TRUE	("Key order: '45678' == '45678'", wc_key_cmp("45678", "45678") == 0);
+	STFU_TRUE	("Key order: '42' < '43'", wc_key_cmp("42", "43") < 0);
+	STFU_TRUE	("Key order: 'FOO' == 'FOO'", wc_key_cmp("FOO", "FOO") == 0);
+	STFU_TRUE	("Key order: 'FOO' < 'FOQ'", wc_key_cmp("FOO", "FOQ") < 0);
+	STFU_TRUE	("Key order: 'FOR' > 'FOQ'", wc_key_cmp("FOR", "FOQ") > 0);
+
 	char *str1 = "Good morning, that's a nice tnetennba";
 	char *str2 = "{\"t\":\"c\",\"d\":{\"t\":\"h\",\"d\":{\"ts\":1492191239182,\"h\":\"\\/test\\/foo?bar=baz\",\"v\":\"5\"}}}";
 	char *str3 = "{\"t\":\"c\",\"d\":{\"t\":\"s\",\"d\":\"the truth is out there\"}}";
