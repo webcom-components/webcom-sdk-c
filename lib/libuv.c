@@ -155,7 +155,7 @@ wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *applica
 	integration_data->loop = loop;
 	integration_data->next_try = 0;
 
-	ret = wc_context_new(host, port, application, _wc_libuv_cb, integration_data);
+	ret = wc_datasync_init(host, port, application, _wc_libuv_cb, integration_data);
 
 	if (ret == NULL) {
 		free(integration_data);

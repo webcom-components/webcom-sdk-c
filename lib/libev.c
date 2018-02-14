@@ -23,9 +23,9 @@
 #include <stdlib.h>
 #include <poll.h>
 #include <string.h>
+#include <webcom-c/webcom-datasync.h>
 
 #include "webcom-c/webcom-libev.h"
-#include "webcom-c/webcom-cnx.h"
 #include "webcom-c/webcom-utils.h"
 #include "webcom-c/webcom-log.h"
 
@@ -157,9 +157,11 @@ static int _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, size_t
 	return ret;
 }
 
-wc_context_t *wc_context_new_with_libev(char *host, uint16_t port, char *application, struct ev_loop *loop, struct wc_eli_callbacks *callbacks) {
+wc_context_t *wc_context_create_with_libev(struct wc_context_options *options, struct ev_loop *loop, struct wc_eli_callbacks *callbacks) {
 	struct wc_libev_integration_data *integration_data;
 	wc_context_t *ret = NULL;
+
+	struct wc_context_options ev_options;
 
 	integration_data = calloc(1, sizeof *integration_data);
 	if (integration_data == NULL) {
@@ -169,7 +171,12 @@ wc_context_t *wc_context_new_with_libev(char *host, uint16_t port, char *applica
 	integration_data->callbacks = *callbacks;
 	integration_data->loop = loop;
 
-	ret = wc_context_new(host, port, application, _wc_libev_cb, integration_data);
+	ev_options = *options;
+	ev_options.callback = _wc_libev_cb;
+	ev_options.user_data = integration_data;
+
+
+	ret = wc_context_create(&ev_options);
 
 	if (ret == NULL) {
 		free(integration_data);

@@ -34,9 +34,8 @@
 #include <assert.h>
 #include <poll.h>
 
-#include "webcom_priv.h"
-#include "webcom-c/webcom-parser.h"
-#include "webcom-c/webcom-req.h"
+#include "../webcom_base_priv.h"
+#include "webcom-c/webcom.h"
 
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
@@ -46,25 +45,25 @@ static void _wc_context_connect(wc_context_t *ctx);
 static int _wc_process_incoming_message(wc_context_t *ctx, wc_msg_t *msg) {
 	struct wc_timerargs ta;
 	if (msg->type == WC_MSG_CTRL && msg->u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
-		int64_t now = wc_now();
-		srand48_r((long int)now, &ctx->pids.rand_buffer);
-		ctx->time_offset = now - msg->u.ctrl.u.handshake.ts;
-		ctx->state = WC_CNX_STATE_CONNECTED;
-		ctx->time_offset = wc_now() - msg->u.ctrl.u.handshake.ts;
+		int64_t now = wc_datasync_now();
+		srand48_r((long int)now, &ctx->datasync.pids.rand_buffer);
+		ctx->datasync.time_offset = now - msg->u.ctrl.u.handshake.ts;
+		ctx->datasync.state = WC_CNX_STATE_CONNECTED;
+		ctx->datasync.time_offset = wc_datasync_now() - msg->u.ctrl.u.handshake.ts;
 		ctx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, ctx, msg, sizeof(wc_msg_t));
 		ta.ms = 50000;
 		ta.repeat = 1;
 		ta.timer = WC_TIMER_DATASYNC_KEEPALIVE;
-		ctx->ws_next_reconnect_timer = 0;
+		ctx->datasync.ws_next_reconnect_timer = 0;
 		ctx->callback(WC_EVENT_SET_TIMER, ctx, &ta, 0);
 	} else if (msg->type == WC_MSG_DATA
 			&& msg->u.data.type == WC_DATA_MSG_PUSH
 			&& (msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT
 					|| msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_MERGE))
 	{
-		wc_on_data_dispatch(ctx, &msg->u.data.u.push);
+		wc_datasync_on_data_dispatch(ctx, &msg->u.data.u.push);
 	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
-		wc_req_response_dispatch(ctx, &msg->u.data.u.response);
+		wc_datasync_req_response_dispatch(ctx, &msg->u.data.u.response);
 	}
 	ctx->callback(WC_EVENT_ON_MSG_RECEIVED, ctx, msg, sizeof(wc_msg_t));
 	return 1;
@@ -77,9 +76,9 @@ void wc_handle_fd_events(wc_context_t *ctx, struct wc_pollargs *pa) {
 	pfd.events = pa->events;
 	pfd.revents = pa->events;
 	if (pa->src == WC_POLL_DATASYNC) {
-		lws_service_fd(ctx->lws_cci.context, &pfd);
+		lws_service_fd(ctx->datasync.lws_cci.context, &pfd);
 	} else if (pa->src == WC_POLL_AUTH) {
-		wc_auth_event_action(ctx, pa->fd);
+		wc_datasync_auth_event_action(ctx, pa->fd);
 	}
 }
 
@@ -92,7 +91,7 @@ void wc_handle_timer(wc_context_t *ctx, enum wc_timersrc timer) {
 		wc_context_reconnect(ctx);
 		break;
 	case WC_TIMER_AUTH:
-		wc_auth_event_action(ctx, -1);
+		wc_datasync_auth_event_action(ctx, -1);
 		break;
 	default:
 		break;
@@ -102,25 +101,25 @@ void wc_handle_timer(wc_context_t *ctx, enum wc_timersrc timer) {
 void _wc_process_incoming_data(wc_context_t *ctx, char *buf, size_t len) {
 	wc_msg_t msg;
 
-	if (ctx->parser == NULL) {
+	if (ctx->datasync.parser == NULL) {
 		if (*buf == '{') {
-			ctx->parser = wc_parser_new();
+			ctx->datasync.parser = wc_parser_new();
 		} else {
 			return;
 		}
 	}
-	switch (wc_parse_msg_ex(ctx->parser, buf, (size_t)len, &msg)) {
+	switch (wc_parse_msg_ex(ctx->datasync.parser, buf, (size_t)len, &msg)) {
 	case WC_PARSER_OK:
 		_wc_process_incoming_message(ctx, &msg);
-		wc_parser_free(ctx->parser);
-		ctx->parser = NULL;
+		wc_parser_free(ctx->datasync.parser);
+		ctx->datasync.parser = NULL;
 		wc_msg_free(&msg);
 		break;
 	case WC_PARSER_CONTINUE:
 		break;
 	case WC_PARSER_ERROR:
-		wc_parser_free(ctx->parser);
-		ctx->parser = NULL;
+		wc_parser_free(ctx->datasync.parser);
+		ctx->datasync.parser = NULL;
 		break;
 	}
 }
@@ -128,12 +127,12 @@ void _wc_process_incoming_data(wc_context_t *ctx, char *buf, size_t len) {
 static void _wc_schedule_reconnect(wc_context_t *ctx) {
 	struct wc_timerargs wcta;
 
-	wcta.ms = 1000 * ctx->ws_next_reconnect_timer;
+	wcta.ms = 1000 * ctx->datasync.ws_next_reconnect_timer;
 	wcta.repeat = 0;
 	wcta.timer = WC_TIMER_DATASYNC_RECONNECT;
 	ctx->callback(WC_EVENT_SET_TIMER, ctx, &wcta, 0);
-	if (ctx->ws_next_reconnect_timer < (1 << 8)) {
-		ctx->ws_next_reconnect_timer <<= 1;
+	if (ctx->datasync.ws_next_reconnect_timer < (1 << 8)) {
+		ctx->datasync.ws_next_reconnect_timer <<= 1;
 	}
 }
 
@@ -181,19 +180,19 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		WL_DBG("client websocket established for context %p", ctx);
 		break;
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
-		ctx->state = WC_CNX_STATE_DISCONNECTED;
+		ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 		WL_ERR("connection error \"%.*s\"", (int)len, (char*)in);
 		if (ctx->callback(WC_EVENT_ON_CNX_ERROR, ctx, in, len)) {
 			_wc_schedule_reconnect(ctx);
 		}
 		break;
 	case LWS_CALLBACK_CLIENT_RECEIVE:
-		if (ctx->state != WC_CNX_STATE_DISCONNECTING) {
+		if (ctx->datasync.state != WC_CNX_STATE_DISCONNECTING) {
 			_wc_process_incoming_data(ctx, (char*)in, len);
 		}
 		break;
 	case LWS_CALLBACK_CLOSED:
-		ctx->state = WC_CNX_STATE_DISCONNECTED;
+		ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 		wcta.timer = WC_TIMER_DATASYNC_KEEPALIVE;
 		ctx->callback(WC_EVENT_DEL_TIMER, ctx, &wcta.timer, 0);
 		if (ctx->callback(WC_EVENT_ON_CNX_CLOSED, ctx, NULL, 0)) {
@@ -201,7 +200,7 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		}
 		break;
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
-		if (ctx->state == WC_CNX_STATE_DISCONNECTING) {
+		if (ctx->datasync.state == WC_CNX_STATE_DISCONNECTING) {
 			return -1;
 		}
 		break;
@@ -217,8 +216,8 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	long len;
 	int sent;
 
-	if (ctx->state != WC_CNX_STATE_CONNECTED) {
-		WL_WARN("message not sent, the context %p is not connected (state %d)", ctx, ctx->state);
+	if (ctx->datasync.state != WC_CNX_STATE_CONNECTED) {
+		WL_WARN("message not sent, the context %p is not connected (state %d)", ctx, ctx->datasync.state);
 		return -1;
 	}
 
@@ -232,7 +231,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 
 	memcpy(buf + LWS_SEND_BUFFER_PRE_PADDING, jsonstr, len);
 
-	sent = lws_write(ctx->lws_conn, buf + LWS_SEND_BUFFER_PRE_PADDING, len, LWS_WRITE_TEXT);
+	sent = lws_write(ctx->datasync.lws_conn, buf + LWS_SEND_BUFFER_PRE_PADDING, len, LWS_WRITE_TEXT);
 	WL_DBG("%d bytes sent:\n\t%s", sent, jsonstr);
 	free(jsonstr);
 	free(buf);
@@ -240,11 +239,11 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 }
 
 void wc_context_close_cnx(wc_context_t *ctx) {
-	switch (ctx->state) {
+	switch (ctx->datasync.state) {
 	case WC_CNX_STATE_CONNECTED:
 	case WC_CNX_STATE_CONNECTING:
-		ctx->state = WC_CNX_STATE_DISCONNECTING;
-		lws_callback_on_writable(ctx->lws_conn);
+		ctx->datasync.state = WC_CNX_STATE_DISCONNECTING;
+		lws_callback_on_writable(ctx->datasync.lws_conn);
 		break;
 	case WC_CNX_STATE_DISCONNECTING:
 	case WC_CNX_STATE_DISCONNECTED:
@@ -262,18 +261,11 @@ struct lws_protocols protocols[] = {
 	{.name=NULL}
 };
 
-wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on_event_cb_t callback, void *user) {
-	wc_context_t *res;
+wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 	size_t ws_path_l;
 
 	struct lws_context_creation_info lws_ctx_creation_nfo;
 	memset(&lws_ctx_creation_nfo, 0, sizeof(lws_ctx_creation_nfo));
-
-	res = calloc(1, sizeof(wc_context_t));
-
-	if (res == NULL) {
-		return NULL;
-	}
 
 	lws_ctx_creation_nfo.port = CONTEXT_PORT_NO_LISTEN;
 	lws_ctx_creation_nfo.protocols = protocols;
@@ -293,66 +285,58 @@ wc_context_t *wc_context_new(char *host, uint16_t port, char *application, wc_on
 	lws_ctx_creation_nfo.http_proxy_address = proxy;
 #endif
 
-	res->lws_cci.context = lws_create_context(&lws_ctx_creation_nfo);
-	res->lws_cci.address = host;
-	res->lws_cci.host = host;
-	res->lws_cci.port = (int)port;
-	res->lws_cci.ssl_connection = 1;
+	ctx->datasync.lws_cci.context = lws_create_context(&lws_ctx_creation_nfo);
+	ctx->datasync.lws_cci.address = ctx->host;
+	ctx->datasync.lws_cci.host = ctx->host;
+	ctx->datasync.lws_cci.port = (int)ctx->port;
+	ctx->datasync.lws_cci.ssl_connection = 1;
 	ws_path_l = (
 			sizeof(WEBCOM_WS_PATH) - 1
 			+ 3
 			+ sizeof(WEBCOM_PROTOCOL_VERSION) - 1
 			+ 4
-			+ strlen(application)
+			+ strlen(ctx->app_name)
 			+ 1 );
-	res->lws_cci.path = malloc(ws_path_l);
-	if (res->lws_cci.path == NULL) {
-		free(res);
+	ctx->datasync.lws_cci.path = malloc(ws_path_l);
+	if (ctx->datasync.lws_cci.path == NULL) {
 		return NULL;
 	}
-	snprintf((char*)res->lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, application);
-	res->lws_cci.protocol = protocols[0].name;
-	res->lws_cci.ietf_version_or_minus_one = -1;
-	res->lws_cci.userdata = (void *)res;
-	res->user = user;
-	res->callback = callback;
-	res->app_name = strdup(application);
-	res->host = strdup(host);
-	res->port = port;
+	snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, ctx->app_name);
+	ctx->datasync.lws_cci.protocol = protocols[0].name;
+	ctx->datasync.lws_cci.ietf_version_or_minus_one = -1;
+	ctx->datasync.lws_cci.userdata = (void *)ctx;
 
-	res->state = WC_CNX_STATE_DISCONNECTED;
-	_wc_context_connect(res);
+	ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 
-	return res;
+	return &ctx->datasync;
 }
 
 static void _wc_context_connect(wc_context_t *ctx) {
-	ctx->state = WC_CNX_STATE_CONNECTING;
-	ctx->lws_conn = lws_client_connect_via_info(&ctx->lws_cci);
-	lws_service(ctx->lws_cci.context, 0);
+	ctx->datasync.state = WC_CNX_STATE_CONNECTING;
+	ctx->datasync.lws_conn = lws_client_connect_via_info(&ctx->datasync.lws_cci);
+	lws_service(ctx->datasync.lws_cci.context, 0);
 }
 
 void wc_context_reconnect(wc_context_t *ctx) {
-	if (ctx->state == WC_CNX_STATE_DISCONNECTED) {
+	if (ctx->datasync.state == WC_CNX_STATE_DISCONNECTED) {
 		_wc_context_connect(ctx);
 	} else {
 		WL_WARN("called wc_context_reconnect() on not disconnected connection in context %p", ctx);
 	}
 }
 
-void wc_context_free(wc_context_t *ctx) {
-	if (ctx->lws_cci.path != NULL) free((char*)ctx->lws_cci.path);
-	if (ctx->app_name != NULL) free(ctx->app_name);
-	if (ctx->host != NULL) free(ctx->host);
-	if (ctx->auth_form_data != NULL) free(ctx->auth_form_data);
-	if (ctx->auth_url != NULL) free(ctx->auth_url);
-	if (ctx->lws_cci.context != NULL) lws_context_destroy(ctx->lws_cci.context);
-	if (ctx->parser != NULL) wc_parser_free(ctx->parser);
+void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx) {
+	if (ds_ctx->lws_cci.path != NULL) free((char*)ds_ctx->lws_cci.path);
+	//TODO add destrucors in base / auth
+	//if (ctx->app_name != NULL) free(ctx->app_name);
+	//if (ctx->host != NULL) free(ctx->host);
+	//if (ctx->auth_form_data != NULL) free(ctx->auth_form_data);
+	//if (ctx->auth_url != NULL) free(ctx->auth_url);
+	if (ds_ctx->lws_cci.context != NULL) lws_context_destroy(ds_ctx->lws_cci.context);
+	if (ds_ctx->parser != NULL) wc_parser_free(ds_ctx->parser);
 
-	wc_free_on_data_handlers(ctx->handlers);
-	wc_free_pending_trans(ctx->pending_req_table);
-
-	free(ctx);
+	wc_datasync_free_on_data_handlers(ds_ctx->handlers);
+	wc_datasync_free_pending_trans(ds_ctx->pending_req_table);
 }
 
 int wc_cnx_keepalive(wc_context_t *ctx) {
@@ -360,7 +344,7 @@ int wc_cnx_keepalive(wc_context_t *ctx) {
 	unsigned char keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING + 1 + LWS_SEND_BUFFER_POST_PADDING];
 
 	keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING] = '0';
-	sent = lws_write(ctx->lws_conn, &(keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING]), 1, LWS_WRITE_TEXT);
+	sent = lws_write(ctx->datasync.lws_conn, &(keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING]), 1, LWS_WRITE_TEXT);
 	if (sent) {
 		WL_DBG("keepalive frame sent");
 	} else {

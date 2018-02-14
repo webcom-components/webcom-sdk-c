@@ -27,16 +27,11 @@
 #include <stdio.h>
 #include <unistd.h>
 
-#include "webcom_priv.h"
+#include "../webcom_base_priv.h"
 
 #define WEBCOM_AUTH_API_PATH_BEGIN "auth/v2/"
 #define WEBCOM_AUTH_API_PATH_END            "/password/signin"
 
-/* libcurl init */
-__attribute__((constructor))
-static void libwebcom_curl_init() {
-   curl_global_init(CURL_GLOBAL_DEFAULT);
-}
 
 static void _wc_parse_auth_json(json_object *root, struct wc_auth_info *pai) {
 	json_object *tmp, *tmp2;
@@ -120,17 +115,17 @@ static int _wc_parse_auth_body(wc_context_t *ctx, char *data, size_t len, struct
 	enum json_tokener_error jte;
 	json_object* jroot;
 
-	if (ctx->auth_parser == NULL) {
-		ctx->auth_parser = json_tokener_new();
+	if (ctx->auth.auth_parser == NULL) {
+		ctx->auth.auth_parser = json_tokener_new();
 	}
 
-	jroot = json_tokener_parse_ex(ctx->auth_parser, data, len);
-	jte = json_tokener_get_error(ctx->auth_parser);
+	jroot = json_tokener_parse_ex(ctx->auth.auth_parser, data, len);
+	jte = json_tokener_get_error(ctx->auth.auth_parser);
 	switch (jte) {
 		case json_tokener_success:
 			memset(pai, 0, sizeof(*pai));
 			_wc_parse_auth_json(jroot, pai);
-			json_tokener_free(ctx->auth_parser);
+			json_tokener_free(ctx->auth.auth_parser);
 			json_object_put(jroot);
 			return 1;
 			break;
@@ -193,7 +188,7 @@ static int curl_sock_cb(CURL *e, curl_socket_t s, int what, void *data, void *so
 
 	wc_event_t event = ((intptr_t)sockp) ? WC_EVENT_MODIFY_FD : WC_EVENT_ADD_FD;
 
-	curl_multi_assign(ctx->auth_curl_multi_handle, s, (void*)1);
+	curl_multi_assign(ctx->auth.auth_curl_multi_handle, s, (void*)1);
 
 	switch (what) {
 	case CURL_POLL_IN:
@@ -242,23 +237,23 @@ int wc_auth_with_password(wc_context_t *ctx, const char *email, const char *pass
 	char *urle_email, *urle_password;
 	size_t form_data_l;
 
-	if (ctx->auth_curl_handle != NULL) {
+	if (ctx->auth.auth_curl_handle != NULL) {
 		return 0;
 	}
 
-	if (ctx->auth_parser != NULL) {
-		json_tokener_free(ctx->auth_parser);
-		ctx->auth_parser = NULL;
+	if (ctx->auth.auth_parser != NULL) {
+		json_tokener_free(ctx->auth.auth_parser);
+		ctx->auth.auth_parser = NULL;
 	}
 
 
-	if (ctx->auth_curl_multi_handle == NULL) {
-		ctx->auth_curl_multi_handle = curl_multi_init();
+	if (ctx->auth.auth_curl_multi_handle == NULL) {
+		ctx->auth.auth_curl_multi_handle = curl_multi_init();
 
-		curl_multi_setopt(ctx->auth_curl_multi_handle, CURLMOPT_SOCKETFUNCTION, curl_sock_cb);
-		curl_multi_setopt(ctx->auth_curl_multi_handle, CURLMOPT_SOCKETDATA, ctx);
-		curl_multi_setopt(ctx->auth_curl_multi_handle, CURLMOPT_TIMERFUNCTION, curl_timer_cb);
-		curl_multi_setopt(ctx->auth_curl_multi_handle, CURLMOPT_TIMERDATA, ctx);
+		curl_multi_setopt(ctx->auth.auth_curl_multi_handle, CURLMOPT_SOCKETFUNCTION, curl_sock_cb);
+		curl_multi_setopt(ctx->auth.auth_curl_multi_handle, CURLMOPT_SOCKETDATA, ctx);
+		curl_multi_setopt(ctx->auth.auth_curl_multi_handle, CURLMOPT_TIMERFUNCTION, curl_timer_cb);
+		curl_multi_setopt(ctx->auth.auth_curl_multi_handle, CURLMOPT_TIMERDATA, ctx);
 		api_path_l =
 				8 /* 'https://' */
 				+ strlen(ctx->host)
@@ -266,47 +261,47 @@ int wc_auth_with_password(wc_context_t *ctx, const char *email, const char *pass
 				+ sizeof(WEBCOM_AUTH_API_PATH_BEGIN) - 1
 				+ strlen(ctx->app_name) + sizeof(WEBCOM_AUTH_API_PATH_END) - 1
 				+ 1;
-		ctx->auth_url = malloc(api_path_l);
-		if (ctx->auth_url == NULL) {
+		ctx->auth.auth_url = malloc(api_path_l);
+		if (ctx->auth.auth_url == NULL) {
 			return 0;
 		}
-		snprintf((char*) ctx->auth_url, api_path_l,
+		snprintf((char*) ctx->auth.auth_url, api_path_l,
 				"https://%s:%"PRIu16"/"WEBCOM_AUTH_API_PATH_BEGIN"%s"WEBCOM_AUTH_API_PATH_END,
 				ctx->host,
 				ctx->port,
 				ctx->app_name);
 	}
 
-	ctx->auth_curl_handle = curl_easy_init();
+	ctx->auth.auth_curl_handle = curl_easy_init();
 
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_URL, ctx->auth_url);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_WRITEFUNCTION, curl_write_cb);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_WRITEDATA, ctx);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_VERBOSE, 1L);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_DEBUGFUNCTION, curl_debug_cb);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_ERRORBUFFER, ctx->auth_error);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_PRIVATE, ctx);
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_TIMEOUT, 10);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_URL, ctx->auth.auth_url);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_WRITEFUNCTION, curl_write_cb);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_WRITEDATA, ctx);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_VERBOSE, 1L);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_DEBUGFUNCTION, curl_debug_cb);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_ERRORBUFFER, ctx->auth.auth_error);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_PRIVATE, ctx);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_TIMEOUT, 10);
 
-	urle_email = curl_easy_escape(ctx->auth_curl_handle, email, strlen(email));
-	urle_password = curl_easy_escape(ctx->auth_curl_handle, password, strlen(password));
+	urle_email = curl_easy_escape(ctx->auth.auth_curl_handle, email, strlen(email));
+	urle_password = curl_easy_escape(ctx->auth.auth_curl_handle, password, strlen(password));
 	form_data_l = snprintf(NULL, 0, "email=%s&password=%s", urle_email, urle_password);
-	ctx->auth_form_data = malloc(form_data_l + 1);
-	snprintf(ctx->auth_form_data, form_data_l + 1, "email=%s&password=%s", urle_email, urle_password);
+	ctx->auth.auth_form_data = malloc(form_data_l + 1);
+	snprintf(ctx->auth.auth_form_data, form_data_l + 1, "email=%s&password=%s", urle_email, urle_password);
 
-	curl_easy_setopt(ctx->auth_curl_handle, CURLOPT_POSTFIELDS, ctx->auth_form_data);
+	curl_easy_setopt(ctx->auth.auth_curl_handle, CURLOPT_POSTFIELDS, ctx->auth.auth_form_data);
 
-	curl_multi_add_handle(ctx->auth_curl_multi_handle, ctx->auth_curl_handle);
+	curl_multi_add_handle(ctx->auth.auth_curl_multi_handle, ctx->auth.auth_curl_handle);
 
 	return 1;
 }
 
-void wc_auth_event_action(wc_context_t *ctx, int fd) {
+void wc_datasync_auth_event_action(wc_context_t *ctx, int fd) {
 	int curl_still_running;
 
-	curl_multi_socket_action(ctx->auth_curl_multi_handle, fd, 0, &curl_still_running);
+	curl_multi_socket_action(ctx->auth.auth_curl_multi_handle, fd, 0, &curl_still_running);
 	if (curl_still_running == 0) {
-		curl_multi_remove_handle(ctx->auth_curl_multi_handle, ctx->auth_curl_handle);
-		curl_easy_cleanup(ctx->auth_curl_handle);
+		curl_multi_remove_handle(ctx->auth.auth_curl_multi_handle, ctx->auth.auth_curl_handle);
+		curl_easy_cleanup(ctx->auth.auth_curl_handle);
 	}
 }

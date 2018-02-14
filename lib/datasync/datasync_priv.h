@@ -23,14 +23,14 @@
 #ifndef SRC_WEBCOM_PRIV_H_
 #define SRC_WEBCOM_PRIV_H_
 
-#include "compat.h"
+#include "../compat.h"
 
 #include <stdint.h>
 #include <stdlib.h>
 #include <libwebsockets.h>
 #include <sys/time.h>
 #include <json-c/json.h>
-#include <curl/curl.h>
+
 
 #include "webcom-c/webcom.h"
 
@@ -56,11 +56,10 @@ struct pushid_state {
 typedef struct wc_action_trans wc_action_trans_t;
 typedef struct wc_on_data_handler wc_on_data_handler_t;
 
-typedef struct wc_context {
+struct wc_datasync_context {
+	struct wc_context *webcom;
 	struct lws_client_connect_info lws_cci;
 	struct lws *lws_conn;
-	wc_on_event_cb_t callback;
-	void *user;
 	wc_cnx_state_t state;
 	wc_parser_t *parser;
 	char rxbuf[WC_RX_BUF_LEN];
@@ -69,39 +68,30 @@ typedef struct wc_context {
 	int64_t last_req;
 	wc_action_trans_t *pending_req_table[1 << PENDING_ACTION_HASH_FACTOR];
 	wc_on_data_handler_t *handlers[1 << DATA_HANDLERS_HASH_FACTOR];
-	char *app_name;
-	char *host;
-	uint16_t port;
 	unsigned ws_next_reconnect_timer;
-	char *auth_url;
-	CURL *auth_curl_handle;
-	CURLM *auth_curl_multi_handle;
-	json_tokener *auth_parser;
-	char auth_error[CURL_ERROR_SIZE];
-	char *auth_form_data;
-} wc_context_t;
+};
 
-static inline int64_t wc_now() {
+static inline int64_t wc_datasync_now() {
 	struct timeval tv;
 	gettimeofday(&tv, NULL);
 	return (int64_t) tv.tv_sec * 1000 + tv.tv_usec / 1000;
 }
 
-static inline int64_t wc_server_now(wc_context_t *cnx) {
-	return wc_now() - cnx->time_offset;
+static inline int64_t wc_datasync_server_now(struct wc_datasync_context *dsctx) {
+	return wc_datasync_now() - dsctx->time_offset;
 }
 
-static inline int64_t wc_next_reqnum(wc_context_t *cnx) {
-	return ++cnx->last_req;
+static inline int64_t wc_datasync_next_reqnum(struct wc_datasync_context *dsctx) {
+	return ++dsctx->last_req;
 }
 
-wc_action_trans_t *wc_req_get_pending(wc_context_t *cnx, int64_t id);
-void wc_free_pending_trans(wc_action_trans_t **table);
-void wc_req_response_dispatch(wc_context_t *cnx, wc_response_t *response);
+wc_action_trans_t *wc_datasync_req_get_pending(wc_context_t *dsctx, int64_t id);
+void wc_datasync_free_pending_trans(wc_action_trans_t **table);
+void wc_datasync_req_response_dispatch(wc_context_t *dsctx, wc_response_t *response);
 
-void wc_push_id(struct pushid_state *s, int64_t time, char* buf) ;
-void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push);
-void wc_free_on_data_handlers(wc_on_data_handler_t **table);
-void wc_auth_event_action(wc_context_t *ctx, int fd);
+void wc_datasync_push_id(struct pushid_state *s, int64_t time, char* buf) ;
+void wc_datasync_on_data_dispatch(wc_context_t *dsctx, wc_push_t *push);
+void wc_datasync_free_on_data_handlers(wc_on_data_handler_t **table);
+void wc_datasync_auth_event_action(wc_context_t *ctx, int fd);
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

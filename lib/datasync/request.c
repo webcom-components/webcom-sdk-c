@@ -25,7 +25,8 @@
 #include <string.h>
 
 #include "webcom-c/webcom.h"
-#include "webcom_priv.h"
+
+#include "../webcom_base_priv.h"
 
 typedef struct wc_action_trans {
 	int64_t id;
@@ -59,14 +60,14 @@ static void wc_req_store_pending(
 
 	slot = pending_req_hash(id);
 
-	trans->next = cnx->pending_req_table[slot];
-	cnx->pending_req_table[slot] = trans;
+	trans->next = cnx->datasync.pending_req_table[slot];
+	cnx->datasync.pending_req_table[slot] = trans;
 }
 
-wc_action_trans_t *wc_req_get_pending(wc_context_t *cnx, int64_t id) {
+wc_action_trans_t *wc_datasync_req_get_pending(wc_context_t *cnx, int64_t id) {
 	wc_action_trans_t *cur, **prev;
 
-	prev = &cnx->pending_req_table[pending_req_hash(id)];
+	prev = &cnx->datasync.pending_req_table[pending_req_hash(id)];
 	cur = *prev;
 
 	while (cur != NULL) {
@@ -80,10 +81,10 @@ wc_action_trans_t *wc_req_get_pending(wc_context_t *cnx, int64_t id) {
 	return cur;
 }
 
-void wc_req_response_dispatch(wc_context_t *cnx, wc_response_t *response) {
+void wc_datasync_req_response_dispatch(wc_context_t *cnx, wc_response_t *response) {
 	wc_action_trans_t *trans;
 
-	if ((trans = wc_req_get_pending(cnx, response->r)) != NULL) {
+	if ((trans = wc_datasync_req_get_pending(cnx, response->r)) != NULL) {
 		if (trans->callback != NULL) {
 			trans->callback(
 					cnx,
@@ -97,7 +98,7 @@ void wc_req_response_dispatch(wc_context_t *cnx, wc_response_t *response) {
 	}
 }
 
-void wc_free_pending_trans(wc_action_trans_t **table) {
+void wc_datasync_free_pending_trans(wc_action_trans_t **table) {
 	wc_action_trans_t *p, *q;
 	size_t i;
 
@@ -118,7 +119,7 @@ void wc_free_pending_trans(wc_action_trans_t **table) {
 		wc_action_ ## __name ## _t *req;									\
 		int ret;															\
 																			\
-		int64_t reqnum = wc_next_reqnum(ctx);								\
+		int64_t reqnum = wc_datasync_next_reqnum(wc_get_datasync(ctx));								\
 		wc_msg_init(&msg);													\
 		msg.type = WC_MSG_DATA;												\
 		msg.u.data.type = WC_DATA_MSG_ACTION;								\
@@ -180,7 +181,7 @@ int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, 
 
 	memcpy(push_path, path, path_l);
 	push_path[path_l] = '/';
-	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), push_path + path_l + 1);
+	wc_datasync_push_id(&cnx->datasync.pids, (uint64_t)wc_datasync_server_now(wc_get_datasync(cnx)), push_path + path_l + 1);
 	push_path[path_l + 21] = '\0';
 
 	ret = wc_req_put(cnx, callback, push_path, json);

@@ -174,13 +174,19 @@
 #	define WEBCOM_SDK_VERSION_STR WC_XSTR(WEBCOM_SDK_MAJOR) "." WC_XSTR(WEBCOM_SDK_MINOR) "." WC_XSTR(WEBCOM_SDK_PATCH)
 #endif
 
+#include "webcom-base.h"
+#include "webcom-callback.h"
 #include "webcom-log.h"
+#include "webcom-utils.h"
+
+/* Datasync */
 #include "webcom-msg.h"
 #include "webcom-parser.h"
-#include "webcom-cnx.h"
+#include "webcom-datasync.h"
 #include "webcom-req.h"
-#include "webcom-utils.h"
 #include "webcom-event.h"
+
+/* Authentication */
 #include "webcom-auth.h"
 
 /**

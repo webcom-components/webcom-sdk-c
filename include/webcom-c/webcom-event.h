@@ -23,7 +23,7 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_EVENT_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_EVENT_H_
 
-#include "webcom-cnx.h"
+#include "webcom-datasync.h"
 
 /**
  * @ingroup webcom-event

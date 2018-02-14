@@ -25,8 +25,8 @@
 #include <stdint.h>
 #include <string.h>
 
-#include "webcom_priv.h"
 #include "webcom-c/webcom.h"
+#include "../webcom_base_priv.h"
 
 /* lrand48 is documented to return a long int in the [0, 2^31[ range */
 #define RANDOM_BYTES_PER_LRAND48 3
@@ -90,7 +90,7 @@ inline static void wc_b64ish_encode(char *out, unsigned char *in, size_t n) {
 	}
 }
 
-void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
+void wc_datasync_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	uint64_t time_be;
 
 	time_be = htobe64((uint64_t)time);
@@ -138,11 +138,11 @@ void wc_push_id(struct pushid_state *s, int64_t time, char* buf) {
 }
 
 int64_t wc_get_server_time(wc_context_t *cnx) {
-	return wc_server_now(cnx);
+	return wc_datasync_server_now(wc_get_datasync(cnx));
 }
 
 void wc_get_push_id(wc_context_t *cnx, char *result) {
-	wc_push_id(&cnx->pids, (uint64_t)wc_server_now(cnx), result);
+	wc_datasync_push_id(&cnx->datasync.pids, (uint64_t)wc_datasync_server_now(wc_get_datasync(cnx)), result);
 }
 
 const char* wc_version() {

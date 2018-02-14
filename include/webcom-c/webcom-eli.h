@@ -23,8 +23,8 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_ELI_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_ELI_H_
 
-#include "webcom-cnx.h"
 #include "webcom-auth.h"
+#include "webcom-datasync.h"
 
 /**
  * Callbacks to pass to the event loop integration. You can set one callback to

@@ -23,7 +23,7 @@
 #ifndef INCLUDE_WEBCOM_C_WEBCOM_REQ_H_
 #define INCLUDE_WEBCOM_C_WEBCOM_REQ_H_
 
-#include "webcom-cnx.h"
+#include "webcom-datasync.h"
 #include "webcom-msg.h"
 
 typedef enum {WC_REQ_OK, WC_REQ_ERROR} wc_req_pending_result_t;

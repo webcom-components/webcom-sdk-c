@@ -80,11 +80,6 @@ static enum wc_log_level wc_log_levels[WC_LOG_ALL] = {
 	[WC_LOG_APPLICATION] = WC_LOG_WARNING,
 };
 
-/* capture logs from libwebsockets */
-__attribute__((constructor))
-static void libwebcom_c_init() {
-   wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
-}
 
 void wc_lws_log_adapter(int level, const char *line) {
 	enum wc_log_level l = WC_LOG_EXTRADEBUG;
@@ -115,6 +110,11 @@ void wc_lws_log_adapter(int level, const char *line) {
 	}
 
 	wc_log(WC_LOG_WEBSOCKET, l, "libwebsockets.so", "N/A", 0, "%s", line);
+}
+
+__attribute__ ((visibility ("hidden")))
+void wc_init_log(void) {
+	wc_set_log_level(WC_LOG_WEBSOCKET, wc_log_levels[WC_LOG_WEBSOCKET]);
 }
 
 void wc_set_log_level(enum wc_log_facility f, enum wc_log_level l) {

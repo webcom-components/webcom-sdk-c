@@ -90,15 +90,18 @@ configure_file(
 add_library(
 	webcom-c
 	SHARED
-	lib/parser.c
-	lib/message.c
-	lib/connection.c
-	lib/webcom.c
-	lib/request.c
-	lib/event.c
+	lib/webcom_base.c
 	lib/log.c
-	lib/auth.c
 	${WC_SRC_LIST}
+
+	lib/datasync/parser.c
+	lib/datasync/message.c
+	lib/datasync/connection.c
+	lib/datasync/webcom.c
+	lib/datasync/request.c
+	lib/datasync/event.c
+
+	lib/auth/auth.c
 )
 
 target_compile_options(

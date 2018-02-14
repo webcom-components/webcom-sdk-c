@@ -56,7 +56,7 @@
  * @return a pointer to the newly created connection on success, NULL on
  * failure to create the context
  */
-wc_context_t *wc_context_new_with_libev(char *host, uint16_t port, char *application, struct ev_loop *loop, struct wc_eli_callbacks *callbacks);
+wc_context_t *wc_context_create_with_libev(struct wc_context_options *options, struct ev_loop *loop, struct wc_eli_callbacks *callbacks);
 
 /**
  * @}

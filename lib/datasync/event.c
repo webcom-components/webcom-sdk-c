@@ -24,7 +24,8 @@
 #include <stdint.h>
 
 #include "webcom-c/webcom.h"
-#include "webcom_priv.h"
+
+#include "../webcom_base_priv.h"
 
 typedef struct wc_on_data_handler {
 	char *path;
@@ -90,10 +91,10 @@ void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, v
 
 	slot = path_hash(path) % (1 << DATA_HANDLERS_HASH_FACTOR);
 
-	tmp = cnx->handlers[slot];
+	tmp = cnx->datasync.handlers[slot];
 
 	new_h->next = tmp;
-	cnx->handlers[slot] = new_h;
+	cnx->datasync.handlers[slot] = new_h;
 }
 
 void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) {
@@ -102,7 +103,7 @@ void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) 
 
 	slot = path_hash(path) % (1 << DATA_HANDLERS_HASH_FACTOR);
 
-	prev = &cnx->handlers[slot];
+	prev = &cnx->datasync.handlers[slot];
 	h = *prev;
 
 	while (h) {
@@ -123,7 +124,7 @@ void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) 
 static void _dispatch_helper(wc_context_t *cnx, char *full_path, char *path_chunk, uint32_t hash, ws_on_data_event_t event, char *json_data) {
 	wc_on_data_handler_t *p, *next;
 
-	p = cnx->handlers[hash % (1 << DATA_HANDLERS_HASH_FACTOR)];
+	p = cnx->datasync.handlers[hash % (1 << DATA_HANDLERS_HASH_FACTOR)];
 
 	while (p != NULL) {
 		next = p->next;
@@ -138,7 +139,7 @@ static void _dispatch_helper(wc_context_t *cnx, char *full_path, char *path_chun
 	}
 }
 
-void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
+void wc_datasync_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 	ws_on_data_event_t event;
 	char *updated_path, *copy, *p;
 	char *updated_data;
@@ -190,7 +191,7 @@ void wc_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 	free(copy);
 }
 
-void wc_free_on_data_handlers(wc_on_data_handler_t **table) {
+void wc_datasync_free_on_data_handlers(wc_on_data_handler_t **table) {
 	wc_on_data_handler_t *p, *q;
 	size_t i;
 
