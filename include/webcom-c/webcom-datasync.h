@@ -76,7 +76,7 @@ void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx);
  * @return the number of bytes written, otherwise < 0 is returned in case of
  * failure.
  */
-int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg);
+int wc_datasync_send_msg(wc_context_t *ctx, wc_msg_t *msg);
 
 /**
  * Gracefully closes a connection to a webcom server.
@@ -86,7 +86,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg);
  *
  * @param ctx the context
  */
-void wc_context_close_cnx(wc_context_t *ctx);
+void wc_datasync_close_cnx(wc_context_t *ctx);
 
 /**
  * Function that keeps the connection to the webcom server alive.
@@ -100,40 +100,7 @@ void wc_context_close_cnx(wc_context_t *ctx);
  *
  * @param ctx the context
  */
-int wc_cnx_keepalive(wc_context_t *ctx);
-
-/**
- * gets the user data associated to this context
- *
- * @return some user-defined data, set in wc_context_new()
- */
-void *wc_context_get_user_data(wc_context_t *ctx);
-
-/**
- * informs the SDK of some event happening on one of its file descriptors
- *
- * This function is to be called by the event loop logic to make the Webcom SDK
- * handle any pending event on one of its file descriptor.
- *
- * @note If you use one of the libev/libuv/libevent integration, you don't need
- * to call this function.
- *
- * @param ctx the context
- * @param pa a pointer to a structure describing the event (file descriptor,
- * events [WC_POLLHUP, WC_POLLIN, WC_POLLOUT], and source [WC_POLL_DATASYNC,
- * WC_POLL_AUTH])
- */
-void wc_handle_fd_events(wc_context_t *ctx, struct wc_pollargs *pa);
-
-/**
- * informs the SDK that some timer has fired
- *
- * You need to call this function once a timer armed because of a
- * **WC_EVENT_SET_TIMER** event has fired.
- * @param ctx the context
- * @param timer the timer identifier
- */
-void wc_handle_timer(wc_context_t *ctx, enum wc_timersrc timer);
+int wc_datasync_keepalive(wc_context_t *ctx);
 
 /**
  * Reconnects a disconnected Webcom context
@@ -147,7 +114,14 @@ void wc_handle_timer(wc_context_t *ctx, enum wc_timersrc timer);
  *
  * @param ctx the context
  */
-void wc_context_reconnect(wc_context_t *ctx);
+void wc_datasync_connect(wc_context_t *ctx);
+
+/**
+ * TODO
+ * @param ctx
+ * @param pa
+ */
+void wc_datasync_service_socket(wc_context_t *ctx, struct wc_pollargs *pa);
 
 /**
  * @}

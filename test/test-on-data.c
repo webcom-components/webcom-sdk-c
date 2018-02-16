@@ -20,7 +20,7 @@
  *
  */
 
-#include "../lib/event.c"
+#include "../lib/datasync/event.c"
 
 #include "stfu.h"
 
@@ -98,49 +98,49 @@ int main(void)
 	STFU_TRUE("Inner slash is significant for equality", path_eq("/foo/barbazqux/", "/foo/bar/bazqux/") == 0);
 	STFU_TRUE("The actual content of the path is significant for equality", path_eq("/foo/bar/baZqux/", "/foo/bar/bazqux/") == 0);
 
-	wc_on_data(&cnx, "/foo/", ev1, (void*)0x10101010);
-	wc_on_data(&cnx, "/foo/bar/", ev2, (void*)0x20202020);
-	wc_on_data(&cnx, "/foo/bar/baz/", ev3, (void*)0x30303030);
+	wc_datasync_route_data(&cnx, "/foo/", ev1, (void*)0x10101010);
+	wc_datasync_route_data(&cnx, "/foo/bar/", ev2, (void*)0x20202020);
+	wc_datasync_route_data(&cnx, "/foo/bar/baz/", ev3, (void*)0x30303030);
 
-	wc_on_data(&cnx, "/qux/", ev4, NULL);
+	wc_datasync_route_data(&cnx, "/qux/", ev4, NULL);
 
-	wc_off_data(&cnx, "/qux", ev2);
-	wc_off_data(&cnx, "/qux", ev4);
+	wc_datasync_unroute_data(&cnx, "/qux", ev2);
+	wc_datasync_unroute_data(&cnx, "/qux", ev4);
 
-	wc_on_data(&cnx, "/qux/", ev1, (void*)1);
-	wc_on_data(&cnx, "/qux/", ev2, (void*)2);
-	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
-	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
-	wc_on_data(&cnx, "/qux/", ev4, (void*)4);
+	wc_datasync_route_data(&cnx, "/qux/", ev1, (void*)1);
+	wc_datasync_route_data(&cnx, "/qux/", ev2, (void*)2);
+	wc_datasync_route_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_datasync_route_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_datasync_route_data(&cnx, "/qux/", ev4, (void*)4);
 
-	wc_off_data(&cnx, "/qux/", ev1);
-	wc_off_data(&cnx, "/qux/", ev2);
-	wc_off_data(&cnx, "/qux/", ev3);
-	wc_off_data(&cnx, "/qux/", ev4);
+	wc_datasync_unroute_data(&cnx, "/qux/", ev1);
+	wc_datasync_unroute_data(&cnx, "/qux/", ev2);
+	wc_datasync_unroute_data(&cnx, "/qux/", ev3);
+	wc_datasync_unroute_data(&cnx, "/qux/", ev4);
 
-	wc_on_data(&cnx, "/qux/", ev1, (void*)1);
-	wc_on_data(&cnx, "/qux/", ev2, (void*)2);
-	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
-	wc_on_data(&cnx, "/qux/", ev3, (void*)3);
-	wc_on_data(&cnx, "/qux/", ev4, (void*)4);
+	wc_datasync_route_data(&cnx, "/qux/", ev1, (void*)1);
+	wc_datasync_route_data(&cnx, "/qux/", ev2, (void*)2);
+	wc_datasync_route_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_datasync_route_data(&cnx, "/qux/", ev3, (void*)3);
+	wc_datasync_route_data(&cnx, "/qux/", ev4, (void*)4);
 
-	wc_off_data(&cnx, "/qux/", NULL);
+	wc_datasync_unroute_data(&cnx, "/qux/", NULL);
 
 	push.type = WC_PUSH_DATA_UPDATE_PUT;
 	push.u.update_put.path = "/foo/bar/baz/qux/";
 	push.u.update_put.data = "{\"aaa\": \"bbb\", \"answer\": 42}";
 
-	wc_on_data_dispatch(&cnx, &push);
+	wc_datasync_dispatch_data(&cnx, &push);
 
 	STFU_TRUE("Callback was called for path /foo/", c & 0x1);
 	STFU_TRUE("Callback was called for path /foo/bar/", c & 0x2);
 	STFU_TRUE("Callback was called for path /foo/bar/baz/", c & 0x4);
 	STFU_TRUE("Callback was never called for path /qux/", !(c & 0x8));
 
-	wc_on_data(&cnx, "/foo/bar/baz/qux/", ev5, (void*)5);
-	wc_on_data(&cnx, "/", ev6, (void*)6);
+	wc_datasync_route_data(&cnx, "/foo/bar/baz/qux/", ev5, (void*)5);
+	wc_datasync_route_data(&cnx, "/", ev6, (void*)6);
 
-	wc_on_data_dispatch(&cnx, &push);
+	wc_datasync_dispatch_data(&cnx, &push);
 
 	STFU_TRUE("Callback was called for path /foo/bar/baz/qux/", c & 0x10);
 	STFU_TRUE("Callback was called for path /", c & 0x20);

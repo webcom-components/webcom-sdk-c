@@ -20,11 +20,27 @@
  *
  */
 
-#include "../lib/webcom.c"
+
+#include "../lib/datasync/datasync_utils.c"
+#include "../lib/webcom_base_priv.h"
 
 #include "stfu.h"
 
 #define getRandomNumber() (4)
+
+wc_datasync_context_t *wc_get_datasync(wc_context_t *ctx) {
+	wc_datasync_context_t *ret = NULL;
+	if (ctx->datasync_init) {
+		ret = &ctx->datasync;
+	}
+	return ret;
+}
+
+const char* wc_version() {
+	return WEBCOM_SDK_VERSION_STR;
+}
+
+
 
 int main(void)
 {
@@ -46,15 +62,15 @@ int main(void)
 	memset(rnd_dat, 0, sizeof(rnd_dat));
 	memset(rnd_str, 0, sizeof(rnd_str));
 
-	srand48_r(getRandomNumber(), &cnx.pids.rand_buffer);
+	srand48_r(getRandomNumber(), &cnx.datasync.pids.rand_buffer);
 
-	rand_bytes(rnd_dat, 1, &cnx.pids.rand_buffer);
-	rand_bytes(rnd_dat, 2, &cnx.pids.rand_buffer);
-	rand_bytes(rnd_dat, 3, &cnx.pids.rand_buffer);
-	rand_bytes(rnd_dat, 4, &cnx.pids.rand_buffer);
-	rand_bytes(rnd_dat, 9, &cnx.pids.rand_buffer);
-	rand_bytes(rnd_dat, 10, &cnx.pids.rand_buffer);
-	rand_bytes(rnd_dat, 12, &cnx.pids.rand_buffer);
+	rand_bytes(rnd_dat, 1, &cnx.datasync.pids.rand_buffer);
+	rand_bytes(rnd_dat, 2, &cnx.datasync.pids.rand_buffer);
+	rand_bytes(rnd_dat, 3, &cnx.datasync.pids.rand_buffer);
+	rand_bytes(rnd_dat, 4, &cnx.datasync.pids.rand_buffer);
+	rand_bytes(rnd_dat, 9, &cnx.datasync.pids.rand_buffer);
+	rand_bytes(rnd_dat, 10, &cnx.datasync.pids.rand_buffer);
+	rand_bytes(rnd_dat, 12, &cnx.datasync.pids.rand_buffer);
 	STFU_TRUE("The PRNG did not segfault (yet)", 1);
 
 	wc_b64ish_encode(rnd_str, rnd_dat, 9);
@@ -73,14 +89,14 @@ int main(void)
 		&& rnd_str[8] && rnd_str[9] && rnd_str[10] && rnd_str[11]
 		&& rnd_str[12] && rnd_str[13] && rnd_str[14] && rnd_str[15]);
 
-	wc_push_id(&cnx.pids, 1496911743000UL, push_id[0]);
+	wc_datasync_push_id(&cnx.datasync.pids, 1496911743000UL, push_id[0]);
 	STFU_TRUE("The push ID for the timestamp 1496911743000 begins with '-Km5t7VN'", strncmp(push_id[0], "-Km5t7VN", 8) == 0);
 
-	wc_push_id(&cnx.pids, 1496911736000UL, push_id[0]);
+	wc_datasync_push_id(&cnx.datasync.pids, 1496911736000UL, push_id[0]);
 	STFU_TRUE("The push ID for the timestamp 1496911736000 begins with '-Km5t5n-'", strncmp(push_id[0], "-Km5t5n-", 8) == 0);
 
 	for (i = 0 ; i < 16 ; i++) {
-		wc_push_id(&cnx.pids, 1496911743314UL, push_id[i]);
+		wc_datasync_push_id(&cnx.datasync.pids, 1496911743314UL, push_id[i]);
 		printf("\t%.20s\n", push_id[i]);
 	}
 

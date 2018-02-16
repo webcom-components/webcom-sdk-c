@@ -115,7 +115,7 @@ static inline void _wc_free_ctrl_msg(wc_ctrl_msg_t *msg) {
 	}
 }
 
-void wc_msg_free(wc_msg_t *msg) {
+void wc_datasync_free(wc_msg_t *msg) {
 	switch (msg->type) {
 	case WC_MSG_DATA:
 		_wc_free_data_msg(&msg->u.data);
@@ -126,7 +126,7 @@ void wc_msg_free(wc_msg_t *msg) {
 	}
 }
 
-void wc_msg_init(wc_msg_t *msg) {
+void wc_datasync_msg_init(wc_msg_t *msg) {
 	memset(msg, 0, sizeof(wc_msg_t));
 }
 
@@ -284,7 +284,7 @@ static json_object* _wc_msg_to_json(wc_msg_t *msg) {
 	return jroot;
 }
 
-char *wc_msg_to_json_str(wc_msg_t *msg) {
+char *wc_datasync_msg_to_json_str(wc_msg_t *msg) {
 	json_object *jroot;
 	char *res;
 

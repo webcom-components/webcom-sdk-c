@@ -49,8 +49,8 @@ void on_listen_result(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_r
 			ev_timer_start(EV_DEFAULT, &ev_on_update);
 		}
 
-		wc_req_put(cnx, NULL, "/brick/0-0", "{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":0,\"y\":0}");
-		wc_req_put(cnx, NULL, "/brick/0-0", "{\"color\":\"green\",\"uid\":\"anonymous\",\"x\":0,\"y\":0}");
+		wc_datasync_put(cnx, "/brick/0-0", "{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":0,\"y\":0}", NULL);
+		wc_datasync_put(cnx, "/brick/0-0", "{\"color\":\"green\",\"uid\":\"anonymous\",\"x\":0,\"y\":0}", NULL);
 
 	} else {
 		printf("\nthe listen request failed with status '%s'\n", reason);
@@ -65,7 +65,7 @@ static void disc_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	puts("\tnow closing the connection");
 	fflush(stdout);
 
-	wc_context_close_cnx(cnx);
+	wc_datasync_close_cnx(cnx);
 }
 
 void on_brick_1_1_data(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
@@ -90,19 +90,19 @@ static void listen_fail_cb(EV_P_ ev_timer *w, UNUSED_PARAM(int revents)) {
 	ev_break(EV_A_ EVBREAK_ALL);
 }
 
-static void on_connected(wc_context_t *ctx, int initial_connection) {
+static void on_connected(wc_context_t *ctx) {
 	ev_timer_stop(EV_DEFAULT, &ev_handshake);
 	STFU_TRUE("The sever sent the handshake", 1);
 
-	wc_on_data(ctx, "/brick/0-0", on_brick_1_1_data, EV_DEFAULT);
-	wc_req_listen(ctx, on_listen_result, "/brick/0-0");
+	wc_datasync_route_data(ctx, "/brick/0-0", on_brick_1_1_data, EV_DEFAULT);
+	wc_datasync_listen(ctx, "/brick/0-0", on_listen_result);
 
 	ev_timer_init(&ev_listen, listen_fail_cb, 5, 0);
 	ev_timer_start(EV_DEFAULT, &ev_listen);
 }
 static int on_disconnected(wc_context_t *ctx) {
 	STFU_TRUE("The connection was closed", 1);
-	wc_context_free(ctx);
+	wc_context_destroy(ctx);
 	ev_break(EV_DEFAULT, EVBREAK_ALL);
 	return 0;
 }
@@ -129,10 +129,19 @@ int main(void) {
 			.on_error = on_error,
 	};
 
+	struct wc_context_options options = {
+			.host = "io.datasync.orange.com",
+			.port = 443,
+			.app_name = "legorange"
+	};
+
 	STFU_TRUE	("Establish a new Connection",
-			cnx1 = wc_context_new_with_libev("io.datasync.orange.com", 443, "legorange", loop, &cb)
+			cnx1 = wc_context_create_with_libev(&options, loop, &cb)
 			);
 	if (cnx1 == NULL) goto end;
+
+	wc_datasync_init(cnx1);
+	wc_datasync_connect(cnx1);
 
 	puts("\tprocessing the event loop...");
 

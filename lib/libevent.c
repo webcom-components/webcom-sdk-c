@@ -41,7 +41,7 @@ static inline void _wc_on_fd_event_libevent_cb (
 {
 
 	wc_context_t *ctx = data;
-	wc_handle_fd_events(ctx, fd,
+	wc_dispatch_fd_event(ctx, fd,
 			((revents&EV_READ) ? POLLIN : 0)
 					| ((revents&EV_WRITE) ? POLLOUT : 0)
 					);
@@ -53,7 +53,7 @@ static inline void _wc_on_ka_timer_libevent_cb (
 		void *data)
 {
 	wc_context_t *ctx = data;
-	wc_cnx_keepalive(ctx);
+	wc_datasync_keepalive(ctx);
 }
 
 static inline void _wc_on_recon_timer_libevent_cb (
@@ -64,7 +64,7 @@ static inline void _wc_on_recon_timer_libevent_cb (
 	wc_context_t *ctx = data;
 
 	W_DBG(WC_LOG_CONNECTION, "reconnect callback triggered for context %p", ctx);
-	wc_context_reconnect(ctx);
+	wc_datasync_connect(ctx);
 }
 
 static void _wc_libevent_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSED_PARAM(size_t len)) {

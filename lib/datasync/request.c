@@ -113,14 +113,14 @@ void wc_datasync_free_pending_trans(wc_action_trans_t **table) {
 }
 
 #define DEFINE_REQ_FUNC(__name, __type, ... /* args */)						\
-	int64_t wc_req_ ## __name(wc_context_t *ctx, wc_on_req_result_t callback,	\
-		## __VA_ARGS__) {													\
+	int64_t wc_datasync_ ## __name(wc_context_t *ctx, ## __VA_ARGS__,		\
+			wc_on_req_result_t callback) {									\
 		wc_msg_t msg;														\
 		wc_action_ ## __name ## _t *req;									\
 		int ret;															\
 																			\
-		int64_t reqnum = wc_datasync_next_reqnum(wc_get_datasync(ctx));								\
-		wc_msg_init(&msg);													\
+		int64_t reqnum = wc_datasync_next_reqnum(wc_get_datasync(ctx));		\
+		wc_datasync_msg_init(&msg);											\
 		msg.type = WC_MSG_DATA;												\
 		msg.u.data.type = WC_DATA_MSG_ACTION;								\
 		msg.u.data.u.action.r = reqnum;										\
@@ -128,7 +128,7 @@ void wc_datasync_free_pending_trans(wc_action_trans_t **table) {
 		msg.u.data.u.action.type = (__type);								\
 		wc_req_store_pending(ctx, reqnum, (__type), callback);
 #define END_DEFINE_REQ_FUNC													\
-		ret = wc_context_send_msg(ctx, &msg);								\
+		ret = wc_datasync_send_msg(ctx, &msg);								\
 		return ret > 0 ? reqnum : -1l;										\
 	}
 
@@ -172,7 +172,7 @@ DEFINE_REQ_FUNC (on_disc_cancel, WC_ACTION_ON_DISCONNECT_CANCEL, char *path)
 	req->path = path;
 END_DEFINE_REQ_FUNC
 
-int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json) {
+int64_t wc_datasync_push(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback) {
 	int64_t ret;
 	size_t path_l;
 
@@ -184,7 +184,7 @@ int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, 
 	wc_datasync_push_id(&cnx->datasync.pids, (uint64_t)wc_datasync_server_now(wc_get_datasync(cnx)), push_path + path_l + 1);
 	push_path[path_l + 21] = '\0';
 
-	ret = wc_req_put(cnx, callback, push_path, json);
+	ret = wc_datasync_put(cnx, push_path, json, callback);
 
 	return ret;
 }

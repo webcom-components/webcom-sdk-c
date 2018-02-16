@@ -22,6 +22,7 @@
 
 #include <stdio.h>
 #include <string.h>
+#include <stdlib.h>
 #include <ev.h>
 #include <webcom-c/webcom.h>
 #include <webcom-c/webcom-libev.h>
@@ -33,21 +34,12 @@
 char *email = "user@test.org";
 char *password = "s3cr3t";
 char *read_path = NULL;
-
-static void on_connected(wc_context_t *ctx, int initial_connection) {
-	STFU_TRUE("Connected", 1);
-	wc_auth_with_password(ctx, email, password);
-
-}
-static int on_disconnected(wc_context_t *ctx) {
-	STFU_TRUE("The connection was closed", 1);
-
-	return 0;
-}
+char *token;
 
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
-	STFU_TRUE("Connection error", 0);
+	STFU_TRUE("Datasync connection error", 0);
 	printf("\t%.*s\n", error_len, error);
+	ev_break(EV_DEFAULT, EVBREAK_ALL);
 	return 0;
 }
 
@@ -71,8 +63,8 @@ void wc_on_ws_auth_response(wc_context_t *ctx, int64_t id, wc_action_type_t type
 	if (status == WC_REQ_OK) {
 		STFU_TRUE("Successful authentication on the datasync websocket", 1);
 		if (read_path) {
-			wc_on_data(ctx, read_path, on_data, NULL);
-			wc_req_listen(ctx, wc_on_ws_listen_response, read_path);
+			wc_datasync_route_data(ctx, read_path, on_data, NULL);
+			wc_datasync_listen(ctx, read_path, wc_on_ws_listen_response);
 		} else {
 			ev_break(EV_DEFAULT, EVBREAK_ALL);
 		}
@@ -101,7 +93,10 @@ void on_auth_success(wc_context_t *ctx, struct wc_auth_info* ai) {
 	STFU_TRUE("Auth expires received", ai->expires != 0);
 	printf("\t%"PRIu64"\n", ai->expires);
 
-	wc_req_auth(ctx, wc_on_ws_auth_response, ai->token);
+	token = strdup(ai->token);
+
+	wc_datasync_init(ctx);
+	wc_datasync_connect(ctx);
 }
 
 void on_auth_error(wc_context_t *ctx, char* error) {
@@ -109,6 +104,17 @@ void on_auth_error(wc_context_t *ctx, char* error) {
 	printf("\t%s...\n", error);
 
 	ev_break(EV_DEFAULT, EVBREAK_ALL);
+}
+
+static void on_connected(wc_context_t *ctx) {
+	STFU_TRUE("Connected to the datasync server", 1);
+
+	wc_datasync_auth(ctx, token, wc_on_ws_auth_response);
+}
+static int on_disconnected(wc_context_t *ctx) {
+	STFU_TRUE("The connection to the datasync server was closed", 1);
+
+	return 0;
 }
 
 int main(int argc, char **argv) {
@@ -155,10 +161,18 @@ int main(int argc, char **argv) {
 			.on_auth_error = on_auth_error,
 	};
 
-	STFU_TRUE	("Establish a new Connection",
-			ctx = wc_context_new_with_libev(server, port, app, loop, &cb)
+	struct wc_context_options options = {
+			.host = server,
+			.port = port,
+			.app_name = app
+	};
+
+	STFU_TRUE	("Create a new context",
+			ctx = wc_context_create_with_libev(&options, loop, &cb)
 			);
 	if (ctx == NULL) goto end;
+
+	wc_auth_with_password(ctx, email, password);
 
 	ev_run(loop, 0);
 

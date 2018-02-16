@@ -20,26 +20,34 @@
  *
  */
 
-#include "../lib/request.c"
+#include "../lib/datasync/request.c"
 
 #include <inttypes.h>
 
 #include "stfu.h"
 
 /* stubs */
-int wc_context_send_msg(wc_context_t *cnx, wc_msg_t *msg) {
+int wc_datasync_send_msg(wc_context_t *cnx, wc_msg_t *msg) {
 	wc_response_t resp;
 	if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_ACTION) {
 		resp.r = msg->u.data.u.action.r;
 		resp.status = "ok";
 		resp.data = "{\"foo\": \"bar\"";
-		wc_req_response_dispatch(cnx, &resp);
+		wc_datasync_req_response_dispatch(cnx, &resp);
 	}
 	return 42;
 }
 
-void wc_push_id(UNUSED_PARAM(struct pushid_state *s), UNUSED_PARAM(int64_t time), UNUSED_PARAM(char* buf)) {}
-void wc_msg_init(UNUSED_PARAM(wc_msg_t *msg)) {}
+wc_datasync_context_t *wc_get_datasync(wc_context_t *ctx) {
+	wc_datasync_context_t *ret = NULL;
+	if (ctx->datasync_init) {
+		ret = &ctx->datasync;
+	}
+	return ret;
+}
+
+void wc_datasync_push_id(UNUSED_PARAM(struct pushid_state *s), UNUSED_PARAM(int64_t time), UNUSED_PARAM(char* buf)) {}
+void wc_datasync_msg_init(UNUSED_PARAM(wc_msg_t *msg)) {}
 /* end stubs */
 
 int listen_response = 0, put_response = 0, auth_response = 0;
@@ -75,12 +83,14 @@ int main(void)
 
 	memset(&cnx, 0, sizeof(cnx));
 
+	cnx.datasync_init = 1;
+
 	for (i = 0 ; i < 4096 ; i++) {
-		wc_req_store_pending(&cnx, wc_next_reqnum(&cnx), WC_ACTION_LISTEN, NULL);
+		wc_req_store_pending(&cnx, wc_datasync_next_reqnum(&cnx.datasync), WC_ACTION_LISTEN, NULL);
 	}
 	c = 0;
 	for (i = 0 ; i < (1 << PENDING_ACTION_HASH_FACTOR) ; i++) {
-		p = cnx.pending_req_table[i];
+		p = cnx.datasync.pending_req_table[i];
 		while(p) {
 			c++;
 			p = p->next;
@@ -90,12 +100,12 @@ int main(void)
 	STFU_TRUE("Store 4096 pending requests", c == 4096);
 
 	for (id = 1 ; id <= 4096 ; id++) {
-		free(wc_req_get_pending(&cnx, id));
+		free(wc_datasync_req_get_pending(&cnx, id));
 	}
 
 	c = 0;
 	for (i = 0 ; i < (1 << PENDING_ACTION_HASH_FACTOR) ; i++) {
-		p = cnx.pending_req_table[i];
+		p = cnx.datasync.pending_req_table[i];
 		while(p) {
 			c++;
 			p = p->next;
@@ -104,13 +114,13 @@ int main(void)
 
 	STFU_TRUE("Requests table is empty after all getting all entries", c == 0);
 
-	wc_req_listen(&cnx, cb_listen, "/foo/");
+	wc_datasync_listen(&cnx, "/foo/", cb_listen);
 	STFU_TRUE("Callback was called for listen request", listen_response);
 
-	wc_req_put(&cnx, cb_put, "/bar/", "{\"foo\": 1337}");
+	wc_datasync_put(&cnx, "/bar/", "{\"foo\": 1337}", cb_put);
 	STFU_TRUE("Callback was called for put request", put_response);
 
-	wc_req_auth(&cnx, cb_auth, "S3CRET");
+	wc_datasync_auth(&cnx, "S3CRET", cb_auth);
 	STFU_TRUE("Callback was called for auth request", auth_response);
 
 	STFU_SUMMARY();

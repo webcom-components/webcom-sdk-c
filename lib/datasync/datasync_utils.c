@@ -137,14 +137,10 @@ void wc_datasync_push_id(struct pushid_state *s, int64_t time, char* buf) {
 	wc_b64ish_encode(buf + 8, s->lastrand, 9);
 }
 
-int64_t wc_get_server_time(wc_context_t *cnx) {
+int64_t wc_datasync_server_time(wc_context_t *cnx) {
 	return wc_datasync_server_now(wc_get_datasync(cnx));
 }
 
-void wc_get_push_id(wc_context_t *cnx, char *result) {
+void wc_datasync_gen_push_id(wc_context_t *cnx, char *result) {
 	wc_datasync_push_id(&cnx->datasync.pids, (uint64_t)wc_datasync_server_now(wc_get_datasync(cnx)), result);
-}
-
-const char* wc_version() {
-	return WEBCOM_SDK_VERSION_STR;
 }

@@ -96,8 +96,8 @@ add_library(
 
 	lib/datasync/parser.c
 	lib/datasync/message.c
-	lib/datasync/connection.c
-	lib/datasync/webcom.c
+	lib/datasync/datasync.c
+	lib/datasync/datasync_utils.c
 	lib/datasync/request.c
 	lib/datasync/event.c
 

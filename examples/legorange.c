@@ -114,7 +114,7 @@ int main(int argc, char *argv[]) {
 	/* establish the connection to the webcom server, and let it integrate in
 	 * our libev event loop
 	 */
-	ctx = wc_context_new_with_libev(
+	ctx = wc_context_create_with_libev(
 			"io.datasync.orange.com",
 			443,
 			"legorange",
@@ -141,7 +141,7 @@ static void on_connected(wc_context_t *ctx) {
 	 * let's configure a route: if some data update happens on the given path,
 	 * we instruct the SDK to call on_data_update()
 	 */
-	wc_on_data(ctx, board_name, on_data_update, NULL);
+	wc_datasync_route_data(ctx, board_name, on_data_update, NULL);
 
 	/*
 	 * now that the route is configured, let's subscribe to the path
@@ -284,7 +284,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		puts("Closing...");
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
-		wc_context_close_cnx(cnx);
+		wc_datasync_close_cnx(cnx);
 	}
 }
 

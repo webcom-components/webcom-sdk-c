@@ -126,7 +126,7 @@ int main(int argc, char *argv[]) {
 }
 
 static void on_connected(wc_context_t *ctx) {
-	wc_on_data(ctx, board_name, on_data_update, NULL);
+	wc_datasync_route_data(ctx, board_name, on_data_update, NULL);
 	wc_req_listen(ctx, NULL, board_name);
 	clear_screen();
 }
@@ -255,7 +255,7 @@ void stdin_cb (uv_poll_t* handle, int status, int events) {
 		move_to(0, 0);
 		puts("Closing...");
 		uv_stop(handle->loop);
-		wc_context_close_cnx(cnx);
+		wc_datasync_close_cnx(cnx);
 	}
 }
 

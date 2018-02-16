@@ -65,7 +65,7 @@ typedef void (*wc_on_data_callback_t)(wc_context_t *cnx, ws_on_data_event_t even
  * @param user some optional user data pointer that will be passed to the
  * callback
  */
-void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user);
+void wc_datasync_route_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user);
 
 
 /**
@@ -79,7 +79,7 @@ void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, v
  * @param callback the callback to unregister; pass NULL to unregister all the
  * callbacks for the given path
  */
-void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback);
+void wc_datasync_unroute_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback);
 
 /**
  * @}

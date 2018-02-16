@@ -45,7 +45,7 @@ int main(int argc, char *argv[]) {
 	ev_io webcom_watcher;
 	ev_timer ka_timer;
 
-	cnx = wc_context_new(
+	cnx = wc_datasync_init(
 			"io.datasync.orange.com",
 			443,
 			"<your app name here>",
@@ -143,7 +143,7 @@ void webcom_service_cb(wc_event_t event, wc_context_t *cnx, void *data,
 void keepalive_cb(EV_P_ ev_timer *w, int revents) {
 	wc_context_t *cnx = (wc_context_t *)w->data;
 
-	wc_cnx_keepalive(cnx);
+	wc_datasync_keepalive(cnx);
 }
 
 /*
@@ -160,6 +160,6 @@ void stdin_cb (EV_P_ ev_io *w, int revents) {
 		/* quit if EOF on stdin */
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
-		wc_context_close_cnx(cnx);
+		wc_datasync_close_cnx(cnx);
 	}
 }

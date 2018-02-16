@@ -52,7 +52,7 @@ static inline void _wc_on_fd_event_libev_cb (
 	pa.events = ((revents&EV_READ) ? POLLIN : 0)
 			| ((revents&EV_WRITE) ? POLLOUT : 0);
 	pa.src = w - lid->fd_watcher;
-	wc_handle_fd_events(ctx, &pa);
+	wc_dispatch_fd_event(ctx, &pa);
 }
 
 static inline void _wc_on_timer_libev_cb (
@@ -64,10 +64,10 @@ static inline void _wc_on_timer_libev_cb (
 	struct wc_libev_integration_data *lid = wc_context_get_user_data(ctx);
 	enum wc_timersrc timer = w - lid->timer_events;
 
-	wc_handle_timer(ctx, timer);
+	wc_dispatch_timer_event(ctx, timer);
 }
 
-static int _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, size_t len) {
+int _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, size_t len) {
 	struct wc_libev_integration_data *lid = wc_context_get_user_data(ctx);
 	struct wc_pollargs *pollargs;
 	struct wc_timerargs *timerargs;
@@ -140,7 +140,9 @@ static int _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, size_t
 	case WC_EVENT_DEL_TIMER:
 		wctimer = *((enum wc_timersrc *)data);
 		timer = &lid->timer_events[wctimer];
-		ev_timer_stop(lid->loop, timer);
+		if (ev_is_active(timer)) {
+			ev_timer_stop(lid->loop, timer);
+		}
 		break;
 	case WC_AUTH_ON_AUTH_REPLY:
 		ai = data;

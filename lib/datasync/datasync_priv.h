@@ -52,9 +52,9 @@ struct pushid_state {
 
 #define WC_RX_BUF_LEN	(1 << 12)
 #define PENDING_ACTION_HASH_FACTOR 8
-#define DATA_HANDLERS_HASH_FACTOR 8
+#define DATA_ROUTES_HASH_FACTOR 8
 typedef struct wc_action_trans wc_action_trans_t;
-typedef struct wc_on_data_handler wc_on_data_handler_t;
+typedef struct wc_datasync_data_route wc_datasync_data_route_t;
 
 struct wc_datasync_context {
 	struct wc_context *webcom;
@@ -67,7 +67,7 @@ struct wc_datasync_context {
 	int64_t time_offset;
 	int64_t last_req;
 	wc_action_trans_t *pending_req_table[1 << PENDING_ACTION_HASH_FACTOR];
-	wc_on_data_handler_t *handlers[1 << DATA_HANDLERS_HASH_FACTOR];
+	wc_datasync_data_route_t *data_routes[1 << DATA_ROUTES_HASH_FACTOR];
 	unsigned ws_next_reconnect_timer;
 };
 
@@ -90,8 +90,9 @@ void wc_datasync_free_pending_trans(wc_action_trans_t **table);
 void wc_datasync_req_response_dispatch(wc_context_t *dsctx, wc_response_t *response);
 
 void wc_datasync_push_id(struct pushid_state *s, int64_t time, char* buf) ;
-void wc_datasync_on_data_dispatch(wc_context_t *dsctx, wc_push_t *push);
-void wc_datasync_free_on_data_handlers(wc_on_data_handler_t **table);
-void wc_datasync_auth_event_action(wc_context_t *ctx, int fd);
+void wc_datasync_dispatch_data(wc_context_t *dsctx, wc_push_t *push);
+void wc_datasync_cleanup_data_routes(wc_datasync_data_route_t **table);
+void wc_auth_service(wc_context_t *ctx, int fd);
+void _wc_datasync_connect(wc_context_t *ctx);
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

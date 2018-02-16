@@ -27,12 +27,12 @@
 
 #include "../webcom_base_priv.h"
 
-typedef struct wc_on_data_handler {
+typedef struct wc_datasync_data_route {
 	char *path;
 	wc_on_data_callback_t callback;
 	void *user;
-	struct wc_on_data_handler *next;
-} wc_on_data_handler_t;
+	struct wc_datasync_data_route *next;
+} wc_datasync_data_route_t;
 
 static int path_eq(char *p1, char *p2) {
 	do {
@@ -75,11 +75,11 @@ static uint32_t path_hash(char *path) {
 	return hash;
 }
 
-void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user) {
-	wc_on_data_handler_t *new_h, *tmp;
+void wc_datasync_route_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, void *user) {
+	wc_datasync_data_route_t *new_h, *tmp;
 	uint32_t slot;
 
-	new_h = malloc(sizeof(wc_on_data_handler_t));
+	new_h = malloc(sizeof(wc_datasync_data_route_t));
 
 	if (new_h == NULL) {
 		return;
@@ -89,21 +89,21 @@ void wc_on_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback, v
 	new_h->callback = callback;
 	new_h->user = user;
 
-	slot = path_hash(path) % (1 << DATA_HANDLERS_HASH_FACTOR);
+	slot = path_hash(path) % (1 << DATA_ROUTES_HASH_FACTOR);
 
-	tmp = cnx->datasync.handlers[slot];
+	tmp = cnx->datasync.data_routes[slot];
 
 	new_h->next = tmp;
-	cnx->datasync.handlers[slot] = new_h;
+	cnx->datasync.data_routes[slot] = new_h;
 }
 
-void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) {
-	wc_on_data_handler_t *h, *tmp, **prev;
+void wc_datasync_unroute_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) {
+	wc_datasync_data_route_t *h, *tmp, **prev;
 	uint32_t slot;
 
-	slot = path_hash(path) % (1 << DATA_HANDLERS_HASH_FACTOR);
+	slot = path_hash(path) % (1 << DATA_ROUTES_HASH_FACTOR);
 
-	prev = &cnx->datasync.handlers[slot];
+	prev = &cnx->datasync.data_routes[slot];
 	h = *prev;
 
 	while (h) {
@@ -122,9 +122,9 @@ void wc_off_data(wc_context_t *cnx, char *path, wc_on_data_callback_t callback) 
 }
 
 static void _dispatch_helper(wc_context_t *cnx, char *full_path, char *path_chunk, uint32_t hash, ws_on_data_event_t event, char *json_data) {
-	wc_on_data_handler_t *p, *next;
+	wc_datasync_data_route_t *p, *next;
 
-	p = cnx->datasync.handlers[hash % (1 << DATA_HANDLERS_HASH_FACTOR)];
+	p = cnx->datasync.data_routes[hash % (1 << DATA_ROUTES_HASH_FACTOR)];
 
 	while (p != NULL) {
 		next = p->next;
@@ -139,7 +139,7 @@ static void _dispatch_helper(wc_context_t *cnx, char *full_path, char *path_chun
 	}
 }
 
-void wc_datasync_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
+void wc_datasync_dispatch_data(wc_context_t *cnx, wc_push_t *push) {
 	ws_on_data_event_t event;
 	char *updated_path, *copy, *p;
 	char *updated_data;
@@ -191,11 +191,11 @@ void wc_datasync_on_data_dispatch(wc_context_t *cnx, wc_push_t *push) {
 	free(copy);
 }
 
-void wc_datasync_free_on_data_handlers(wc_on_data_handler_t **table) {
-	wc_on_data_handler_t *p, *q;
+void wc_datasync_cleanup_data_routes(wc_datasync_data_route_t **table) {
+	wc_datasync_data_route_t *p, *q;
 	size_t i;
 
-	for (i = 0 ; i < (1 << DATA_HANDLERS_HASH_FACTOR) ; i++) {
+	for (i = 0 ; i < (1 << DATA_ROUTES_HASH_FACTOR) ; i++) {
 		p = table[i];
 		while(p) {
 			q = p->next;

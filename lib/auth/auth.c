@@ -33,7 +33,7 @@
 #define WEBCOM_AUTH_API_PATH_END            "/password/signin"
 
 
-static void _wc_parse_auth_json(json_object *root, struct wc_auth_info *pai) {
+static void _wc_auth_parse_json(json_object *root, struct wc_auth_info *pai) {
 	json_object *tmp, *tmp2;
 
 	/* is this an error response? */
@@ -102,7 +102,7 @@ static void _wc_parse_auth_json(json_object *root, struct wc_auth_info *pai) {
 }
 
 #define FREE_IF_NOT_NULL(p) do{if(p)free(p);}while(0)
-static void _wc_free_auth_members(struct wc_auth_info *pai) {
+static void _wc_auth_cleanup_info(struct wc_auth_info *pai) {
 	FREE_IF_NOT_NULL(pai->error);
 	FREE_IF_NOT_NULL(pai->provider_uid);
 	FREE_IF_NOT_NULL(pai->uid);
@@ -111,7 +111,7 @@ static void _wc_free_auth_members(struct wc_auth_info *pai) {
 	FREE_IF_NOT_NULL(pai->provider_profile);
 }
 
-static int _wc_parse_auth_body(wc_context_t *ctx, char *data, size_t len, struct wc_auth_info *pai) {
+static int _wc_auth_parse_body(wc_context_t *ctx, char *data, size_t len, struct wc_auth_info *pai) {
 	enum json_tokener_error jte;
 	json_object* jroot;
 
@@ -124,7 +124,7 @@ static int _wc_parse_auth_body(wc_context_t *ctx, char *data, size_t len, struct
 	switch (jte) {
 		case json_tokener_success:
 			memset(pai, 0, sizeof(*pai));
-			_wc_parse_auth_json(jroot, pai);
+			_wc_auth_parse_json(jroot, pai);
 			json_tokener_free(ctx->auth.auth_parser);
 			json_object_put(jroot);
 			return 1;
@@ -171,9 +171,9 @@ static size_t curl_write_cb(void *ptr, size_t size, size_t nmemb, void *data) {
 	WL_DBG("incoming data for auth request: %.*s", (int)(size * nmemb), (char*)ptr);
 	struct wc_auth_info ai;
 	wc_context_t *ctx = data;
-	if (_wc_parse_auth_body(ctx, ptr, size * nmemb, &ai)) {
+	if (_wc_auth_parse_body(ctx, ptr, size * nmemb, &ai)) {
 		ctx->callback(WC_AUTH_ON_AUTH_REPLY, ctx, &ai, sizeof(ai));
-		_wc_free_auth_members(&ai);
+		_wc_auth_cleanup_info(&ai);
 	}
 	return size * nmemb;
 }
@@ -296,7 +296,7 @@ int wc_auth_with_password(wc_context_t *ctx, const char *email, const char *pass
 	return 1;
 }
 
-void wc_datasync_auth_event_action(wc_context_t *ctx, int fd) {
+void wc_auth_service(wc_context_t *ctx, int fd) {
 	int curl_still_running;
 
 	curl_multi_socket_action(ctx->auth.auth_curl_multi_handle, fd, 0, &curl_still_running);

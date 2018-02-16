@@ -81,7 +81,7 @@ struct _wc_hlp_json_keyval {
 	json_object *val;
 };
 
-int wc_key_cmp(const char *sa, const char *sb) {
+int wc_datasync_key_cmp(const char *sa, const char *sb) {
 	int64_t ia;
 	int64_t ib;
 	int read, ret = 0;
@@ -113,7 +113,7 @@ int wc_key_cmp(const char *sa, const char *sb) {
 }
 
 static int cmp_json_keys(const void *a, const void *b) {
-	return wc_key_cmp(
+	return wc_datasync_key_cmp(
 			((struct _wc_hlp_json_keyval *)a)->key,
 			((struct _wc_hlp_json_keyval *)b)->key);
 }
@@ -379,11 +379,11 @@ static int wc_parse_msg_json(json_object *jroot, wc_msg_t *res) {
 	return 0;
 }
 
-const char *wc_parser_get_error(wc_parser_t *parser) {
+const char *wc_datasync_parser_get_error(wc_parser_t *parser) {
 	return parser ? parser->error : wc_parse_err_parser_null;
 }
 
-wc_parser_t *wc_parser_new() {
+wc_parser_t *wc_datasync_parser_new() {
 	wc_parser_t * parser = malloc(sizeof(wc_parser_t));
 	if (parser == NULL) {
 		return NULL;
@@ -401,7 +401,7 @@ wc_parser_t *wc_parser_new() {
 	return parser;
 }
 
-void wc_parser_free(wc_parser_t *parser) {
+void wc_datasync_parser_free(wc_parser_t *parser) {
 	if (parser != NULL) {
 		if (parser->jtok != NULL) {
 			json_tokener_free(parser->jtok);
@@ -410,7 +410,7 @@ void wc_parser_free(wc_parser_t *parser) {
 	}
 }
 
-wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, wc_msg_t *res) {
+wc_parser_result_t wc_datasync_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, wc_msg_t *res) {
 	enum json_tokener_error jte;
 	int ret;
 	json_object* jroot;
@@ -444,13 +444,13 @@ wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, w
 	}
 }
 
-int wc_parse_msg(char *str, wc_msg_t *res) {
+int wc_datasync_parse_msg(char *str, wc_msg_t *res) {
 	wc_parser_t *parser;
 	int ret;
 
-	parser = wc_parser_new();
-	ret = wc_parse_msg_ex(parser, str, strlen(str), res);
-	wc_parser_free(parser);
+	parser = wc_datasync_parser_new();
+	ret = wc_datasync_parse_msg_ex(parser, str, strlen(str), res);
+	wc_datasync_parser_free(parser);
 
 	return ret == WC_PARSER_OK;
 }

@@ -28,14 +28,14 @@
 int main(void) {
 	wc_msg_t msg1, msg2, msg3, msg4, msg5, msg6, msg7, msg8;
 
-	STFU_TRUE	("Key order: '123456' < '111foo'", wc_key_cmp("123456", "111foo") < 0);
-	STFU_TRUE	("Key order: '123text' > '0123'", wc_key_cmp("123text", "122") > 0);
-	STFU_TRUE	("Key order: '-456789' > '-567890'", wc_key_cmp("-456789", "-567890") > 0);
-	STFU_TRUE	("Key order: '45678' == '45678'", wc_key_cmp("45678", "45678") == 0);
-	STFU_TRUE	("Key order: '42' < '43'", wc_key_cmp("42", "43") < 0);
-	STFU_TRUE	("Key order: 'FOO' == 'FOO'", wc_key_cmp("FOO", "FOO") == 0);
-	STFU_TRUE	("Key order: 'FOO' < 'FOQ'", wc_key_cmp("FOO", "FOQ") < 0);
-	STFU_TRUE	("Key order: 'FOR' > 'FOQ'", wc_key_cmp("FOR", "FOQ") > 0);
+	STFU_TRUE	("Key order: '123456' < '111foo'", wc_datasync_key_cmp("123456", "111foo") < 0);
+	STFU_TRUE	("Key order: '123text' > '0123'", wc_datasync_key_cmp("123text", "122") > 0);
+	STFU_TRUE	("Key order: '-456789' > '-567890'", wc_datasync_key_cmp("-456789", "-567890") > 0);
+	STFU_TRUE	("Key order: '45678' == '45678'", wc_datasync_key_cmp("45678", "45678") == 0);
+	STFU_TRUE	("Key order: '42' < '43'", wc_datasync_key_cmp("42", "43") < 0);
+	STFU_TRUE	("Key order: 'FOO' == 'FOO'", wc_datasync_key_cmp("FOO", "FOO") == 0);
+	STFU_TRUE	("Key order: 'FOO' < 'FOQ'", wc_datasync_key_cmp("FOO", "FOQ") < 0);
+	STFU_TRUE	("Key order: 'FOR' > 'FOQ'", wc_datasync_key_cmp("FOR", "FOQ") > 0);
 
 	char *str1 = "Good morning, that's a nice tnetennba";
 	char *str2 = "{\"t\":\"c\",\"d\":{\"t\":\"h\",\"d\":{\"ts\":1492191239182,\"h\":\"\\/test\\/foo?bar=baz\",\"v\":\"5\"}}}";
@@ -54,28 +54,28 @@ int main(void) {
 	wc_parser_t *parser;
 	int i;
 
-	wc_msg_init(&msg1);
-	wc_msg_init(&msg2);
-	wc_msg_init(&msg3);
-	wc_msg_init(&msg4);
-	wc_msg_init(&msg5);
-	wc_msg_init(&msg6);
-	wc_msg_init(&msg7);
-	wc_msg_init(&msg8);
+	wc_datasync_msg_init(&msg1);
+	wc_datasync_msg_init(&msg2);
+	wc_datasync_msg_init(&msg3);
+	wc_datasync_msg_init(&msg4);
+	wc_datasync_msg_init(&msg5);
+	wc_datasync_msg_init(&msg6);
+	wc_datasync_msg_init(&msg7);
+	wc_datasync_msg_init(&msg8);
 
-	STFU_TRUE	("Parse non JSON", wc_parse_msg(str1, &msg1) == 0);
+	STFU_TRUE	("Parse non JSON", wc_datasync_parse_msg(str1, &msg1) == 0);
 
-	parser = wc_parser_new();
-	wc_parse_msg_ex(parser, str1, strlen(str1), &msg1);
-	STFU_TRUE	("Parser error string", wc_parser_get_error(parser) != NULL);
-	printf("\t%s\n", wc_parser_get_error(parser));
-	wc_parser_free(parser);
+	parser = wc_datasync_parser_new();
+	wc_datasync_parse_msg_ex(parser, str1, strlen(str1), &msg1);
+	STFU_TRUE	("Parser error string", wc_datasync_parser_get_error(parser) != NULL);
+	printf("\t%s\n", wc_datasync_parser_get_error(parser));
+	wc_datasync_parser_free(parser);
 
-	STFU_TRUE	("Parse valid handshake", wc_parse_msg(str2, &msg2) == 1);
+	STFU_TRUE	("Parse valid handshake", wc_datasync_parse_msg(str2, &msg2) == 1);
 	STFU_STR_EQ	("Handshake server path string", msg2.u.ctrl.u.handshake.server, "/test/foo?bar=baz");
-	STFU_TRUE	("Parse valid shutdown message", wc_parse_msg(str3, &msg3) == 1);
+	STFU_TRUE	("Parse valid shutdown message", wc_datasync_parse_msg(str3, &msg3) == 1);
 	STFU_STR_EQ	("Shutdown reason string", msg3.u.ctrl.u.shutdown_reason, "the truth is out there");
-	STFU_TRUE	("Parse valid put action", wc_parse_msg(str4, &msg4) == 1);
+	STFU_TRUE	("Parse valid put action", wc_datasync_parse_msg(str4, &msg4) == 1);
 	STFU_STR_EQ	("Put action path", msg4.u.data.u.action.u.put.path, "/brick/23-32");
 	STFU_STR_EQ	(
 			"Put action data",
@@ -83,19 +83,19 @@ int main(void) {
 			"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
 	);
 
-	STFU_TRUE   ("Create Webcom msg parser", (parser = wc_parser_new()) != NULL);
+	STFU_TRUE   ("Create Webcom msg parser", (parser = wc_datasync_parser_new()) != NULL);
 	for (i = 0 ; i < 4 ; i++) {
 		if (i != 3) {
-			STFU_TRUE ("Parse a 4-chunks Webcom message", wc_parse_msg_ex(parser, chunked_str5[i], strlen(chunked_str5[i]), &msg5) ==  WC_PARSER_CONTINUE);
+			STFU_TRUE ("Parse a 4-chunks Webcom message", wc_datasync_parse_msg_ex(parser, chunked_str5[i], strlen(chunked_str5[i]), &msg5) ==  WC_PARSER_CONTINUE);
 		} else {
-			STFU_TRUE ("Parse the last chunk of a 4-chunks Webcom message", wc_parse_msg_ex(parser, chunked_str5[i], strlen(chunked_str5[i]), &msg5) ==  WC_PARSER_OK);
+			STFU_TRUE ("Parse the last chunk of a 4-chunks Webcom message", wc_datasync_parse_msg_ex(parser, chunked_str5[i], strlen(chunked_str5[i]), &msg5) ==  WC_PARSER_OK);
 		}
 	}
 	STFU_STR_EQ	("Put action path", msg5.u.data.u.action.u.put.path, "/brick/13-37");
 
-	wc_parser_free(parser);
+	wc_datasync_parser_free(parser);
 
-	STFU_TRUE	("Parse valid put response", wc_parse_msg(str6, &msg6) == 1);
+	STFU_TRUE	("Parse valid put response", wc_datasync_parse_msg(str6, &msg6) == 1);
 	STFU_TRUE	("Check put response message type is data", msg6.type == WC_MSG_DATA);
 	STFU_TRUE	("Check put response data msg is response", msg6.u.data.type == WC_DATA_MSG_RESPONSE);
 	STFU_TRUE	("Check put response id is 3", msg6.u.data.u.response.r == 3L);
@@ -105,28 +105,28 @@ int main(void) {
 				msg6.u.data.u.response.data,
 				"\"ok\""
 	);
-	STFU_TRUE	("Parse valid update put push", wc_parse_msg(str7, &msg7) == 1);
+	STFU_TRUE	("Parse valid update put push", wc_datasync_parse_msg(str7, &msg7) == 1);
 	STFU_STR_EQ	(
 					"Check put update put push data",
 					msg7.u.data.u.push.u.update_put.data,
 					"{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}"
 	);
 
-	parser = wc_parser_new();
-	wc_parse_msg_ex(parser, str1, strlen(str8), &msg8);
-	STFU_TRUE	("Parse valid JSON invalid webcom message", wc_parse_msg_ex(parser, str8, strlen(str8), &msg8));
-	STFU_STR_EQ	("Valid JSON invalid webcom message error string", wc_parser_get_error(parser), "not a valid webcom message");
-	printf("\t%s\n", wc_parser_get_error(parser));
-	wc_parser_free(parser);
+	parser = wc_datasync_parser_new();
+	wc_datasync_parse_msg_ex(parser, str1, strlen(str8), &msg8);
+	STFU_TRUE	("Parse valid JSON invalid webcom message", wc_datasync_parse_msg_ex(parser, str8, strlen(str8), &msg8));
+	STFU_STR_EQ	("Valid JSON invalid webcom message error string", wc_datasync_parser_get_error(parser), "not a valid webcom message");
+	printf("\t%s\n", wc_datasync_parser_get_error(parser));
+	wc_datasync_parser_free(parser);
 
-	wc_msg_free(&msg1);
-	wc_msg_free(&msg2);
-	wc_msg_free(&msg3);
-	wc_msg_free(&msg4);
-	wc_msg_free(&msg5);
-	wc_msg_free(&msg6);
-	wc_msg_free(&msg7);
-	wc_msg_free(&msg8);
+	wc_datasync_free(&msg1);
+	wc_datasync_free(&msg2);
+	wc_datasync_free(&msg3);
+	wc_datasync_free(&msg4);
+	wc_datasync_free(&msg5);
+	wc_datasync_free(&msg6);
+	wc_datasync_free(&msg7);
+	wc_datasync_free(&msg8);
 
 	STFU_SUMMARY();
 

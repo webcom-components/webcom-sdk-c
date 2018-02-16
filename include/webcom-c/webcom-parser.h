@@ -47,7 +47,7 @@ typedef enum {
  *
  * @return a pointer to the new object or NULL in case of failure
  */
-wc_parser_t *wc_parser_new();
+wc_parser_t *wc_datasync_parser_new();
 
 /**
  * Parses a JSON text buffer to populate a wc_msg_t object.
@@ -66,14 +66,14 @@ wc_parser_t *wc_parser_new();
  * wc_parser_get_error() to get the error description)
  *
  */
-wc_parser_result_t wc_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, wc_msg_t *res);
+wc_parser_result_t wc_datasync_parse_msg_ex(wc_parser_t *parser, char *buf, size_t len, wc_msg_t *res);
 
 /**
  * Returns a string describing a parsing error.
  *
  * @return the description if an error occurred, NULL otherwise
  */
-const char *wc_parser_get_error(wc_parser_t *parser);
+const char *wc_datasync_parser_get_error(wc_parser_t *parser);
 
 /**
  * Parses a null-terminated webcom message string.
@@ -86,14 +86,14 @@ const char *wc_parser_get_error(wc_parser_t *parser);
  *
  * @return 1 on success, 0 on error
  */
-int wc_parse_msg(char *str, wc_msg_t *res);
+int wc_datasync_parse_msg(char *str, wc_msg_t *res);
 
 /**
  * Frees a wc_parser_t object previously allocated by wc_parser_new()
  *
  * @param parser  the wc_parser_t object to free
  */
-void wc_parser_free(wc_parser_t *parser);
+void wc_datasync_parser_free(wc_parser_t *parser);
 
 /**
  * Compares two strings using the Webcom key order:
@@ -107,7 +107,7 @@ void wc_parser_free(wc_parser_t *parser);
  * @param sb second string
  * @return a negative number if sa < sb, positive number if sa > sb, 0 if equal
  */
-int wc_key_cmp(const char *sa, const char *sb);
+int wc_datasync_key_cmp(const char *sa, const char *sb);
 
 /**
  * @}

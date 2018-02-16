@@ -50,7 +50,7 @@ static inline void _wc_on_fd_event_libuv_cb (
 	int fd;
 
 	if (uv_fileno((uv_handle_t*)handle, &fd) == 0) {
-		wc_handle_fd_events(ctx, fd,
+		wc_dispatch_fd_event(ctx, fd,
 				((events&UV_READABLE) ? POLLIN : 0)
 				| ((events&UV_WRITABLE) ? POLLOUT : 0)
 				| ((events&UV_DISCONNECT) ? POLLIN : 0)
@@ -60,14 +60,14 @@ static inline void _wc_on_fd_event_libuv_cb (
 
 static inline void _wc_on_ka_timer_libuv_cb (uv_timer_t *handle) {
 	wc_context_t *ctx = handle->data;
-	wc_cnx_keepalive(ctx);
+	wc_datasync_keepalive(ctx);
 }
 
 static inline void _wc_on_recon_timer_libuv_cb (uv_timer_t *handle) {
 	wc_context_t *ctx = handle->data;
 	W_DBG(WC_LOG_CONNECTION, "reconnect callback triggered for context %p", ctx);
 	uv_timer_stop(handle);
-	wc_context_reconnect(ctx);
+	wc_datasync_connect(ctx);
 }
 
 static void _wc_libuv_cb (wc_event_t event, wc_context_t *ctx, void *data, UNUSED_PARAM(size_t len)) {

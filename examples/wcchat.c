@@ -79,16 +79,19 @@ int main(int argc, char *argv[]) {
 			.on_error = on_error,
 	};
 
-	ctx = wc_context_new_with_libev(
-			"io.datasync.orange.com",
-			443,
-			"chat",
+	struct wc_context_options options = {
+			.host = "io.datasync.orange.com",
+			.port = 443,
+			.app_name = "chat"
+	};
+
+	ctx = wc_context_create_with_libev(
+			&options,
 			loop,
 			&cb);
 
-	if (ctx == NULL) {
-		return 1;
-	}
+	wc_datasync_init(ctx);
+	wc_datasync_connect(ctx);
 
 	/* if stdin has data to read, call stdin_watcher() */
 	ev_io_init(&stdin_watcher, stdin_cb, fileno(stdin), EV_READ);
@@ -125,8 +128,8 @@ int main(int argc, char *argv[]) {
  */
 static void on_connected(wc_context_t *ctx) {
 
-	wc_on_data(ctx, "/", process_message_data_update, NULL);
-	wc_req_listen(ctx, NULL, "/");
+	wc_datasync_route_data(ctx, "/", process_message_data_update, NULL);
+	wc_datasync_listen(ctx, "/", NULL);
 
 	wprintw(chat, "*** [INFO] Connected\n");
 	wrefresh(chat);
@@ -195,12 +198,12 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		if(strcmp(buf, "/quit") == 0) {
 			ev_io_stop(EV_A_ w);
 			ev_break(EV_A_ EVBREAK_ALL);
-			wc_context_close_cnx(cnx);
+			wc_datasync_close_cnx(cnx);
 		} else {
 			text = json_object_new_string(buf);
 			escaped_text = json_object_to_json_string(text);
 			asprintf(&json_str, "{\"name\":%s,\"text\":%s}", escaped_name, escaped_text);
-			wc_req_push(cnx, NULL, "/", json_str);
+			wc_datasync_push(cnx, "/", json_str, NULL);
 			free(json_str);
 			json_object_put(text);
 		}
@@ -209,6 +212,6 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		/* quit if EOF on stdin */
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
-		wc_context_close_cnx(cnx);
+		wc_datasync_close_cnx(cnx);
 	}
 }

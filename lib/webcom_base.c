@@ -59,6 +59,31 @@ wc_context_t *wc_context_create(struct wc_context_options *options) {
 	return ret;
 }
 
+void wc_dispatch_fd_event(wc_context_t *ctx, struct wc_pollargs *pa) {
+	if (pa->src == WC_POLL_DATASYNC) {
+		wc_datasync_service_socket(ctx, pa);
+	} else if (pa->src == WC_POLL_AUTH) {
+		wc_auth_service(ctx, pa->fd);
+	}
+}
+
+void wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer) {
+	switch (timer) {
+	case WC_TIMER_DATASYNC_KEEPALIVE:
+		wc_datasync_keepalive(ctx);
+		break;
+	case WC_TIMER_DATASYNC_RECONNECT:
+		_wc_datasync_connect(ctx);
+		break;
+	case WC_TIMER_AUTH:
+		wc_auth_service(ctx, -1);
+		break;
+	default:
+		break;
+	}
+}
+
+
 wc_datasync_context_t *wc_get_datasync(wc_context_t *ctx) {
 	wc_datasync_context_t *ret = NULL;
 	if (ctx->datasync_init) {
@@ -77,7 +102,7 @@ wc_auth_context_t *wc_get_auth(wc_context_t *ctx) {
 
 void wc_context_destroy(wc_context_t * ctx) {
 	if (ctx->datasync_init) {
-		// TODO call destructor
+		wc_datasync_context_cleanup(&ctx->datasync);
 	}
 
 	if (ctx->auth_init) {
@@ -89,3 +114,12 @@ void wc_context_destroy(wc_context_t * ctx) {
 
 	free(ctx);
 }
+
+void *wc_context_get_user_data(wc_context_t *ctx) {
+	return ctx->user;
+}
+
+const char* wc_version() {
+	return WEBCOM_SDK_VERSION_STR;
+}
+

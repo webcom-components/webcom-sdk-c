@@ -197,7 +197,7 @@ typedef struct {
  *
  * @param msg pointer to the message to initialize
  */
-void wc_msg_init(wc_msg_t *msg);
+void wc_datasync_msg_init(wc_msg_t *msg);
 
 /**
  * frees the memory allocated for a message structure
@@ -209,7 +209,7 @@ void wc_msg_init(wc_msg_t *msg);
  *
  * @param msg the message structure to be freed
  */
-void wc_msg_free(wc_msg_t *msg);
+void wc_datasync_free(wc_msg_t *msg);
 
 
 /**
@@ -220,7 +220,7 @@ void wc_msg_free(wc_msg_t *msg);
  * @return a newly malloc'd JSON string (must be manually free'd after use), or
  * NULL if out of memory
  */
-char *wc_msg_to_json_str(wc_msg_t *msg);
+char *wc_datasync_msg_to_json_str(wc_msg_t *msg);
 
 /**
  * @}

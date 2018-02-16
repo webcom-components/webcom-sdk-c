@@ -31,7 +31,7 @@ int main(void) {
 
 	char *str1 = "{\"t\":\"d\",\"d\":{\"r\":3,\"a\":\"p\",\"b\":{\"p\":\"\\/brick\\/23-32\",\"d\":{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}}}}";
 
-	wc_msg_init(&msg1);
+	wc_datasync_msg_init(&msg1);
 
 	char *res;
 
@@ -42,13 +42,13 @@ int main(void) {
 	msg1.u.data.u.action.u.put.path = strdup("/brick/23-32");
 	msg1.u.data.u.action.u.put.data = strdup("{\"color\":\"white\",\"uid\":\"anonymous\",\"x\":23,\"y\":32}");
 
-	res = wc_msg_to_json_str(&msg1);
+	res = wc_datasync_msg_to_json_str(&msg1);
 
 	STFU_TRUE	("Message to JSON str not null", res != NULL);
 	STFU_STR_EQ	("JSON document conforms to reference", str1, res);
 	printf("\tgot: %s\n\tref: %s", res, str1);
 
-	wc_msg_free(&msg1);
+	wc_datasync_free(&msg1);
 	free(res);
 
 	STFU_SUMMARY();

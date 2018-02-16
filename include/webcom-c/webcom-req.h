@@ -59,7 +59,7 @@ typedef void (*wc_on_req_result_t) (wc_context_t *cnx, int64_t id, wc_action_typ
  * 	             at the given path
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_put(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+int64_t wc_datasync_put(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback);
 
 /**
  * sends a data merge request to the webcom server and get notified of the
@@ -75,7 +75,7 @@ int64_t wc_req_put(wc_context_t *cnx, wc_on_req_result_t callback, char *path, c
  * 	             at the given path
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_merge(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+int64_t wc_datasync_merge(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback);
 
 /**
  * sends a data push request to the webcom server and get notified of the status
@@ -93,7 +93,7 @@ int64_t wc_req_merge(wc_context_t *cnx, wc_on_req_result_t callback, char *path,
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+int64_t wc_datasync_push(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback);
 
 /**
  * sends a listen request to the webcom server and get notified of the status
@@ -107,7 +107,7 @@ int64_t wc_req_push(wc_context_t *cnx, wc_on_req_result_t callback, char *path, 
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_listen(wc_context_t *cnx, wc_on_req_result_t callback, char *path);
+int64_t wc_datasync_listen(wc_context_t *cnx, char *path, wc_on_req_result_t callback);
 
 /**
  * sends a un-listen request to the webcom server and get notified of the status
@@ -122,7 +122,7 @@ int64_t wc_req_listen(wc_context_t *cnx, wc_on_req_result_t callback, char *path
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_unlisten(wc_context_t *cnx, wc_on_req_result_t callback, char *path);
+int64_t wc_datasync_unlisten(wc_context_t *cnx, char *path, wc_on_req_result_t callback);
 
 /**
  * sends an authentication request to the webcom server and get notified of the
@@ -137,7 +137,7 @@ int64_t wc_req_unlisten(wc_context_t *cnx, wc_on_req_result_t callback, char *pa
  *
  * @see wc_auth_with_password()
  */
-int64_t wc_req_auth(wc_context_t *cnx, wc_on_req_result_t callback, char *cred);
+int64_t wc_datasync_auth(wc_context_t *cnx, char *cred, wc_on_req_result_t callback);
 
 /**
  * sends a un-authentication request to the webcom server and get notified of
@@ -149,7 +149,7 @@ int64_t wc_req_auth(wc_context_t *cnx, wc_on_req_result_t callback, char *cred);
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_unauth(wc_context_t *cnx, wc_on_req_result_t callback);
+int64_t wc_datasync_unauth(wc_context_t *cnx, wc_on_req_result_t callback);
 
 /**
  * sends an on-disconnect-put request to the webcom server and get notified of
@@ -163,7 +163,7 @@ int64_t wc_req_unauth(wc_context_t *cnx, wc_on_req_result_t callback);
  * 	             at the given path on disconnection
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_on_disc_put(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+int64_t wc_datasync_on_disc_put(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback);
 
 /**
  * sends an on-disconnect-merge request to the webcom server and get notified of
@@ -177,7 +177,7 @@ int64_t wc_req_on_disc_put(wc_context_t *cnx, wc_on_req_result_t callback, char 
  * 	             at the given path on disconnection
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_on_disc_merge(wc_context_t *cnx, wc_on_req_result_t callback, char *path, char *json);
+int64_t wc_datasync_on_disc_merge(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback);
 
 /**
  * sends an on-disconnect-cancel request to the webcom server and get notified
@@ -189,7 +189,7 @@ int64_t wc_req_on_disc_merge(wc_context_t *cnx, wc_on_req_result_t callback, cha
  * @param path a string representing the path of the data
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
-int64_t wc_req_on_disc_cancel(wc_context_t *cnx, wc_on_req_result_t callback, char *path);
+int64_t wc_datasync_on_disc_cancel(wc_context_t *cnx, char *path, wc_on_req_result_t callback);
 
 /**
  * @}

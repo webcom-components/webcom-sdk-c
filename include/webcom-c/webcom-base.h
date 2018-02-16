@@ -92,7 +92,41 @@ struct wc_context_options {
 	void *user_data;
 };
 
+/**
+ * informs the SDK of some event happening on one of its file descriptors
+ *
+ * This function is to be called by the event loop logic to make the Webcom SDK
+ * handle any pending event on one of its file descriptor.
+ *
+ * @note If you use one of the libev/libuv/libevent integration, you don't need
+ * to call this function.
+ *
+ * @param ctx the context
+ * @param pa a pointer to a structure describing the event (file descriptor,
+ * events [WC_POLLHUP, WC_POLLIN, WC_POLLOUT], and source [WC_POLL_DATASYNC,
+ * WC_POLL_AUTH])
+ */
+void wc_dispatch_fd_event(wc_context_t *ctx, struct wc_pollargs *pa);
+
+/**
+ * informs the SDK that some timer has fired
+ *
+ * You need to call this function once a timer armed because of a
+ * **WC_EVENT_SET_TIMER** event has fired.
+ * @param ctx the context
+ * @param timer the timer identifier
+ */
+void wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer);
+
+/**
+ * gets the user data associated to this context
+ *
+ * @return some user-defined data, set in wc_context_new()
+ */
+void *wc_context_get_user_data(wc_context_t *ctx);
+
 wc_context_t *wc_context_create(struct wc_context_options *options);
+void wc_context_destroy(wc_context_t * ctx);
 
 wc_datasync_context_t *wc_get_datasync(wc_context_t *);
 wc_auth_context_t *wc_get_auth(wc_context_t *);

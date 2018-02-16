@@ -40,9 +40,7 @@
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
 
-static void _wc_context_connect(wc_context_t *ctx);
-
-static int _wc_process_incoming_message(wc_context_t *ctx, wc_msg_t *msg) {
+static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 	struct wc_timerargs ta;
 	if (msg->type == WC_MSG_CTRL && msg->u.ctrl.type == WC_CTRL_MSG_HANDSHAKE) {
 		int64_t now = wc_datasync_now();
@@ -61,7 +59,7 @@ static int _wc_process_incoming_message(wc_context_t *ctx, wc_msg_t *msg) {
 			&& (msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT
 					|| msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_MERGE))
 	{
-		wc_datasync_on_data_dispatch(ctx, &msg->u.data.u.push);
+		wc_datasync_dispatch_data(ctx, &msg->u.data.u.push);
 	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
 		wc_datasync_req_response_dispatch(ctx, &msg->u.data.u.response);
 	}
@@ -69,62 +67,33 @@ static int _wc_process_incoming_message(wc_context_t *ctx, wc_msg_t *msg) {
 	return 1;
 }
 
-void wc_handle_fd_events(wc_context_t *ctx, struct wc_pollargs *pa) {
-	struct lws_pollfd pfd;
-
-	pfd.fd = pa->fd;
-	pfd.events = pa->events;
-	pfd.revents = pa->events;
-	if (pa->src == WC_POLL_DATASYNC) {
-		lws_service_fd(ctx->datasync.lws_cci.context, &pfd);
-	} else if (pa->src == WC_POLL_AUTH) {
-		wc_datasync_auth_event_action(ctx, pa->fd);
-	}
-}
-
-void wc_handle_timer(wc_context_t *ctx, enum wc_timersrc timer) {
-	switch (timer) {
-	case WC_TIMER_DATASYNC_KEEPALIVE:
-		wc_cnx_keepalive(ctx);
-		break;
-	case WC_TIMER_DATASYNC_RECONNECT:
-		wc_context_reconnect(ctx);
-		break;
-	case WC_TIMER_AUTH:
-		wc_datasync_auth_event_action(ctx, -1);
-		break;
-	default:
-		break;
-	}
-}
-
-void _wc_process_incoming_data(wc_context_t *ctx, char *buf, size_t len) {
+void _wc_datasync_process_data(wc_context_t *ctx, char *buf, size_t len) {
 	wc_msg_t msg;
 
 	if (ctx->datasync.parser == NULL) {
 		if (*buf == '{') {
-			ctx->datasync.parser = wc_parser_new();
+			ctx->datasync.parser = wc_datasync_parser_new();
 		} else {
 			return;
 		}
 	}
-	switch (wc_parse_msg_ex(ctx->datasync.parser, buf, (size_t)len, &msg)) {
+	switch (wc_datasync_parse_msg_ex(ctx->datasync.parser, buf, (size_t)len, &msg)) {
 	case WC_PARSER_OK:
-		_wc_process_incoming_message(ctx, &msg);
-		wc_parser_free(ctx->datasync.parser);
+		_wc_datasync_process_message(ctx, &msg);
+		wc_datasync_parser_free(ctx->datasync.parser);
 		ctx->datasync.parser = NULL;
-		wc_msg_free(&msg);
+		wc_datasync_free(&msg);
 		break;
 	case WC_PARSER_CONTINUE:
 		break;
 	case WC_PARSER_ERROR:
-		wc_parser_free(ctx->datasync.parser);
+		wc_datasync_parser_free(ctx->datasync.parser);
 		ctx->datasync.parser = NULL;
 		break;
 	}
 }
 
-static void _wc_schedule_reconnect(wc_context_t *ctx) {
+static void _wc_datasync_schedule_reconnect(wc_context_t *ctx) {
 	struct wc_timerargs wcta;
 
 	wcta.ms = 1000 * ctx->datasync.ws_next_reconnect_timer;
@@ -134,6 +103,16 @@ static void _wc_schedule_reconnect(wc_context_t *ctx) {
 	if (ctx->datasync.ws_next_reconnect_timer < (1 << 8)) {
 		ctx->datasync.ws_next_reconnect_timer <<= 1;
 	}
+}
+
+void wc_datasync_service_socket(wc_context_t *ctx, struct wc_pollargs *pa) {
+	struct lws_pollfd pfd;
+
+	pfd.fd = pa->fd;
+	pfd.events = pa->events;
+	pfd.revents = pa->events;
+
+	lws_service_fd(ctx->datasync.lws_cci.context, &pfd);
 }
 
 static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_reasons reason, void *user, void *in, size_t len) {
@@ -183,12 +162,12 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 		WL_ERR("connection error \"%.*s\"", (int)len, (char*)in);
 		if (ctx->callback(WC_EVENT_ON_CNX_ERROR, ctx, in, len)) {
-			_wc_schedule_reconnect(ctx);
+			_wc_datasync_schedule_reconnect(ctx);
 		}
 		break;
 	case LWS_CALLBACK_CLIENT_RECEIVE:
 		if (ctx->datasync.state != WC_CNX_STATE_DISCONNECTING) {
-			_wc_process_incoming_data(ctx, (char*)in, len);
+			_wc_datasync_process_data(ctx, (char*)in, len);
 		}
 		break;
 	case LWS_CALLBACK_CLOSED:
@@ -196,7 +175,7 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		wcta.timer = WC_TIMER_DATASYNC_KEEPALIVE;
 		ctx->callback(WC_EVENT_DEL_TIMER, ctx, &wcta.timer, 0);
 		if (ctx->callback(WC_EVENT_ON_CNX_CLOSED, ctx, NULL, 0)) {
-			_wc_schedule_reconnect(ctx);
+			_wc_datasync_schedule_reconnect(ctx);
 		}
 		break;
 	case LWS_CALLBACK_CLIENT_WRITEABLE:
@@ -210,7 +189,7 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 	return 0;
 }
 
-int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
+int wc_datasync_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	char *jsonstr;
 	unsigned char *buf;
 	long len;
@@ -221,7 +200,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 		return -1;
 	}
 
-	jsonstr = wc_msg_to_json_str(msg);
+	jsonstr = wc_datasync_msg_to_json_str(msg);
 	if (jsonstr == NULL) {
 		return -1;
 	}
@@ -238,7 +217,7 @@ int wc_context_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	return sent;
 }
 
-void wc_context_close_cnx(wc_context_t *ctx) {
+void wc_datasync_close_cnx(wc_context_t *ctx) {
 	switch (ctx->datasync.state) {
 	case WC_CNX_STATE_CONNECTED:
 	case WC_CNX_STATE_CONNECTING:
@@ -252,7 +231,7 @@ void wc_context_close_cnx(wc_context_t *ctx) {
 	}
 }
 
-struct lws_protocols protocols[] = {
+static struct lws_protocols protocols[] = {
 	{
 		.name = "webcom-protocol",
 		.callback =_wc_lws_callback,
@@ -308,21 +287,23 @@ wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 
 	ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 
+	ctx->datasync_init = 1;
+
 	return &ctx->datasync;
 }
 
-static void _wc_context_connect(wc_context_t *ctx) {
-	ctx->datasync.state = WC_CNX_STATE_CONNECTING;
-	ctx->datasync.lws_conn = lws_client_connect_via_info(&ctx->datasync.lws_cci);
-	lws_service(ctx->datasync.lws_cci.context, 0);
+void _wc_datasync_connect(wc_context_t *ctx) {
+	if (ctx->datasync.state == WC_CNX_STATE_DISCONNECTED) {
+		ctx->datasync.state = WC_CNX_STATE_CONNECTING;
+		ctx->datasync.lws_conn = lws_client_connect_via_info(&ctx->datasync.lws_cci);
+		lws_service(ctx->datasync.lws_cci.context, 0);
+	} else {
+		WL_WARN("bad state for _wc_datasync_connect() in context %p, expected %d, got %d", ctx, WC_CNX_STATE_DISCONNECTED, ctx->datasync.state);
+	}
 }
 
-void wc_context_reconnect(wc_context_t *ctx) {
-	if (ctx->datasync.state == WC_CNX_STATE_DISCONNECTED) {
-		_wc_context_connect(ctx);
-	} else {
-		WL_WARN("called wc_context_reconnect() on not disconnected connection in context %p", ctx);
-	}
+void wc_datasync_connect(wc_context_t *ctx) {
+	_wc_datasync_schedule_reconnect(ctx);
 }
 
 void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx) {
@@ -333,13 +314,13 @@ void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx) {
 	//if (ctx->auth_form_data != NULL) free(ctx->auth_form_data);
 	//if (ctx->auth_url != NULL) free(ctx->auth_url);
 	if (ds_ctx->lws_cci.context != NULL) lws_context_destroy(ds_ctx->lws_cci.context);
-	if (ds_ctx->parser != NULL) wc_parser_free(ds_ctx->parser);
+	if (ds_ctx->parser != NULL) wc_datasync_parser_free(ds_ctx->parser);
 
-	wc_datasync_free_on_data_handlers(ds_ctx->handlers);
+	wc_datasync_cleanup_data_routes(ds_ctx->data_routes);
 	wc_datasync_free_pending_trans(ds_ctx->pending_req_table);
 }
 
-int wc_cnx_keepalive(wc_context_t *ctx) {
+int wc_datasync_keepalive(wc_context_t *ctx) {
 	int sent = 0;
 	unsigned char keepalive_msg[LWS_SEND_BUFFER_PRE_PADDING + 1 + LWS_SEND_BUFFER_POST_PADDING];
 
@@ -352,8 +333,4 @@ int wc_cnx_keepalive(wc_context_t *ctx) {
 	}
 
 	return sent;
-}
-
-void *wc_context_get_user_data(wc_context_t *ctx) {
-	return ctx->user;
 }
