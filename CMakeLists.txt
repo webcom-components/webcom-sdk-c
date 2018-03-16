@@ -92,6 +92,8 @@ add_library(
 	SHARED
 	lib/webcom_base.c
 	lib/log.c
+	lib/sha1.c
+	lib/base64.c
 	${WC_SRC_LIST}
 
 	lib/datasync/parser.c
@@ -100,6 +102,10 @@ add_library(
 	lib/datasync/datasync_utils.c
 	lib/datasync/request.c
 	lib/datasync/event.c
+	lib/datasync/path.c
+	lib/datasync/cache/treenode.c
+	lib/datasync/cache/treenode_sibs.c
+	lib/datasync/cache/treenode_cache.c
 
 	lib/auth/auth.c
 )

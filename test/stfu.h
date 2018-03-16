@@ -42,6 +42,8 @@ STFU_NOINLINE static unsigned int _stfu_nfail_incr(unsigned int increment) {
 	return (n += increment);
 }
 
+#define STFU_INFO(fmt, ...) printf("[\033[1;36mINFO\033[0m] " fmt "\n", ## __VA_ARGS__)
+
 #define STFU_TRUE(message, test) \
 	do { \
 		printf("[....] Testing \"%s\"", (message)); \

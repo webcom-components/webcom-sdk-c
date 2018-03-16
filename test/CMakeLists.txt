@@ -181,3 +181,54 @@ add_test(
 	NAME auth
 	COMMAND webcom-test-auth
 )
+
+## path parser
+add_executable(
+	webcom-test-path
+	test-path.c
+)
+
+target_include_directories(
+	webcom-test-path
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-path
+	webcom-c
+)
+
+## tests on the treenode objects
+add_executable(
+	webcom-test-treenode
+	test-treenode.c
+)
+
+target_include_directories(
+	webcom-test-treenode
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-treenode
+	webcom-c
+)
+
+## tests on the treenode cache
+add_executable(
+	webcom-test-cache
+	test-cache.c
+)
+
+target_include_directories(
+	webcom-test-cache
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-cache
+	webcom-c
+)
