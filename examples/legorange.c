@@ -107,6 +107,12 @@ int main(int argc, char *argv[]) {
 			.on_error = on_error,
 	};
 
+	struct wc_context_options options = {
+			.host = "io.datasync.orange.com",
+			.port = 443,
+			.app_name = "legorange",
+	};
+
 	wc_log_use_stderr();
 
 	APP_INFO("Starting legorange");
@@ -115,11 +121,12 @@ int main(int argc, char *argv[]) {
 	 * our libev event loop
 	 */
 	ctx = wc_context_create_with_libev(
-			"io.datasync.orange.com",
-			443,
-			"legorange",
+			&options,
 			loop,
 			&cb);
+
+	wc_datasync_init(ctx);
+	wc_datasync_connect(ctx);
 
 	/* if stdin has data to read, call stdin_watcher() */
 	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);
@@ -146,7 +153,7 @@ static void on_connected(wc_context_t *ctx) {
 	/*
 	 * now that the route is configured, let's subscribe to the path
 	 */
-	wc_req_listen(ctx, NULL, board_name);
+	wc_datasync_listen(ctx, board_name, NULL);
 
 	clear_screen();
 }
@@ -268,7 +275,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 					"\"y\":%d}", col_str, x, y);
 
 			/* send the put message to the webcom server */
-			if (wc_req_put(cnx, NULL, path, data) > 0) {
+			if (wc_datasync_put(cnx, path, data, NULL) > 0) {
 				puts("OK");
 			} else {
 				puts("ERROR");
