@@ -31,31 +31,6 @@
 #include "../lib/datasync/cache/treenode_cache.h"
 #include "../lib/datasync/cache/treenode_sibs.h"
 
-void dump_tree_r(struct treenode_sibs *_, char *key, struct treenode *n, void *param) {
-	uintptr_t depth = (uintptr_t)param;
-	switch(n->type) {
-	case TREENODE_TYPE_LEAF_BOOL:
-		STFU_INFO("%*s< %-10.10s > => [value:bool] %s", (int)(4 * depth), " ", key, n->uval.bool == TN_FALSE ? "false" : "true");
-		break;
-	case TREENODE_TYPE_LEAF_NULL:
-		STFU_INFO("%*s< %-10.10s > => [value:null]", (int)(4 * depth), " ", key);
-		break;
-	case TREENODE_TYPE_LEAF_NUMBER:
-		STFU_INFO("%*s< %-10.10s > => [value:num ] %.17g", (int)(4 * depth), " ", key, n->uval.number);
-		break;
-	case TREENODE_TYPE_LEAF_STRING:
-		STFU_INFO("%*s< %-10.10s > => [value:str ] \"%s\"", (int)(4 * depth), " ", key, n->uval.str);
-		break;
-	case TREENODE_TYPE_INTERNAL:
-		STFU_INFO("%*s< %-10.10s > => [internal  ] %u children:", (int)(4 * depth), " ", key, treenode_sibs_count(n->uval.children));
-		treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, dump_tree_r, (void*)(depth+1));
-		break;
-	}
-	if (key == NULL) {
-
-	}
-}
-
 int main(void) {
 	data_cache_t *mycache;
 	struct treenode *n;
@@ -138,11 +113,14 @@ int main(void) {
 
 	STFU_INFO("Now dumping the cache contents:");
 
-	n = data_cache_get(mycache, "/");
-	treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, dump_tree_r, 0);
+	data_cache_debug_print(mycache, stdout);
 
+	STFU_INFO("Setting '/' to the String value 'azertyuiop'");
 	uval.str = "azertyuiop";
 	data_cache_set_leaf(mycache, "/", TREENODE_TYPE_LEAF_STRING, uval);
+	STFU_INFO("Now dumping the cache contents again:");
+	data_cache_debug_print(mycache, stdout);
+
 	data_cache_destroy(mycache);
 
 	STFU_SUMMARY();

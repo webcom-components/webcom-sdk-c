@@ -69,14 +69,6 @@ void data_cache_destroy(data_cache_t *cache) {
 	data_cache_empty(cache);
 	free(cache);
 }
-/*
-static void data_cache_remove_child(struct treenode *parent, char *key) {
-	assert(parent->type == TREENODE_TYPE_INTERNAL);
-	assert(treenode_sibs_get(parent->uval.children, key));
-
-	treenode_sibs_remove(parent->uval.children, key);
-}
-*/
 
 void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type type, union treenode_value uval) {
 	assert(type != TREENODE_TYPE_INTERNAL);
@@ -91,19 +83,6 @@ void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type typ
 
 		/* replace the root */
 		cache->root = treenode_new(type, uval);
-#if 0
-	} else if (nparts == 1) {
-		/* insert in root object */
-		if (cache->root->type != TREENODE_TYPE_INTERNAL) {
-			/* it if the root is not an internal node, replace it */
-			union treenode_value root_obj;
-
-			root_obj.children = treenode_sibs_new();
-			treenode_destroy(cache->root);
-			cache->root = treenode_new(TREENODE_TYPE_INTERNAL, root_obj);
-		}
-		treenode_sibs_add_ex(cache->root->uval.children, wc_datasync_path_get_part(parsed_path, 0), type, uval);
-#endif
 	} else {
 		struct treenode *n;
 
@@ -112,41 +91,14 @@ void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type typ
 		n = data_cache_get_r(cache->root, parsed_path, 0);
 		parsed_path->nparts++; /* pop() */
 
+		/* XXX the old leaf must be removed */
+		treenode_sibs_remove(n->uval.children, wc_datasync_path_get_part(parsed_path, nparts - 1));
+
 		treenode_sibs_add_ex(n->uval.children, wc_datasync_path_get_part(parsed_path, nparts - 1), type, uval);
 	}
 	wc_datasync_path_destroy(parsed_path);
 }
 
-/*
-static void data_cache_set_r(struct treenode *parent, wc_ds_path_t *path, unsigned depth, json_object *data) {
-	struct treenode *n, *p;
-	if (wc_datasync_path_get_part_count(path) - depth > 1) {
-		if ((n = treenode_sibs_get(parent->uval.children,
-				wc_datasync_path_get_part(path, depth)))) {
-			if (n->type == TREENODE_TYPE_INTERNAL) {
-				data_cache_set_r(n, path, depth + 1, data);
-			} else {
-				data_cache_remove_child(parent, n->key);
-				data_cache_set_r(parent, path, depth, data);
-			}
-		} else {
-			p = calloc(1, sizeof(*p) + sizeof(treenode_hash_t));
-			p->key = strdup(wc_datasync_path_get_part(path, depth));
-			p->type = TREENODE_TYPE_INTERNAL;
-			p->uval.children = treenode_sibs_new();
-
-			treenode_sibs_add_internal(parent->uval.children, wc_datasync_path_get_part(path, depth), p);
-
-			data_cache_set_r(p, path, depth + 1, data);
-		}
-	} else {
-		assert(parent->type == TREENODE_TYPE_INTERNAL);
-
-		treenode_sibs_add_ex(parent->uval.children, wc_datasync_path_get_part(path, depth), type, uval);
-
-	}
-}
-*/
 static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
 	struct treenode *cur;
 	struct treenode_sibs *prev;
@@ -180,18 +132,6 @@ void data_cache_mkpath(data_cache_t *cache, char *path) {
 	data_cache_mkpath_w(cache, parsed_path);
 	wc_datasync_path_destroy(parsed_path);
 }
-/*
-void data_cache_set(data_cache_t *cache, char *path, json_object *data) {
-	wc_ds_path_t *parsed_path = wc_ds_path_new(path);
-
-	if (wc_datasync_path_get_part_count(parsed_path) == 0) {
-		//replace root
-	} else {
-		data_cache_set_r(cache->root, parsed_path, 0, data);
-	}
-
-	wc_datasync_path_destroy(parsed_path);
-}*/
 
 static struct treenode *data_cache_get_r(struct treenode *node, wc_ds_path_t *path, unsigned depth) {
 	struct treenode *n;
@@ -217,4 +157,63 @@ struct treenode *data_cache_get(data_cache_t *cache, char *path) {
 	wc_datasync_path_destroy(parsed_path);
 
 	return ret;
+}
+
+struct dump_helper {
+	FILE *stream;
+	int depth;
+};
+
+void dump_tree_r(struct treenode_sibs *_, char *key, struct treenode *n, void *param) {
+	struct dump_helper *hlp = (struct dump_helper *)param, up_hlp;
+	(void)_;
+	switch(n->type) {
+	case TREENODE_TYPE_LEAF_BOOL:
+		fprintf(hlp->stream, "%*s< %-10.10s > => [value:bool] %s\n", 4 * hlp->depth, " ", key, n->uval.bool == TN_FALSE ? "false" : "true");
+		break;
+	case TREENODE_TYPE_LEAF_NULL:
+		fprintf(hlp->stream, "%*s< %-10.10s > => [value:null]\n", 4 * hlp->depth, " ", key);
+		break;
+	case TREENODE_TYPE_LEAF_NUMBER:
+		fprintf(hlp->stream, "%*s< %-10.10s > => [value:num ] %.17g\n", 4 * hlp->depth, " ", key, n->uval.number);
+		break;
+	case TREENODE_TYPE_LEAF_STRING:
+		fprintf(hlp->stream, "%*s< %-10.10s > => [value:str ] \"%s\"\n", 4 * hlp->depth, " ", key, n->uval.str);
+		break;
+	case TREENODE_TYPE_INTERNAL:
+		fprintf(hlp->stream, "%*s< %-10.10s > => [internal  ] %u children:\n", 4 * hlp->depth, " ", key, treenode_sibs_count(n->uval.children));
+		up_hlp.depth = hlp->depth + 1;
+		up_hlp.stream = hlp->stream;
+		treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, dump_tree_r, &up_hlp);
+		break;
+	}
+	if (key == NULL) {
+
+	}
+}
+
+void data_cache_debug_print(data_cache_t *cache, FILE *stream) {
+	struct dump_helper hlp;
+
+	if (cache->root->type == TREENODE_TYPE_INTERNAL) {
+		hlp.depth = 0;
+		hlp.stream = stream;
+		treenode_sibs_foreach(cache->root->uval.children, TREENODE_SIBS_INORDER, dump_tree_r, &hlp);
+	} else {
+		switch(cache->root->type) {
+		case TREENODE_TYPE_LEAF_BOOL:
+			fprintf(stream, "ROOT => [value:bool] %s\n", cache->root->uval.bool == TN_FALSE ? "false" : "true");
+			break;
+		case TREENODE_TYPE_LEAF_NULL:
+			fprintf(stream, "ROOT => [value:null]\n");
+			break;
+		case TREENODE_TYPE_LEAF_NUMBER:
+			fprintf(stream, "ROOT => [value:num ] %.17g\n", cache->root->uval.number);
+			break;
+		case TREENODE_TYPE_LEAF_STRING:
+			fprintf(stream, "ROOT => [value:str ] \"%s\"\n", cache->root->uval.str);
+			break;
+		default:;
+		}
+	}
 }
