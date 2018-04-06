@@ -97,6 +97,9 @@ add_library(
 	lib/hash.c
 	${WC_SRC_LIST}
 
+	lib/collection/ht.c
+	lib/collection/avl.c
+
 	lib/datasync/parser.c
 	lib/datasync/message.c
 	lib/datasync/datasync.c
