@@ -232,3 +232,20 @@ target_link_libraries(
 	webcom-test-cache
 	webcom-c
 )
+
+## tests on the AVL container
+add_executable(
+	webcom-test-avl
+	test-avl.c
+)
+
+target_include_directories(
+	webcom-test-avl
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-avl
+	webcom-c
+)
