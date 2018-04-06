@@ -103,6 +103,8 @@ add_library(
 	lib/datasync/request.c
 	lib/datasync/event.c
 	lib/datasync/path.c
+	lib/datasync/json.c
+
 	lib/datasync/cache/treenode.c
 	lib/datasync/cache/treenode_sibs.c
 	lib/datasync/cache/treenode_cache.c

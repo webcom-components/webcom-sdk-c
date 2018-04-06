@@ -28,6 +28,9 @@
 
 #include "treenode.h"
 #include "treenode_sibs.h"
+
+#include "../json.h"
+
 #include "../../sha1.h"
 #include "../../base64.h"
 
@@ -138,4 +141,120 @@ treenode_hash_t *treenode_hash_get(struct treenode *n) {
 	}
 
 	return ret;
+}
+
+struct tn2json {
+	char *buf;
+	int len;
+	int count;
+};
+
+static void update_json_str_len(struct treenode_sibs *l, char *key, struct treenode *n, void *param) {
+	struct tn2json *ctx = param;
+
+	(void)l;
+
+	if (n->type != TREENODE_TYPE_LEAF_NULL) {
+		ctx->len += json_escaped_str_len(key) + 1 /* : */ + treenode_to_json_len(n);
+	}
+	if (ctx->count != 1) {
+		ctx->len += 1; /* , */
+	}
+
+	ctx->count--;
+}
+
+int treenode_to_json_len(struct treenode *n) {
+	int ret = 0;
+	struct tn2json ctx;
+	if (n == NULL) {
+		ret = sizeof("null") - 1;
+	} else {
+		switch (n->type) {
+		case TREENODE_TYPE_LEAF_BOOL:
+			ret = (n->uval.bool == TN_TRUE) ? sizeof("true") - 1 : sizeof("false") - 1;
+			break;
+		case TREENODE_TYPE_LEAF_NULL:
+			ret = sizeof("null") - 1;
+			break;
+		case TREENODE_TYPE_LEAF_NUMBER:
+			ret = snprintf(NULL, 0, "%.16g", n->uval.number);
+			break;
+		case TREENODE_TYPE_LEAF_STRING:
+			ret = json_escaped_str_len(n->uval.str);
+			break;
+		case TREENODE_TYPE_INTERNAL:
+			ctx.len = 0;
+			ctx.count = treenode_sibs_count(n->uval.children);
+			treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, update_json_str_len, (void*)&ctx);
+			ret += ctx.len;
+			ret += 2; /* enclosing { ... } */
+			break;
+		}
+	}
+
+	return ret;
+}
+
+static void update_json_str(struct treenode_sibs *l, char *key, struct treenode *n, void *param) {
+	struct tn2json *ctx = param;
+	char *p = ctx->buf;
+
+	(void)l;
+
+	if (n->type != TREENODE_TYPE_LEAF_NULL) {
+		p += json_escape_str(key, ctx->buf);
+		*p++ = ':';
+		p += treenode_to_json(n, p);
+		if (ctx->count != 1) {
+			*p++ = ',';
+		}
+	}
+
+	ctx->count--;
+	ctx->len += p - ctx->buf;
+	ctx->buf = p;
+}
+
+int treenode_to_json(struct treenode *n, char *json) {
+	char *p = json;
+	struct tn2json ctx;
+	if (n == NULL) {
+		*p++ = 'n'; *p++ = 'u'; *p++ = 'l'; *p++ = 'l';
+	} else {
+		switch (n->type) {
+		case TREENODE_TYPE_LEAF_BOOL:
+			if (n->uval.bool == TN_TRUE) {
+				*p++ = 't'; *p++ = 'r'; *p++ = 'u'; *p++ = 'e';
+			} else {
+				*p++ = 'f'; *p++ = 'a'; *p++ = 'l'; *p++ = 's'; *p++ = 'e';
+			}
+			break;
+		case TREENODE_TYPE_LEAF_NULL:
+			*p++ = 'n'; *p++ = 'u'; *p++ = 'l'; *p++ = 'l';
+			break;
+		case TREENODE_TYPE_LEAF_NUMBER:
+			p += sprintf(p, "%.16g", n->uval.number);
+			break;
+		case TREENODE_TYPE_LEAF_STRING:
+			p += json_escape_str(n->uval.str, p);
+			break;
+		case TREENODE_TYPE_INTERNAL:
+			*p++ = '{';
+
+			ctx.count = treenode_sibs_count(n->uval.children);
+			ctx.buf = p;
+			ctx.len = 0;
+
+			treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, update_json_str, (void*)&ctx);
+
+			p = ctx.buf;
+
+			*p++ = '}';
+
+			break;
+		}
+	}
+	*p = 0;
+	return p - json;
 }

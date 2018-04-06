@@ -53,10 +53,21 @@ struct treenode {
 	char hash[];
 };
 
+struct treenode_ex {
+	struct treenode n;
+	treenode_hash_t h;
+};
+
+#define TREENODE_STATIC(_name, _type, _val) \
+		struct {struct treenode n; char h[sizeof(treenode_hash_t)];} (_name) = \
+			{.n = {.type = (_type), .uval = (union treenode_value) (_val)}}
+
 struct treenode *treenode_new(enum treenode_type type, union treenode_value uval);
 void treenode_cleanup(struct treenode *node);
 void treenode_destroy(struct treenode *node);
 treenode_hash_t *treenode_hash_get(struct treenode *n);
+int treenode_to_json_len(struct treenode *n);
+int treenode_to_json(struct treenode *n, char *json);
 
 
 #endif /* SRC_TREENODE_H_ */
