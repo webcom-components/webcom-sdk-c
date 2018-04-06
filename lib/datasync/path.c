@@ -1,5 +1,5 @@
 /*
- * ht
+ * webom-sdk-c
  *
  * Copyright 2018 Orange
  * <camille.oudot@orange.com>
@@ -28,8 +28,9 @@
 
 #include "path.h"
 
+wc_ds_path_t path_root = {.nparts = 0};
 
-wc_ds_path_t *wc_ds_path_new(const char *path) {
+wc_ds_path_t *wc_datasync_path_new(const char *path) {
 	/*
 	 * Path parser states:
 	 *
@@ -165,26 +166,32 @@ int wc_datasync_key_cmp(const char *sa, const char *sb) {
 }
 
 int wc_datasync_path_cmp(wc_ds_path_t *a, wc_ds_path_t *b) {
-	int cmp = 0;
+	int cmp;
 	unsigned part_a = 0, part_b = 0;
 
-	while (part_a < a->nparts && part_b < b->nparts) {
-		cmp = wc_datasync_key_cmp(wc_datasync_path_get_part(a, part_a), wc_datasync_path_get_part(b, part_b));
-
-		if (cmp != 0) {
-			goto done;
+	if (!(cmp = b->nparts - a->nparts)) {
+		for (part_a = 0, part_b = 0 ; part_a < a->nparts && part_b < b->nparts ; part_a++, part_b++) {
+			if ((cmp = wc_datasync_key_cmp(
+							wc_datasync_path_get_part(a, part_a),
+							wc_datasync_path_get_part(b, part_b))))
+			{
+				break;
+			}
 		}
-
-		part_a++;
-		part_b++;
 	}
 
-	if (a->nparts > b->nparts) {
-		cmp = 1;
-	} else if (b->nparts > a->nparts) {
-		cmp = -1;
-	}
-
-done:
 	return cmp;
+}
+
+wc_hash_t wc_datasync_path_hash(wc_ds_path_t *path) {
+	unsigned i;
+	wc_hash_t hash = 5381;
+	hash = (hash << 5) + hash + '/';
+
+	for (i = 0 ; i < wc_datasync_path_get_part_count(path) ; i++) {
+		wc_djb2_hash_update(wc_datasync_path_get_part(path, i), &hash);
+		hash = (hash << 5) + hash + '/';
+	}
+
+	return hash;
 }

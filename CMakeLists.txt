@@ -94,6 +94,7 @@ add_library(
 	lib/log.c
 	lib/sha1.c
 	lib/base64.c
+	lib/hash.c
 	${WC_SRC_LIST}
 
 	lib/datasync/parser.c

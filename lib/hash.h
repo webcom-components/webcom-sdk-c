@@ -1,5 +1,5 @@
 /*
- * webom-sdk-c
+ * webcom-sdk-c
  *
  * Copyright 2018 Orange
  * <camille.oudot@orange.com>
@@ -20,33 +20,17 @@
  *
  */
 
-#ifndef SRC_PATH_H_
-#define SRC_PATH_H_
+#ifndef LIB_HASH_H_
+#define LIB_HASH_H_
 
-#include <stdint.h>
-
-#include "../hash.h"
-
-#define WC_DS_MAX_DEPTH	32
-#define WC_DS_MAX_PATH_LEN	256
+typedef unsigned long wc_hash_t;
 
 
+void wc_djb2_hash_update(char *str, wc_hash_t *hash);
+wc_hash_t wc_djb2_hash(char *str);
+void wc_ap_hash_update(char* str, wc_hash_t *hash);
+wc_hash_t wc_ap_hash(char* str);
+wc_hash_t wc_str_path_hash_update(unsigned char **str, wc_hash_t hash);
+wc_hash_t wc_str_path_hash(char *path);
 
-typedef struct wc_ds_path {
-	char *_buf;
-	unsigned nparts;
-	uint16_t offsets[];
-} wc_ds_path_t;
-
-wc_ds_path_t *wc_datasync_path_new(const char *path);
-
-void wc_datasync_path_destroy(wc_ds_path_t *path);
-unsigned wc_datasync_path_get_part_count(wc_ds_path_t *path);
-char *wc_datasync_path_get_part(wc_ds_path_t *path, unsigned part);
-int wc_datasync_path_cmp(wc_ds_path_t *a, wc_ds_path_t *b);
-int wc_datasync_key_cmp(const char *sa, const char *sb);
-wc_hash_t wc_datasync_path_hash(wc_ds_path_t *path);
-
-extern wc_ds_path_t path_root;
-
-#endif /* SRC_PATH_H_ */
+#endif /* LIB_HASH_H_ */
