@@ -33,6 +33,8 @@
 
 
 #include "webcom-c/webcom.h"
+#include "cache/treenode_cache.h"
+#include "on/on_registry.h"
 
 typedef enum {
 	WC_CNX_STATE_DISCONNECTED = 0,
@@ -69,6 +71,8 @@ struct wc_datasync_context {
 	wc_action_trans_t *pending_req_table[1 << PENDING_ACTION_HASH_FACTOR];
 	wc_datasync_data_route_t *data_routes[1 << DATA_ROUTES_HASH_FACTOR];
 	unsigned ws_next_reconnect_timer;
+	struct on_registry *on_reg;
+	data_cache_t *cache;
 };
 
 static inline int64_t wc_datasync_now() {

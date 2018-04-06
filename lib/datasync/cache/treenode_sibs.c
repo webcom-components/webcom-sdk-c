@@ -189,6 +189,30 @@ end:
 	return &ret->node;
 }
 
+struct treenode *treenode_sibs_attach(struct treenode_sibs *l, char *key, struct treenode *node) {
+	struct treenode_sibs_entry *ret = NULL;
+	int ins = 0;
+
+	if (treenode_sibs_get(l, key)) {
+		goto end;
+	}
+
+	ret = calloc(1,
+			(node->type == TREENODE_TYPE_LEAF_BOOL || node->type == TREENODE_TYPE_LEAF_NULL)
+			? sizeof(*ret)
+			: sizeof(*ret) + sizeof (treenode_hash_t));
+
+	ret->key = strdup(key);
+	ret->node = *node;
+	ret->node.hash_cached = 0;
+
+	insert(&l->root, ret, &ins);
+	l->count++;
+
+end:
+	return &ret->node;
+}
+
 static struct treenode_sibs_entry *movr(struct treenode_sibs_entry *n, struct treenode_sibs_entry *r) {
 	if (!n)
 		return r;

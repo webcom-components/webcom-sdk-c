@@ -23,13 +23,18 @@
 #include <string.h>
 #include <assert.h>
 
+
+#include "../path.h"
+
+#include "../on/on_registry.h"
+
 #include "treenode_cache.h"
 #include "treenode.h"
 #include "treenode_sibs.h"
-#include "../path.h"
 
 struct data_cache {
 	struct treenode *root;
+	struct on_registry *registry;
 };
 
 static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path);
@@ -42,6 +47,8 @@ data_cache_t *data_cache_new() {
 
 	root->type = TREENODE_TYPE_LEAF_NULL;
 	ret->root = root;
+
+	ret->registry = on_registry_new();
 
 	return ret;
 }
@@ -67,17 +74,22 @@ static void data_cache_empty(data_cache_t *cache) {
 
 void data_cache_destroy(data_cache_t *cache) {
 	data_cache_empty(cache);
+	on_registry_destroy(cache->registry);
 	free(cache);
 }
 
 void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type type, union treenode_value uval) {
 	assert(type != TREENODE_TYPE_INTERNAL);
-	wc_ds_path_t *parsed_path = wc_ds_path_new(path);
+
+	struct treenode_ex new_node = {.n = {.type = type, .uval = uval}};
+
+	wc_ds_path_t *parsed_path = wc_datasync_path_new(path);
 	unsigned nparts = wc_datasync_path_get_part_count(parsed_path);
 
 	if (nparts == 0) {
 		/* chop the entire tree */
 		if (cache->root->type == TREENODE_TYPE_INTERNAL) {
+			on_registry_dispatch(cache->registry, cache, &path_root, data_cache_get(cache, path), &new_node.n);
 			data_cache_empty(cache);
 		}
 
@@ -107,6 +119,7 @@ static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
 
 	if (cache->root->type != TREENODE_TYPE_INTERNAL) {
 		treenode_destroy(cache->root);
+
 		cache->root = treenode_new(TREENODE_TYPE_INTERNAL, (union treenode_value)(struct treenode_sibs *)treenode_sibs_new());
 	}
 
@@ -128,7 +141,7 @@ static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
 }
 
 void data_cache_mkpath(data_cache_t *cache, char *path) {
-	wc_ds_path_t *parsed_path = wc_ds_path_new(path);
+	wc_ds_path_t *parsed_path = wc_datasync_path_new(path);
 	data_cache_mkpath_w(cache, parsed_path);
 	wc_datasync_path_destroy(parsed_path);
 }
@@ -150,7 +163,7 @@ static struct treenode *data_cache_get_r(struct treenode *node, wc_ds_path_t *pa
 
 struct treenode *data_cache_get(data_cache_t *cache, char *path) {
 	struct treenode *ret = NULL;
-	wc_ds_path_t *parsed_path = wc_ds_path_new(path);
+	wc_ds_path_t *parsed_path = wc_datasync_path_new(path);
 
 	ret = data_cache_get_r(cache->root, parsed_path, 0);
 
