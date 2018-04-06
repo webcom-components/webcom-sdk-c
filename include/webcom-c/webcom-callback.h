@@ -27,6 +27,8 @@
 #define WC_DATASYNC_EVENT_OFFSET	0x00000100
 #define WC_AUTH_EVENT_OFFSET		0x00010000
 
+#include <stddef.h>
+
 #include "webcom-base.h"
 
 typedef enum {
