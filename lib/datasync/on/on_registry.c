@@ -174,26 +174,43 @@ void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache,
 
 	wc_datasync_path_parse(path, &key->path);
 
-	sub = avl_get(reg->on_value, key);
-
-	on_value_trigger_maybe(sub, cache);
 	nparts = key->path.nparts;
-	if (nparts > 0) {
-		for (u = 0 ; u < nparts ; u++) {
-			key->path.nparts = u;
-			sub = avl_get(reg->on_value, key);
-			on_value_trigger_maybe(sub, cache);
-		}
+
+	/* try to trigger the subscriptions starting from the cache root
+	 * e.g.:
+	 *     on_registry_dispatch_on_value("/foo/bar/baz");
+	 *   will look for subscriptions for the following paths:
+	 *     /
+	 *     /foo/
+	 *     /foo/bar/
+	 */
+	for (u = 0 ; u < nparts ; u++) {
+		key->path.nparts = u;
+		sub = avl_get(reg->on_value, key);
+		on_value_trigger_maybe(sub, cache);
 	}
 
 	key->path.nparts = nparts;
 
+	/* then try to trigger any subscription "higher or equal" to the current path:
+	 * e.g.:
+	 *     on_registry_dispatch_on_value("/foo/bar/baz");
+	 *   will look for subscriptions for the following paths:
+	 *     /foo/bar/baz/
+	 *     /foo/bar/baz/buzz/
+	 *     /foo/bar/baz/fizz/
+	 *     /foo/bar/baz/fizz/qux/
+	 *     ...
+	 *
+	 * this is done by browsing the on_value list, that is conveniently sorted,
+	 * from the given path, until the next path does not begin with the given
+	 * path
+	 */
+
 	avl_it_start_at(&it, reg->on_value, key);
 
 	while ((sub = avl_it_next(&it)) != NULL && wc_datasync_path_starts_with(&sub->path, &key->path)) {
-		if (sub->path.nparts > key->path.nparts) {
-			on_value_trigger_maybe(sub, cache);
-		}
+		on_value_trigger_maybe(sub, cache);
 	}
 
 	wc_datasync_path_cleanup(&key->path);
