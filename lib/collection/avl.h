@@ -58,7 +58,8 @@ struct avl_it {
 void avl_it_start(struct avl_it *it, avl_t *avl);
 void avl_it_start_at(struct avl_it *it, avl_t *avl, void *key);
 void *avl_it_next(struct avl_it *it);
+int avl_it_has_next(struct avl_it *it);
 void *avl_it_peek_prev(struct avl_it *it);
-void *avl_it_peek_prev(struct avl_it *it);
+void *avl_it_peek_next(struct avl_it *it);
 
 #endif /* LIB_COLLECTION_AVL_H_ */

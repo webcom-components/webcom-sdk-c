@@ -252,6 +252,10 @@ void avl_it_start(struct avl_it *it, avl_t *avl) {
 
 	avl_it_init(it);
 
+	if (avl == NULL) {
+		return;
+	}
+
 	cur = avl->root;
 
 	while (cur != NULL) {
