@@ -82,8 +82,8 @@ size_t data_size(void *data) {
 }
 
 int main(void) {
-	struct avl* tree;
-	struct test_data data, *p, *q;
+	avl_t *tree;
+	struct test_data data, *p, *q, *r;
 	char *key = "Foo";
 	unsigned i;
 
@@ -133,11 +133,35 @@ int main(void) {
 
 	struct avl_it it;
 
-	avl_it_init(&it, tree);
+	avl_it_start(&it, tree);
 
 	while((p = avl_it_next(&it))) {
 		STFU_INFO("Iterating in-order: got key %s, insertion order: %g", p->key, p->value.f);
 	}
+
+	key = "aaa";
+	avl_it_start_at(&it, tree, &key);
+	q = NULL;
+
+	while((p = avl_it_next(&it))) {
+		r = avl_it_peek_prev(&it);
+		STFU_INFO("Checking avl_it_peek_prev(%s): expect %s, got %s", p->key, q ? q->key : "(null)", r ? r->key : "(null)");
+
+		STFU_TRUE("The previous key is correct", q == r);
+		q = p;
+	}
+
+	avl_it_start_at(&it, tree, &key);
+
+	while((p = avl_it_next(&it))) {
+		STFU_INFO("Iterating from '%s': got key %s, insertion order: %g", key, p->key, p->value.f);
+	}
+
+	key = "mam";
+
+	avl_it_start_at(&it, tree, &key);
+	p = avl_it_peek_prev(&it);
+	STFU_INFO("peek 1 element before '%s': got key %s, insertion order: %g", key, p->key, p->value.f);
 
 	avl_destroy(tree);
 

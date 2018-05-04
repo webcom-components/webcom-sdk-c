@@ -58,13 +58,13 @@ struct avl {
 	avl_data_cleanup_f data_cleanup;
 };
 
-struct avl *avl_new(
+avl_t *avl_new(
 		avl_key_cmp_f key_cmp,
 		avl_data_copy_f data_copy,
 		avl_data_size_f data_size,
 		avl_data_cleanup_f data_cleanup)
 {
-	struct avl *ret;
+	avl_t *ret;
 
 	ret = malloc(sizeof(*ret));
 
@@ -79,7 +79,7 @@ struct avl *avl_new(
 	return ret;
 }
 
-unsigned avl_count(struct avl *avl) {
+unsigned avl_count(avl_t *avl) {
 	return avl->count;
 }
 
@@ -161,7 +161,7 @@ static struct avl_node *avl_insert_rec(avl_key_cmp_f cmp, struct avl_node **root
 	return node;
 }
 
-void *avl_get(struct avl *avl, void *key) {
+void *avl_get(avl_t *avl, void *key) {
 	void *ret = NULL;
 	struct avl_node *n;
 	int cmp;
@@ -183,7 +183,7 @@ void *avl_get(struct avl *avl, void *key) {
 	return ret;
 }
 
-void *avl_insert(struct avl *avl, void *data) {
+void *avl_insert(avl_t *avl, void *data) {
 	struct avl_node *ret = NULL;
 	int ins = 0;
 
@@ -208,7 +208,7 @@ static struct avl_node *avl_movr(struct avl_node *n, struct avl_node *r) {
 	return avl_balance(n);
 }
 
-static struct avl_node *avl_remove_rec(struct avl *avl, struct avl_node **root, void *key, struct avl_node *parent) {
+static struct avl_node *avl_remove_rec(avl_t *avl, struct avl_node **root, void *key, struct avl_node *parent) {
 	int key_cmp;
 
 	if (!*root) {
@@ -234,22 +234,54 @@ static struct avl_node *avl_remove_rec(struct avl *avl, struct avl_node **root, 
 	return parent;
 }
 
-void avl_remove(struct avl *avl, void *key) {
+void avl_remove(avl_t *avl, void *key) {
 	struct avl_node *n = avl->root;
 
 	avl_remove_rec(avl, &n, key, n);
 	avl->root = n;
 }
 
-void avl_it_init(struct avl_it *it, struct avl *avl) {
+static void avl_it_init(struct avl_it *it) {
+	it->_rt = it->__rt = NULL;
+	it->_sp = it->_s;
+	it->_c = NULL;
+}
+
+void avl_it_start(struct avl_it *it, avl_t *avl) {
 	struct avl_node *cur;
 
-	it->_sp = it->_s;
+	avl_it_init(it);
+
 	cur = avl->root;
 
 	while (cur != NULL) {
 		*it->_sp++ = cur; /* push(cur) */
 		cur = cur->l;
+	}
+}
+
+void avl_it_start_at(struct avl_it *it, avl_t *avl, void *key) {
+	struct avl_node *cur;
+	int cmp;
+
+	avl_it_init(it);
+
+	cur = avl->root;
+
+	while (cur != NULL) {
+		it->_c = cur;
+		it->_rt = it->__rt;
+		cmp = avl->key_cmp(key, cur->data);
+		if (cmp < 0) {
+			*it->_sp++ = cur; /* push(cur) */
+			cur = cur->l;
+		} else if (cmp > 0) {
+			it->__rt = cur;
+			cur = cur->r;
+		} else {
+			*it->_sp++ = cur; /* push(cur) */
+			break;
+		}
 	}
 }
 
@@ -261,27 +293,62 @@ void *avl_it_next(struct avl_it *it) {
 	}
 
 	top = *--it->_sp; /* top = pop() */
+	it->_rt = it->__rt;
 	if (top->r != NULL) {
+		it->__rt = top;
 		cur = top->r;
 		while (cur != NULL) {
 			*it->_sp++ = cur; /* push(cur) */
 			cur = cur->l;
 		}
 	}
+	it->_c = top;
 	return top->data;
 }
 
-static void avl_walk_rec(struct avl *l, enum avl_order order, struct avl_node *root, avl_walker_f walker, void *param) {
-	if (root == NULL) return;
-
-	if (order == AVL_PREORDER) walker(l, root->data, param);
-	avl_walk_rec(l, order, root->l, walker, param);
-	if (order == AVL_INORDER) walker(l, root->data, param);
-	avl_walk_rec(l, order, root->r, walker, param);
-	if (order == AVL_POSTORDER) walker(l, root->data, param);
+void *avl_it_peek(struct avl_it *it) {
+	return it->_c ? it->_c->data : NULL;
 }
 
-void avl_walk(struct avl *avl, enum avl_order order, avl_walker_f walker, void* param) {
+int avl_it_has_next(struct avl_it *it) {
+	return it->_sp > it->_s;
+}
+
+void *avl_it_peek_next(struct avl_it *it) {
+	if (avl_it_has_next(it)) { /* the stack is empty */
+		return (*(it->_sp - 1))->data;
+	} else {
+		return NULL;
+	}
+}
+
+void *avl_it_peek_prev(struct avl_it *it) {
+	if (it->_c == NULL) {
+		return NULL;
+	} else if (it->_c->l != NULL) {
+		struct avl_node *cur = it->_c->l;
+		while (cur->r != NULL) {
+			cur = cur->r;
+		}
+		return cur->data;
+	} else if (it->_rt != NULL) {
+		return it->_rt->data;
+	} else {
+		return NULL;
+	}
+}
+
+static void avl_walk_rec(avl_t *avl, enum avl_order order, struct avl_node *root, avl_walker_f walker, void *param) {
+	if (root == NULL) return;
+
+	if (order == AVL_PREORDER) walker(avl, root->data, param);
+	avl_walk_rec(avl, order, root->l, walker, param);
+	if (order == AVL_INORDER) walker(avl, root->data, param);
+	avl_walk_rec(avl, order, root->r, walker, param);
+	if (order == AVL_POSTORDER) walker(avl, root->data, param);
+}
+
+void avl_walk(avl_t *avl, enum avl_order order, avl_walker_f walker, void* param) {
 	avl_walk_rec(avl, order, avl->root, walker, param);
 }
 
@@ -289,13 +356,13 @@ static inline struct avl_node *avl_node_from_data(void *data) {
 	return (struct avl_node *)(((char *)data) - offsetof(struct avl_node, data));
 }
 
-static void avl_destroyer_walker(struct avl *avl, void *data, void *param) {
+static void avl_destroyer_walker(avl_t *avl, void *data, void *param) {
 	(void)param;
 	avl->data_cleanup(data);
 	free(avl_node_from_data(data));
 }
 
-void avl_destroy(struct avl *avl) {
+void avl_destroy(avl_t *avl) {
 	avl_walk(avl, AVL_POSTORDER, avl_destroyer_walker, NULL);
 	free(avl);
 }

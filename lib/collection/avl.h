@@ -23,7 +23,7 @@
 #ifndef LIB_COLLECTION_AVL_H_
 #define LIB_COLLECTION_AVL_H_
 
-struct avl;
+typedef struct avl avl_t;
 
 typedef int (*avl_key_cmp_f)(void *a, void *b);
 typedef size_t (*avl_data_size_f)(void *data);
@@ -32,28 +32,33 @@ typedef void (*avl_data_cleanup_f)(void *data);
 
 enum avl_order {AVL_PREORDER, AVL_INORDER, AVL_POSTORDER};
 
-typedef void(*avl_walker_f)(struct avl *avl, void *data, void *param);
+typedef void(*avl_walker_f)(avl_t *avl, void *data, void *param);
 
-struct avl *avl_new(
+avl_t *avl_new(
 		avl_key_cmp_f key_cmp,
 		avl_data_copy_f data_copy,
 		avl_data_size_f data_size,
 		avl_data_cleanup_f data_cleanup);
-unsigned avl_count(struct avl *avl);
-void *avl_get(struct avl *avl, void *key);
-void *avl_insert(struct avl *avl, void *data);
-void avl_remove(struct avl *avl, void *key);
-void avl_walk(struct avl *avl, enum avl_order order, avl_walker_f walker, void* param);
-void avl_destroy(struct avl *avl);
+unsigned avl_count(avl_t *avl);
+void *avl_get(avl_t *avl, void *key);
+void *avl_insert(avl_t *avl, void *data);
+void avl_remove(avl_t *avl, void *key);
+void avl_walk(avl_t *avl, enum avl_order order, avl_walker_f walker, void* param);
+void avl_destroy(avl_t *avl);
 
 struct avl_it {
 /* treat as opaque */
 	struct avl_node **_sp; /* stack pointer */
 	struct avl_node *_s[32]; /* stack, size is the max avl depth */
+	struct avl_node *_rt;
+	struct avl_node *__rt;
+	struct avl_node *_c;
 };
 
-void avl_it_init(struct avl_it *it, struct avl *avl);
+void avl_it_start(struct avl_it *it, avl_t *avl);
+void avl_it_start_at(struct avl_it *it, avl_t *avl, void *key);
 void *avl_it_next(struct avl_it *it);
-
+void *avl_it_peek_prev(struct avl_it *it);
+void *avl_it_peek_prev(struct avl_it *it);
 
 #endif /* LIB_COLLECTION_AVL_H_ */
