@@ -23,7 +23,10 @@
 #ifndef LIB_DATASYNC_JSON_H_
 #define LIB_DATASYNC_JSON_H_
 
+#include <stdio.h>
+
 int json_escaped_str_len(char *str);
 int json_escape_str(char *raw, char *escaped);
+void fjson_escape_str(char *raw, FILE *stream);
 
 #endif /* LIB_DATASYNC_JSON_H_ */

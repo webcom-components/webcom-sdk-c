@@ -96,3 +96,43 @@ int json_escape_str(char *raw, char *escaped) {
 
 	return p - escaped;
 }
+
+void fjson_escape_str(char *raw, FILE *stream) {
+	int c;
+
+	fputc('"', stream);
+
+	while((c = *raw++)) {
+		switch (c) {
+		case '"':
+			fputs("\\\"", stream);
+			break;
+		case '\\':
+			fputs("\\\\", stream);
+			break;
+		case '\b':
+			fputs("\\b", stream);
+			break;
+		case '\f':
+			fputs("\\f", stream);
+			break;
+		case '\n':
+			fputs("\\n", stream);
+			break;
+		case '\r':
+			fputs("\\r", stream);
+			break;
+		case '\t':
+			fputs("\\t", stream);
+			break;
+		default:
+			if ('\x00' <= c && c <= '\x1f') {
+				fprintf(stream, "\\u%04x", c);
+			} else {
+				fputc(c, stream);
+			}
+		}
+	}
+
+	fputc('"', stream);
+}
