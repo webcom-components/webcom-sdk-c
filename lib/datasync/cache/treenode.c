@@ -25,14 +25,147 @@
 #include <inttypes.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <assert.h>
 
 #include "treenode.h"
-#include "treenode_sibs.h"
 
 #include "../json.h"
 
 #include "../../sha1.h"
 #include "../../base64.h"
+#include "../path.h"
+
+struct internal_node_element {
+	char *key;
+	struct treenode node;
+};
+
+static int internal_element_key_cmp(void *a, void *b) {
+	struct internal_node_element *ea = a;
+	struct internal_node_element *eb = b;
+
+	return wc_datasync_key_cmp(ea->key, eb->key);
+}
+
+static size_t internal_element_size(void *data) {
+	struct internal_node_element *elem = data;
+
+	return (elem->node.type == TREENODE_TYPE_LEAF_BOOL || elem->node.type == TREENODE_TYPE_LEAF_NULL)
+			? sizeof(*elem)
+			: sizeof(*elem) + sizeof (treenode_hash_t);
+}
+
+static void internal_element_data_cleanup(void *data) {
+	struct internal_node_element *elem = data;
+
+	free(elem->key);
+
+	treenode_cleanup(&elem->node);
+}
+
+/* deep copy */
+static void internal_element_copy(void *from, void *to) {
+	struct internal_node_element *efrom = from;
+	struct internal_node_element *eto = to;
+	struct internal_node_element *e;
+	struct avl_it it;
+
+	eto->key = strdup(efrom->key);
+	eto->node.hash_cached = 0;
+	eto->node.type = efrom->node.type;
+
+	switch (efrom->node.type) {
+	case TREENODE_TYPE_LEAF_STRING:
+		eto->node.uval.str = strdup(efrom->node.uval.str);
+		break;
+	case TREENODE_TYPE_INTERNAL:
+		eto->node.uval.children = avl_new(internal_element_key_cmp, internal_element_copy, internal_element_size, internal_element_data_cleanup);
+
+		avl_it_start(&it, efrom->node.uval.children);
+		while ((e = avl_it_next(&it)) != NULL) {
+			avl_insert(eto->node.uval.children, e);
+		}
+		break;
+	default:
+		eto->node.uval = efrom->node.uval;
+		break;
+	}
+}
+
+struct treenode *internal_get(struct treenode *internal, char *key) {
+	struct internal_node_element *tmp;
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp = avl_get(internal->uval.children, &key);
+
+	return tmp != NULL ? &tmp->node : NULL;
+}
+
+void internal_remove(struct treenode *internal, char *key) {
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	avl_remove(internal->uval.children, &key);
+}
+
+struct treenode *internal_add_new_number(struct treenode *internal, char *key, double number) {
+	struct internal_node_element tmp;
+
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp.key = key;
+	tmp.node.type = TREENODE_TYPE_LEAF_NUMBER;
+	tmp.node.uval.number = number;
+
+	return &((struct internal_node_element*)avl_insert(internal->uval.children, &tmp))->node;
+}
+
+struct treenode *internal_add_new_bool(struct treenode *internal, char *key, enum treenode_bool bool) {
+	struct internal_node_element tmp;
+
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp.key = key;
+	tmp.node.type = TREENODE_TYPE_LEAF_BOOL;
+	tmp.node.uval.bool = bool;
+
+	return &((struct internal_node_element*)avl_insert(internal->uval.children, &tmp))->node;
+}
+
+struct treenode *internal_add_new_string(struct treenode *internal, char *key, char *string) {
+	struct internal_node_element tmp;
+
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp.key = key;
+	tmp.node.type = TREENODE_TYPE_LEAF_STRING;
+	tmp.node.uval.str = string;
+
+	return &((struct internal_node_element*)avl_insert(internal->uval.children, &tmp))->node;
+}
+
+struct treenode *internal_add_new_null(struct treenode *internal, char *key) {
+	struct internal_node_element tmp;
+
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp.key = key;
+	tmp.node.type = TREENODE_TYPE_LEAF_NULL;
+	tmp.node.uval.null = NULL;
+
+	return &((struct internal_node_element*)avl_insert(internal->uval.children, &tmp))->node;
+}
+
+struct treenode *internal_add_new_internal(struct treenode *internal, char *key) {
+	struct internal_node_element tmp;
+
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp.key = key;
+	tmp.node.type = TREENODE_TYPE_INTERNAL;
+	tmp.node.uval.children = NULL;
+
+	return &((struct internal_node_element*)avl_insert(internal->uval.children, &tmp))->node;
+}
 
 struct treenode *treenode_new(enum treenode_type type, union treenode_value uval) {
 	struct treenode *ret;
@@ -47,11 +180,61 @@ struct treenode *treenode_new(enum treenode_type type, union treenode_value uval
 	return ret;
 }
 
+struct treenode *treenode_new_number(double number) {
+	struct treenode *ret;
+
+	ret = calloc(1, sizeof(*ret) + sizeof (treenode_hash_t));
+	ret->type = TREENODE_TYPE_LEAF_NUMBER;
+	ret->uval.number = number;
+
+	return ret;
+}
+
+struct treenode *treenode_new_bool(enum treenode_bool bool) {
+	struct treenode *ret;
+
+	ret = calloc(1, sizeof(*ret));
+	ret->type = TREENODE_TYPE_LEAF_BOOL;
+	ret->uval.bool = bool;
+
+	return ret;
+}
+
+struct treenode *treenode_new_string(char *string) {
+	struct treenode *ret;
+
+	ret = calloc(1, sizeof(*ret) + sizeof (treenode_hash_t));
+	ret->type = TREENODE_TYPE_LEAF_STRING;
+	ret->uval.str = strdup(string);
+
+	return ret;
+}
+
+struct treenode *treenode_new_null() {
+	struct treenode *ret;
+
+	ret = calloc(1, sizeof(*ret));
+	ret->type = TREENODE_TYPE_LEAF_NULL;
+	ret->uval.null = NULL;
+
+	return ret;
+}
+
+struct treenode *treenode_new_internal() {
+	struct treenode *ret;
+
+	ret = calloc(1, sizeof(*ret) + sizeof (treenode_hash_t));
+	ret->type = TREENODE_TYPE_INTERNAL;
+	ret->uval.children = avl_new(internal_element_key_cmp, internal_element_copy, internal_element_size, internal_element_data_cleanup);
+
+	return ret;
+}
+
 void treenode_cleanup(struct treenode *node) {
-	if (node->type == TREENODE_TYPE_INTERNAL && node->uval.children != NULL) {
-		treenode_sibs_destroy(node->uval.children);
-//	} else if (node->type == TREENODE_TYPE_LEAF_STRING) {
-//		free(node->uval.str);
+	if (node->type == TREENODE_TYPE_INTERNAL) {
+		avl_destroy(node->uval.children);
+	} else if (node->type == TREENODE_TYPE_LEAF_STRING) {
+		free(node->uval.str);
 	}
 }
 
@@ -74,23 +257,13 @@ static treenode_hash_t bool_hash[] = {
 
 #define _U (const unsigned char *)
 
-static void update_internal_hash(struct treenode_sibs *l, char *key, struct treenode *n, void *param) {
-	SHA1_CTX *ctx = param;
-	treenode_hash_t *child_hash;
-	(void)l;
-	if (n->type != TREENODE_TYPE_LEAF_NULL) {
-		child_hash = treenode_hash_get(n);
-		SHA1Update(ctx, _U":", 1);
-		SHA1Update(ctx, _U key, strlen(key));
-		SHA1Update(ctx, _U":", 1);
-		SHA1Update(ctx, _U child_hash->bytes, 28);
-	}
-}
-
 void treenode_hash(struct treenode *n) {
 	SHA1_CTX ctx;
 	char hexnum[17];
 	unsigned char digest[20];
+	treenode_hash_t *child_hash;
+	struct avl_it it;
+	struct internal_node_element *p;
 
 	union {
 		double d;
@@ -111,7 +284,18 @@ void treenode_hash(struct treenode *n) {
 		SHA1Update(&ctx, _U n->uval.str, strlen(n->uval.str));
 		break;
 	case TREENODE_TYPE_INTERNAL:
-		treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, update_internal_hash, &ctx);
+		avl_it_start(&it, n->uval.children);
+
+		while ((p = avl_it_next(&it)) != NULL) {
+			if (p->node.type != TREENODE_TYPE_LEAF_NULL) {
+				child_hash = treenode_hash_get(&p->node);
+				SHA1Update(&ctx, _U":", 1);
+				SHA1Update(&ctx, _U p->key, strlen(p->key));
+				SHA1Update(&ctx, _U":", 1);
+				SHA1Update(&ctx, _U child_hash->bytes, 28);
+			}
+		}
+
 		break;
 	default:
 		break;
@@ -148,30 +332,11 @@ end:
 	return ret;
 }
 
-struct tn2json {
-	char *buf;
-	int len;
-	int count;
-};
-
-static void update_json_str_len(struct treenode_sibs *l, char *key, struct treenode *n, void *param) {
-	struct tn2json *ctx = param;
-
-	(void)l;
-
-	if (n->type != TREENODE_TYPE_LEAF_NULL) {
-		ctx->len += json_escaped_str_len(key) + 1 /* : */ + treenode_to_json_len(n);
-	}
-	if (ctx->count != 1) {
-		ctx->len += 1; /* , */
-	}
-
-	ctx->count--;
-}
-
 int treenode_to_json_len(struct treenode *n) {
-	int ret = 0;
-	struct tn2json ctx;
+	int ret = 0, non_null;
+	struct avl_it it;
+	struct internal_node_element *e;
+
 	if (n == NULL) {
 		ret = sizeof("null") - 1;
 	} else {
@@ -189,10 +354,21 @@ int treenode_to_json_len(struct treenode *n) {
 			ret = json_escaped_str_len(n->uval.str);
 			break;
 		case TREENODE_TYPE_INTERNAL:
-			ctx.len = 0;
-			ctx.count = treenode_sibs_count(n->uval.children);
-			treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, update_json_str_len, (void*)&ctx);
-			ret += ctx.len;
+			avl_it_start(&it, n->uval.children);
+
+			non_null = 0;
+
+			while ((e = avl_it_next(&it)) != NULL) {
+				if (e->node.type != TREENODE_TYPE_LEAF_NULL) {
+					ret += json_escaped_str_len(e->key) + 1 /* : */ + treenode_to_json_len(&e->node);
+				}
+				non_null++;
+			}
+
+			if (non_null > 0) {
+				ret += non_null - 1; /* separating commas */
+			}
+
 			ret += 2; /* enclosing { ... } */
 			break;
 		}
@@ -201,29 +377,11 @@ int treenode_to_json_len(struct treenode *n) {
 	return ret;
 }
 
-static void update_json_str(struct treenode_sibs *l, char *key, struct treenode *n, void *param) {
-	struct tn2json *ctx = param;
-	char *p = ctx->buf;
-
-	(void)l;
-
-	if (n->type != TREENODE_TYPE_LEAF_NULL) {
-		p += json_escape_str(key, ctx->buf);
-		*p++ = ':';
-		p += treenode_to_json(n, p);
-		if (ctx->count != 1) {
-			*p++ = ',';
-		}
-	}
-
-	ctx->count--;
-	ctx->len += p - ctx->buf;
-	ctx->buf = p;
-}
-
 int treenode_to_json(struct treenode *n, char *json) {
 	char *p = json;
-	struct tn2json ctx;
+	struct avl_it it;
+	struct internal_node_element *e;
+
 	if (n == NULL) {
 		*p++ = 'n'; *p++ = 'u'; *p++ = 'l'; *p++ = 'l';
 	} else {
@@ -247,13 +405,17 @@ int treenode_to_json(struct treenode *n, char *json) {
 		case TREENODE_TYPE_INTERNAL:
 			*p++ = '{';
 
-			ctx.count = treenode_sibs_count(n->uval.children);
-			ctx.buf = p;
-			ctx.len = 0;
-
-			treenode_sibs_foreach(n->uval.children, TREENODE_SIBS_INORDER, update_json_str, (void*)&ctx);
-
-			p = ctx.buf;
+			avl_it_start(&it, n->uval.children);
+			while ((e = avl_it_next(&it)) != NULL) {
+				if (e->node.type != TREENODE_TYPE_LEAF_NULL) {
+					p += json_escape_str(e->key, p);
+					*p++ = ':';
+					p += treenode_to_json(&e->node, p);
+					if (avl_it_has_next(&it)) {
+						*p++ = ',';
+					}
+				}
+			}
 
 			*p++ = '}';
 
@@ -262,6 +424,52 @@ int treenode_to_json(struct treenode *n, char *json) {
 	}
 	*p = 0;
 	return p - json;
+}
+
+void ftreenode_to_json(struct treenode *n, FILE *stream) {
+	struct avl_it it;
+	struct internal_node_element *e;
+
+	if (n == NULL) {
+		fputs("null", stream);
+	} else {
+		switch (n->type) {
+		case TREENODE_TYPE_LEAF_BOOL:
+			if (n->uval.bool == TN_TRUE) {
+				fputs("true", stream);
+			} else {
+				fputs("false", stream);
+			}
+			break;
+		case TREENODE_TYPE_LEAF_NULL:
+			fputs("null", stream);
+			break;
+		case TREENODE_TYPE_LEAF_NUMBER:
+			fprintf(stream, "%.16g", n->uval.number);
+			break;
+		case TREENODE_TYPE_LEAF_STRING:
+			fjson_escape_str(n->uval.str, stream);
+			break;
+		case TREENODE_TYPE_INTERNAL:
+			fputc('{', stream);
+
+			avl_it_start(&it, n->uval.children);
+			while ((e = avl_it_next(&it)) != NULL) {
+				if (e->node.type != TREENODE_TYPE_LEAF_NULL) {
+					fjson_escape_str(e->key, stream);
+					fputc(':', stream);
+					ftreenode_to_json(&e->node, stream);
+					if (avl_it_has_next(&it)) {
+						fputc(',', stream);
+					}
+				}
+			}
+
+			fputc('}', stream);
+
+			break;
+		}
+	}
 }
 
 int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2) {

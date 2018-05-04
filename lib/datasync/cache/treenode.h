@@ -23,14 +23,15 @@
 #ifndef SRC_TREENODE_H_
 #define SRC_TREENODE_H_
 
+#include <stdio.h>
+
+#include "../../collection/avl.h"
 
 typedef enum treenode_bool {TN_FALSE = 0, TN_TRUE = 1} treenode_bool_t;
 
-struct treenode_sibs;
-
 union treenode_value {
 	double number;
-	struct treenode_sibs *children;
+	avl_t *children;
 	enum treenode_bool bool;
 	char *str;
 	void *null;
@@ -68,7 +69,21 @@ void treenode_destroy(struct treenode *node);
 treenode_hash_t *treenode_hash_get(struct treenode *n);
 int treenode_to_json_len(struct treenode *n);
 int treenode_to_json(struct treenode *n, char *json);
+void ftreenode_to_json(struct treenode *n, FILE *stream);
 int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2);
 
+struct treenode *internal_get(struct treenode *internal, char *key);
+void internal_remove(struct treenode *internal, char *key);
+struct treenode *internal_add_new_number(struct treenode *internal, char *key, double number);
+struct treenode *internal_add_new_bool(struct treenode *internal, char *key, enum treenode_bool bool);
+struct treenode *internal_add_new_string(struct treenode *internal, char *key, char *string);
+struct treenode *internal_add_new_null(struct treenode *internal, char *key);
+struct treenode *internal_add_new_internal(struct treenode *internal, char *key);
+struct treenode *treenode_new(enum treenode_type type, union treenode_value uval);
+struct treenode *treenode_new_number(double number);
+struct treenode *treenode_new_bool(enum treenode_bool bool);
+struct treenode *treenode_new_string(char *string);
+struct treenode *treenode_new_null();
+struct treenode *treenode_new_internal();
 
 #endif /* SRC_TREENODE_H_ */
