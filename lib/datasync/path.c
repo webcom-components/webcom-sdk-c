@@ -25,12 +25,33 @@
 #include <stdio.h>
 #include <stdint.h>
 #include <inttypes.h>
+#include <alloca.h>
 
 #include "path.h"
 
 wc_ds_path_t path_root = {.nparts = 0};
 
 wc_ds_path_t *wc_datasync_path_new(const char *path) {
+	struct wc_ds_path *ret = NULL;
+	struct wc_ds_path *tmp;
+
+	tmp = alloca(PATH_STRUCT_MAX_SIZE);
+
+	if(wc_datasync_path_parse(path, tmp) == 0) {
+		return NULL;
+	} else {
+		ret = malloc(sizeof (*ret) + tmp->nparts * sizeof (*ret->offsets));
+		if (ret == NULL) {
+			wc_datasync_path_cleanup(tmp);
+			return NULL;
+		} else {
+			memcpy(ret, tmp, sizeof (*ret) + tmp->nparts * sizeof (*ret->offsets));
+			return ret;
+		}
+	}
+}
+
+int wc_datasync_path_parse(const char *path, struct wc_ds_path *parsed) {
 	/*
 	 * Path parser states:
 	 *
@@ -46,11 +67,10 @@ wc_ds_path_t *wc_datasync_path_new(const char *path) {
 	unsigned nparts = 0;
 	unsigned i = 0, part_begin;
 	int state = 0;
-	struct wc_ds_path *ret = NULL;
 
 	path_cpy = strdup(path);
 	if (path_cpy == NULL) {
-		goto error_strdup;
+		return 0;
 	}
 
 	for (i = 0 ; nparts < WC_DS_MAX_DEPTH ; i++) {
@@ -96,26 +116,17 @@ wc_ds_path_t *wc_datasync_path_new(const char *path) {
 	              (spaghetti plate)
 	 */
 end:
-
-	ret = malloc(sizeof (*ret) + nparts * sizeof (*ret->offsets));
-	if (ret == NULL) {
-		goto error_malloc;
-	}
-
-	ret->_buf = path_cpy;
-	ret->nparts = nparts;
+	parsed->_buf = path_cpy;
+	parsed->nparts = nparts;
 
 	for (i = 0 ; i < nparts ; i++) {
-		ret->offsets[i] = offsets[i];
+		parsed->offsets[i] = offsets[i];
 	}
 
-	return ret;
-
-error_malloc:
-	free(path_cpy);
-error_strdup:
-	return ret;
+	return 1;
 }
+
+
 
 unsigned wc_datasync_path_get_part_count(wc_ds_path_t *path) {
 	return path->nparts;
@@ -125,8 +136,12 @@ char *wc_datasync_path_get_part(wc_ds_path_t *path, unsigned part) {
 	return &path->_buf[path->offsets[part]];
 }
 
-void wc_datasync_path_destroy(wc_ds_path_t *path) {
+void wc_datasync_path_cleanup(wc_ds_path_t *path) {
 	free(path->_buf);
+}
+
+void wc_datasync_path_destroy(wc_ds_path_t *path) {
+	wc_datasync_path_cleanup(path);
 	free(path);
 }
 
@@ -169,17 +184,17 @@ int wc_datasync_path_cmp(wc_ds_path_t *a, wc_ds_path_t *b) {
 	int cmp;
 	unsigned part_a = 0, part_b = 0;
 
-	if (!(cmp = b->nparts - a->nparts)) {
-		for (part_a = 0, part_b = 0 ; part_a < a->nparts && part_b < b->nparts ; part_a++, part_b++) {
-			if ((cmp = wc_datasync_key_cmp(
-							wc_datasync_path_get_part(a, part_a),
-							wc_datasync_path_get_part(b, part_b))))
-			{
-				break;
-			}
+	for (part_a = 0, part_b = 0 ; part_a < a->nparts && part_b < b->nparts ; part_a++, part_b++) {
+		if ((cmp = wc_datasync_key_cmp(
+						wc_datasync_path_get_part(a, part_a),
+						wc_datasync_path_get_part(b, part_b))))
+		{
+			goto end;
 		}
 	}
 
+	cmp = a->nparts - b->nparts;
+end:
 	return cmp;
 }
 
@@ -194,4 +209,20 @@ wc_hash_t wc_datasync_path_hash(wc_ds_path_t *path) {
 	}
 
 	return hash;
+}
+
+int wc_datasync_path_starts_with(wc_ds_path_t *path, wc_ds_path_t *prefix) {
+	int ret = 0;
+	unsigned u;
+
+	if (path->nparts >= prefix->nparts) {
+		for (u = 0 ; u < wc_datasync_path_get_part_count(prefix) ; u++) {
+			if (strcmp(wc_datasync_path_get_part(path, u), wc_datasync_path_get_part(prefix, u)) != 0) {
+				goto end;
+			}
+		}
+		ret = 1;
+	}
+end:
+	return ret;
 }

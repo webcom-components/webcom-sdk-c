@@ -38,14 +38,20 @@ typedef struct wc_ds_path {
 	uint16_t offsets[];
 } wc_ds_path_t;
 
-wc_ds_path_t *wc_datasync_path_new(const char *path);
+#define PATH_STRUCT_MAX_FLEXIBLE_SIZE (WC_DS_MAX_DEPTH * sizeof(uint16_t))
+#define PATH_STRUCT_MAX_SIZE (sizeof(struct wc_ds_path) + PATH_STRUCT_MAX_FLEXIBLE_SIZE)
 
+wc_ds_path_t *wc_datasync_path_new(const char *path);
+int wc_datasync_path_parse(const char *path, struct wc_ds_path *parsed);
+
+void wc_datasync_path_cleanup(wc_ds_path_t *path);
 void wc_datasync_path_destroy(wc_ds_path_t *path);
 unsigned wc_datasync_path_get_part_count(wc_ds_path_t *path);
 char *wc_datasync_path_get_part(wc_ds_path_t *path, unsigned part);
 int wc_datasync_path_cmp(wc_ds_path_t *a, wc_ds_path_t *b);
 int wc_datasync_key_cmp(const char *sa, const char *sb);
 wc_hash_t wc_datasync_path_hash(wc_ds_path_t *path);
+int wc_datasync_path_starts_with(wc_ds_path_t *path, wc_ds_path_t *prefix);
 
 extern wc_ds_path_t path_root;
 

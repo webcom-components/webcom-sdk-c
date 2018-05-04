@@ -83,11 +83,17 @@ int main(void) {
 	STFU_TRUE("/ababa/foo < /ababa/fop",
 			wc_datasync_path_cmp(path1, path7) < 0);
 
-	STFU_TRUE("/ababa/fop > /ababa/fop/fup",
-				wc_datasync_path_cmp(path7, path8) > 0);
+	STFU_TRUE("/ababa/fop < /ababa/fop/fup",
+			wc_datasync_path_cmp(path7, path8) < 0);
 
-		STFU_TRUE("/ababa/fop/fup < /ababa/fop",
-			wc_datasync_path_cmp(path8, path7) < 0);
+	STFU_TRUE("/ababa/fop/fup > /ababa/fop",
+			wc_datasync_path_cmp(path8, path7) > 0);
+
+	STFU_TRUE("/ababa/fop/fup starts with /ababa/fop",
+			wc_datasync_path_starts_with(path8, path7));
+
+	STFU_FALSE("/ababa/foo/azerty/oooo/ does not start with /ababa/fop",
+			wc_datasync_path_starts_with(path5, path7));
 
 	wc_datasync_path_destroy(path1);
 	wc_datasync_path_destroy(path2);
