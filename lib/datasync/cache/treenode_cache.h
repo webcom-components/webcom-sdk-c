@@ -39,7 +39,6 @@ data_cache_t *data_cache_new();
 void data_cache_destroy(data_cache_t *);
 void data_cache_update_put(data_cache_t *cache, char *path, json_object *data);
 void data_cache_update_merge(data_cache_t *cache, char *path, json_object *data);
-void data_cache_debug_print(data_cache_t *cache, FILE *stream);
 
 void data_cache_set(data_cache_t *cache, char *path, json_object *data);
 void data_cache_mkpath(data_cache_t *cache, char *path);

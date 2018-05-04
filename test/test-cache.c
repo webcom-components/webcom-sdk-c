@@ -29,7 +29,6 @@
 #include "stfu.h"
 
 #include "../lib/datasync/cache/treenode_cache.h"
-#include "../lib/datasync/cache/treenode_sibs.h"
 
 int main(void) {
 	data_cache_t *mycache;
@@ -113,13 +112,15 @@ int main(void) {
 
 	STFU_INFO("Now dumping the cache contents:");
 
-	data_cache_debug_print(mycache, stdout);
+	ftreenode_to_json(mycache->root, stdout);
+	putchar('\n');
 
 	STFU_INFO("Setting '/' to the String value 'azertyuiop'");
 	uval.str = "azertyuiop";
 	data_cache_set_leaf(mycache, "/", TREENODE_TYPE_LEAF_STRING, uval);
 	STFU_INFO("Now dumping the cache contents again:");
-	data_cache_debug_print(mycache, stdout);
+	ftreenode_to_json(mycache->root, stdout);
+	putchar('\n');
 
 	data_cache_destroy(mycache);
 
