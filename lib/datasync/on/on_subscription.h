@@ -25,20 +25,20 @@
 
 #include "../path.h"
 #include "../cache/treenode.h"
+#include "../../collection/avl.h"
 
 enum on_sub_type {
-	ON_VALUE,
 	ON_CHILD_ADDED,
 	ON_CHILD_CHANGED,
 	ON_CHILD_REMOVED,
-
-	ON_TYPE_NUM // keep last
+	ON_VALUE,
 };
-
+/*
 enum on_status {
 	ON_STATUS_PENDING,
 	ON_STATUS_WATCHING
 };
+*/
 
 typedef int(*on_value_f)(char * data);
 typedef int(*on_child_added_f)(char * data, char *prev_child);
@@ -53,30 +53,39 @@ union on_callback {
 	on_child_removed_f on_child_removed_cb;
 };
 
+union on_hash_store {
+	treenode_hash_t single;
+	avl_t *list;
+};
+
+/*
 struct on_sub {
 	enum on_sub_type type;
 	enum on_status status;
-	wc_ds_path_t *path;
-	struct on_sub *next;
 	union on_callback cb;
+	union on_hash_store hash;
+	struct wc_ds_path path;
 };
+
+*/
 
 struct on_value_sub {
-	wc_ds_path_t *path;
-	struct on_value_sub *next;
 	on_value_f cb;
 	treenode_hash_t hash;
+	struct wc_ds_path path;
 };
 
+#define ON_VALUE_STRUCT_MAX_SIZE (sizeof(struct on_value_sub) + PATH_STRUCT_MAX_FLEXIBLE_SIZE)
+
 struct on_child_sub {
-	wc_ds_path_t *path;
-	struct on_value_sub *next;
 	on_child_f cb;
-	treenode_hash_t hash;
+	avl_t *hashes;
+	struct wc_ds_path path;
 };
+
+#define ON_CHILD_STRUCT_MAX_SIZE (sizeof(struct on_child_sub) + PATH_STRUCT_MAX_FLEXIBLE_SIZE)
 
 struct on_sub *on_sub_new(enum on_sub_type type, char *path, union on_callback cb);
 void on_sub_destroy(struct on_sub *sub);
-void on_sub_destroy_list(struct on_sub *sub);
 
 #endif /* LIB_DATASYNC_ON_ON_SUBSCRIPTION_H_ */

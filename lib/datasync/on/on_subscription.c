@@ -26,6 +26,7 @@
 
 #include "on_subscription.h"
 
+#if 0
 struct on_sub *on_sub_new(enum on_sub_type type, char *path, union on_callback cb) {
 	struct on_sub *ret;
 	wc_ds_path_t *parsed_path;
@@ -37,7 +38,6 @@ struct on_sub *on_sub_new(enum on_sub_type type, char *path, union on_callback c
 	ret->path = parsed_path;
 	ret->status = ON_STATUS_PENDING;
 	ret->type = type;
-	ret->next = NULL;
 
 	return ret;
 }
@@ -46,13 +46,5 @@ void on_sub_destroy(struct on_sub *sub) {
 	 wc_datasync_path_destroy(sub->path);
 	 free(sub);
 }
-void on_sub_destroy_list(struct on_sub *sub) {
-	struct on_sub *cur, *next;
 
-	cur = sub;
-	while (cur) {
-		next = cur->next;
-		on_sub_destroy(cur);
-		cur = next;
-	}
-}
+#endif

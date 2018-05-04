@@ -28,7 +28,12 @@
 #include <json-c/json.h>
 
 #include "treenode.h"
-typedef struct data_cache data_cache_t;
+#include "../path.h"
+
+typedef struct data_cache {
+	struct treenode *root;
+	struct on_registry *registry;
+} data_cache_t;
 
 data_cache_t *data_cache_new();
 void data_cache_destroy(data_cache_t *);
@@ -41,6 +46,7 @@ void data_cache_mkpath(data_cache_t *cache, char *path);
 void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type type, union treenode_value uval);
 
 struct treenode *data_cache_get(data_cache_t *cache, char *path);
+struct treenode *data_cache_get_parsed(data_cache_t *cache, wc_ds_path_t *path);
 
 
 #endif /* SRC_TREENODE_CACHE_H_ */

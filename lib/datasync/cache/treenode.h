@@ -48,7 +48,7 @@ typedef struct {char bytes[28];} treenode_hash_t;
 
 struct treenode {
 	enum treenode_type type:3;
-	int hash_cached:1;
+	unsigned hash_cached:1;
 	union treenode_value uval;
 	char hash[];
 };
@@ -68,6 +68,7 @@ void treenode_destroy(struct treenode *node);
 treenode_hash_t *treenode_hash_get(struct treenode *n);
 int treenode_to_json_len(struct treenode *n);
 int treenode_to_json(struct treenode *n, char *json);
+int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2);
 
 
 #endif /* SRC_TREENODE_H_ */

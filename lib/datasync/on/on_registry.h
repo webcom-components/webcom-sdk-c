@@ -30,10 +30,10 @@
 struct on_registry;
 
 struct on_registry *on_registry_new();
-void on_registry_attach(struct on_registry* reg, struct on_sub *sub);
-void on_registry_detach(struct on_registry*, enum on_sub_type type, char *path);
+void on_registry_add_on_value(struct on_registry* reg, data_cache_t *cache, char *path, on_value_f cb);
 void on_registry_destroy(struct on_registry *);
 
-void on_registry_dispatch(struct on_registry* reg, data_cache_t *cache, wc_ds_path_t * path, struct treenode *old_data, struct treenode *new_data);
+void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache, char *path);
+
 
 #endif /* LIB_DATASYNC_ON_ON_REGISTRY_H_ */

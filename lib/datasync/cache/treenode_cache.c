@@ -32,11 +32,6 @@
 #include "treenode.h"
 #include "treenode_sibs.h"
 
-struct data_cache {
-	struct treenode *root;
-	struct on_registry *registry;
-};
-
 static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path);
 static struct treenode *data_cache_get_r(struct treenode *node, wc_ds_path_t *path, unsigned depth);
 
@@ -57,17 +52,25 @@ void data_cache_update_merge(data_cache_t *cache, char *path, json_object *data)
 
 static void data_cache_destroy_nodes_r(struct treenode_sibs *l, char *key, struct treenode *node, void *_) {
 	if (node->type == TREENODE_TYPE_INTERNAL) {
+		printf("destroying %s's children {\n", key);
 		treenode_sibs_foreach(node->uval.children, TREENODE_SIBS_POSTORDER, data_cache_destroy_nodes_r, _);
+		puts("}");
 	}
-	treenode_sibs_remove(l, key);
+	printf("destroyed %s.\n", key);
+	//treenode_sibs_remove(l, key);
+	(void)l;
+	treenode_cleanup(node);
 }
 
 /* warning: this function leaves the cache in a transient state where its root
  * is the NULL pointer, it must be linked to an actual treenode right after */
 static void data_cache_empty(data_cache_t *cache) {
 	if (cache->root->type == TREENODE_TYPE_INTERNAL) {
+		printf("destroying the root's children {\n");
 		treenode_sibs_foreach(cache->root->uval.children, TREENODE_SIBS_POSTORDER, data_cache_destroy_nodes_r, NULL);
+		puts("}");
 	}
+	printf("destroying the root.\n");
 	treenode_destroy(cache->root);
 	cache->root = NULL;
 }
@@ -81,7 +84,7 @@ void data_cache_destroy(data_cache_t *cache) {
 void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type type, union treenode_value uval) {
 	assert(type != TREENODE_TYPE_INTERNAL);
 
-	struct treenode_ex new_node = {.n = {.type = type, .uval = uval}};
+	//struct treenode_ex new_node = {.n = {.type = type, .uval = uval}};
 
 	wc_ds_path_t *parsed_path = wc_datasync_path_new(path);
 	unsigned nparts = wc_datasync_path_get_part_count(parsed_path);
@@ -89,7 +92,7 @@ void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type typ
 	if (nparts == 0) {
 		/* chop the entire tree */
 		if (cache->root->type == TREENODE_TYPE_INTERNAL) {
-			on_registry_dispatch(cache->registry, cache, &path_root, data_cache_get(cache, path), &new_node.n);
+			//on_registry_dispatch(cache->registry, cache, &path_root, data_cache_get(cache, path), &new_node.n);
 			data_cache_empty(cache);
 		}
 
@@ -135,6 +138,8 @@ static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
 			treenode_sibs_remove(prev, wc_datasync_path_get_part(path, i));
 			uval.children = treenode_sibs_new();
 			cur = treenode_sibs_add_ex(prev, wc_datasync_path_get_part(path, i), TREENODE_TYPE_INTERNAL, uval);
+		} else {
+			cur->hash_cached = 0;
 		}
 		prev = cur->uval.children;
 	}
@@ -170,6 +175,10 @@ struct treenode *data_cache_get(data_cache_t *cache, char *path) {
 	wc_datasync_path_destroy(parsed_path);
 
 	return ret;
+}
+
+struct treenode *data_cache_get_parsed(data_cache_t *cache, wc_ds_path_t *path) {
+	return data_cache_get_r(cache->root, path, 0);;
 }
 
 struct dump_helper {

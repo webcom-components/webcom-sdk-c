@@ -50,6 +50,8 @@ struct treenode *treenode_new(enum treenode_type type, union treenode_value uval
 void treenode_cleanup(struct treenode *node) {
 	if (node->type == TREENODE_TYPE_INTERNAL && node->uval.children != NULL) {
 		treenode_sibs_destroy(node->uval.children);
+//	} else if (node->type == TREENODE_TYPE_LEAF_STRING) {
+//		free(node->uval.str);
 	}
 }
 
@@ -122,6 +124,9 @@ void treenode_hash(struct treenode *n) {
 
 treenode_hash_t *treenode_hash_get(struct treenode *n) {
 	treenode_hash_t *ret = NULL;
+
+	if (n == NULL) goto end;
+
 	switch (n->type) {
 	case TREENODE_TYPE_LEAF_NULL:
 		/* let the function return NULL */
@@ -139,7 +144,7 @@ treenode_hash_t *treenode_hash_get(struct treenode *n) {
 		ret = (treenode_hash_t *)n->hash;
 		break;
 	}
-
+end:
 	return ret;
 }
 
@@ -257,4 +262,16 @@ int treenode_to_json(struct treenode *n, char *json) {
 	}
 	*p = 0;
 	return p - json;
+}
+
+int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2) {
+	if (h1 == h2) {
+		return 1;
+	}
+
+	if (h1 == NULL || h2 == NULL) {
+		return 0;
+	}
+
+	return memcmp(h1, h2, sizeof(*h1)) == 0;
 }

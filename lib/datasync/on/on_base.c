@@ -26,6 +26,7 @@
 #include "on_base.h"
 #include "on_registry.h"
 
+#if 0
 void wc_datasync_on_value(wc_context_t *ctx, char *path, on_value_f callback) {
 	struct on_sub *sub;
 
@@ -73,3 +74,4 @@ void wc_datasync_off_child_changed(wc_context_t *ctx, char *path) {
 void wc_datasync_off_child_removed(wc_context_t *ctx, char *path) {
 	on_registry_detach(ctx->datasync.on_reg, ON_CHILD_REMOVED, path);
 }
+#endif
