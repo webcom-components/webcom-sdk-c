@@ -95,6 +95,9 @@ int main(void) {
 	STFU_FALSE("/ababa/foo/azerty/oooo/ does not start with /ababa/fop",
 			wc_datasync_path_starts_with(path5, path7));
 
+	STFU_TRUE("/ababa/foo/azerty/oooo/ starts with /",
+			wc_datasync_path_starts_with(path5, path2));
+
 	wc_datasync_path_destroy(path1);
 	wc_datasync_path_destroy(path2);
 	wc_datasync_path_destroy(path3);

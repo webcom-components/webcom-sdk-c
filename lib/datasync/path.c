@@ -116,7 +116,12 @@ int wc_datasync_path_parse(const char *path, struct wc_ds_path *parsed) {
 	              (spaghetti plate)
 	 */
 end:
-	parsed->_buf = path_cpy;
+	if (nparts > 0) {
+		parsed->_buf = path_cpy;
+	} else {
+		free(path_cpy);
+		parsed->_buf = NULL;
+	}
 	parsed->nparts = nparts;
 
 	for (i = 0 ; i < nparts ; i++) {
@@ -137,7 +142,9 @@ char *wc_datasync_path_get_part(wc_ds_path_t *path, unsigned part) {
 }
 
 void wc_datasync_path_cleanup(wc_ds_path_t *path) {
-	free(path->_buf);
+	if (path->nparts > 0) {
+		free(path->_buf);
+	}
 }
 
 void wc_datasync_path_destroy(wc_ds_path_t *path) {
