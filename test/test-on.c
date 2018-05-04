@@ -66,7 +66,7 @@ int main(void) {
 
 
 	on_registry_add_on_value(reg, cache, "/foo/qux", on_value1);
-	on_registry_add_on_value(reg, cache, "/foo/", on_value2);
+	on_registry_add_on_value(reg, cache, "/", on_value2);
 	on_registry_add_on_value(reg, cache, "/foo/qux/ccc", on_value3);
 	on_registry_add_on_value(reg, cache, "/foo/qux/ddd", on_value4);
 
