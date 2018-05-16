@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <alloca.h>
+#include <stddef.h>
 
 #include "on_registry.h"
 #include "../path.h"
@@ -165,14 +166,12 @@ static void on_value_trigger_maybe(struct on_value_sub *sub, data_cache_t *cache
 
 }
 
-void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache, char *path) {
+void on_registry_dispatch_on_value_ex(struct on_registry* reg, data_cache_t *cache, wc_ds_path_t *parsed_path) {
 	struct on_value_sub *sub, *key;
 	unsigned u, nparts;
 	struct avl_it it;
 
-	key = alloca(ON_CHILD_STRUCT_MAX_SIZE);
-
-	wc_datasync_path_parse(path, &key->path);
+	key = ((void *)parsed_path) - offsetof(struct on_value_sub, path);
 
 	nparts = key->path.nparts;
 
@@ -212,8 +211,16 @@ void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache,
 	while ((sub = avl_it_next(&it)) != NULL && wc_datasync_path_starts_with(&sub->path, &key->path)) {
 		on_value_trigger_maybe(sub, cache);
 	}
+}
 
-	wc_datasync_path_cleanup(&key->path);
+void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache, char *path) {
+	wc_ds_path_t *parsed_path;
+
+	parsed_path = wc_datasync_path_new(path);
+
+	on_registry_dispatch_on_value_ex(reg, cache, parsed_path);
+
+	wc_datasync_path_cleanup(parsed_path);
 }
 
 

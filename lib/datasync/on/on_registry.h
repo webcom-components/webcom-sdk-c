@@ -26,6 +26,7 @@
 #include "on_subscription.h"
 
 #include "../cache/treenode_cache.h"
+#include "../path.h"
 
 struct on_registry;
 
@@ -34,6 +35,7 @@ void on_registry_add_on_value(struct on_registry* reg, data_cache_t *cache, char
 void on_registry_destroy(struct on_registry *);
 
 void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache, char *path);
+void on_registry_dispatch_on_value_ex(struct on_registry* reg, data_cache_t *cache, wc_ds_path_t *parsed_path);
 
 
 #endif /* LIB_DATASYNC_ON_ON_REGISTRY_H_ */
