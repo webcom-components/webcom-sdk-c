@@ -79,6 +79,10 @@ int main(void) {
 
 	on_registry_dispatch_on_value(reg, cache, "/foo/qux");
 
+	data_cache_set_leaf(cache, "/foo/qux/ccc", TREENODE_TYPE_LEAF_STRING, (union treenode_value) "CCC");
+
+	on_registry_dispatch_on_value(reg, cache, "/foo/qux");
+
 	STFU_TRUE("",
 			0);
 
