@@ -40,7 +40,8 @@ void data_cache_destroy(data_cache_t *);
 void data_cache_update_put(data_cache_t *cache, char *path, json_object *data);
 void data_cache_update_merge(data_cache_t *cache, char *path, json_object *data);
 
-void data_cache_set(data_cache_t *cache, char *path, json_object *data);
+void data_cache_set(data_cache_t *cache, char *path, char *json_doc);
+void data_cache_set_ex(data_cache_t *cache, wc_ds_path_t * parsed_path, json_object *parsed_json);
 void data_cache_mkpath(data_cache_t *cache, char *path);
 void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type type, union treenode_value uval);
 

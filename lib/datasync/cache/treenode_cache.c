@@ -22,6 +22,7 @@
 
 #include <string.h>
 #include <assert.h>
+#include <json-c/json.h>
 
 
 #include "../path.h"
@@ -47,8 +48,6 @@ data_cache_t *data_cache_new() {
 
 	return ret;
 }
-void data_cache_update_put(data_cache_t *cache, char *path, json_object *data);
-void data_cache_update_merge(data_cache_t *cache, char *path, json_object *data);
 
 /* warning: this function leaves the cache in a transient state where its root
  * is the NULL pointer, it must be linked to an actual treenode right after */
@@ -70,10 +69,7 @@ void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type typ
 	unsigned nparts = wc_datasync_path_get_part_count(parsed_path);
 
 	if (nparts == 0) {
-		/* chop the entire tree */
-		if (cache->root->type == TREENODE_TYPE_INTERNAL) {
-			data_cache_empty(cache);
-		}
+		data_cache_empty(cache);
 
 		/* replace the root */
 		switch (type) {
@@ -122,6 +118,142 @@ void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type typ
 		}
 	}
 	wc_datasync_path_destroy(parsed_path);
+}
+
+static struct treenode *treenode_from_json_val(json_object *val) {
+	assert(json_object_get_type(val) != json_type_object
+			&& json_object_get_type(val) != json_type_array);
+
+	struct treenode *ret = NULL;
+
+	switch (json_object_get_type(val)) {
+	case json_type_boolean:
+		ret = treenode_new_bool(json_object_get_boolean(val) == FALSE ? TN_FALSE : TN_TRUE);
+		break;
+	case json_type_double:
+		ret = treenode_new_number(json_object_get_double(val));
+		break;
+	case json_type_int:
+		ret = treenode_new_number((double)json_object_get_int64(val));
+		break;
+	case json_type_string:
+		ret = treenode_new_string((char*)json_object_get_string(val));
+		break;
+	default:
+		break;
+	}
+
+	return ret;
+}
+
+static void internal_add_from_json_val(struct treenode *root, char *key, json_object *val) {
+	assert(root->type == TREENODE_TYPE_INTERNAL);
+	assert(json_object_get_type(val) != json_type_object
+			&& json_object_get_type(val) != json_type_array);
+
+	switch (json_object_get_type(val)) {
+	case json_type_boolean:
+		internal_add_new_bool(root, key, json_object_get_boolean(val) == FALSE ? TN_FALSE : TN_TRUE);
+		break;
+	case json_type_double:
+		internal_add_new_number(root, key, json_object_get_double(val));
+		break;
+	case json_type_int:
+		internal_add_new_number(root, key, (double)json_object_get_int64(val));
+		break;
+	case json_type_string:
+		internal_add_new_string(root, key, (char*)json_object_get_string(val));
+		break;
+	case json_type_null:
+		avl_remove(root->uval.children, &key);
+		break;
+	default:
+		break;
+	}
+}
+
+static void data_cache_set_r(data_cache_t *cache, struct treenode *root, char *key, json_object *value);
+
+void data_cache_set(data_cache_t *cache, char *path, char *json_doc) {
+	wc_ds_path_t *parsed_path;
+	json_object *parsed_json;
+
+	parsed_path = wc_datasync_path_new(path);
+	parsed_json = json_tokener_parse(json_doc);
+
+	data_cache_set_ex(cache, parsed_path, parsed_json);
+
+	json_object_put(parsed_json);
+	wc_datasync_path_destroy(parsed_path);
+
+}
+
+void data_cache_set_ex(data_cache_t *cache, wc_ds_path_t * parsed_path, json_object *parsed_json) {
+	unsigned nparts;
+
+	nparts = wc_datasync_path_get_part_count(parsed_path);
+	if (nparts == 0) {
+		data_cache_empty(cache);
+
+		data_cache_set_r(cache, NULL, NULL, parsed_json);
+	} else {
+		struct treenode *n;
+
+		parsed_path->nparts--; /* push(hack) */
+		data_cache_mkpath_w(cache, parsed_path);
+		n = data_cache_get_r(cache->root, parsed_path, 0);
+		parsed_path->nparts++; /* pop() */
+
+		data_cache_set_r(cache, n, wc_datasync_path_get_part(parsed_path, nparts - 1), parsed_json);
+	}
+}
+
+static void data_cache_set_r(data_cache_t *cache, struct treenode *root, char *key, json_object *value) {
+	int i;
+	struct treenode *sub;
+	char sidx[32];
+
+	sidx[31] = 0;
+
+	switch(json_object_get_type(value)) {
+	case json_type_array:
+		if (root == NULL) {
+			sub = treenode_new_internal();
+			cache->root = sub;
+		} else {
+			sub = internal_add_new_internal(root, key);
+		}
+
+		for (i = 0 ; i < json_object_array_length(value) ; i++) {
+			snprintf(sidx, sizeof(sidx) - 1, "%d", i);
+			data_cache_set_r(cache, sub, sidx, json_object_array_get_idx(value, i));
+		}
+		break;
+	case json_type_object:
+		if (root == NULL) {
+			sub = treenode_new_internal();
+			cache->root = sub;
+		} else {
+			sub = internal_add_new_internal(root, key);
+		}
+
+		json_object_object_foreach(value, obj_key, obj_val) {
+			data_cache_set_r(cache, sub, obj_key, obj_val);
+		}
+		break;
+	case json_type_boolean:
+	case json_type_double:
+	case json_type_int:
+	case json_type_null:
+	case json_type_string:
+		if (root == NULL) {
+			sub = treenode_from_json_val(value);
+			cache->root = sub;
+		} else {
+			internal_add_from_json_val(root, key, value);
+		}
+		break;
+	}
 }
 
 static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
