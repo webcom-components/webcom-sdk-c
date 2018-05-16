@@ -118,9 +118,38 @@ int main(void) {
 	STFU_INFO("Setting '/' to the String value 'azertyuiop'");
 	uval.str = "azertyuiop";
 	data_cache_set_leaf(mycache, "/", TREENODE_TYPE_LEAF_STRING, uval);
+
+	n = data_cache_get(mycache, "/");
+	STFU_TRUE("The '/' leaf exists",
+			n != NULL);
+	STFU_TRUE("The '/' leaf is a string",
+			n->type == TREENODE_TYPE_LEAF_STRING);
+	STFU_STR_EQ("The '/' leaf value is 'azertyuiop'",
+			n->uval.str, "azertyuiop");
+
 	STFU_INFO("Now dumping the cache contents again:");
 	ftreenode_to_json(mycache->root, stdout);
 	putchar('\n');
+
+	char *complex_doc =
+			"{\"j\":[\"banana\",\"orange\",\"apple\"],\"b\":1.12e-45,\"f\":false"
+			",\"c\":-0,\"a\":123456789,\"d\":-42,\"e\":true,\"i\":{\"bbbbb\":tr"
+			"ue,\"zzzz\":{\"z\":{},\"x\":1,\"y\":2,\"foo\":null},\"aaaaa\":0,\""
+			"001\":null,\"00002\":42,\"000003\":3.14159},\"g\":\"Flygande bäcka"
+			"siner söka strax hwila på mjuka tuvor. Любя, съешь щипцы, — вздохн"
+			"ёт мэр, — кайф жгуч. Nechť již hříšné saxofony ďáblů rozzvučí síň "
+			"úděsnými tóny waltzu, tanga a quickstepu. Ξεσκεπάζω την ψυχοφθόρα "
+			"βδελυγμία. Įlinkusi fechtuotojo špaga blykčiodama gręžė apvalų arb"
+			"ūzą. Nne, nna, wepụ he'l'ụjọ dum n'ime ọzụzụ ụmụ, vufesi obi nye Ch"
+			"ukwu, ṅụrịanụ, gbakọọnụ kpaa, kwee ya ka o guzoshie ike. Ìwò̩fà ń yò̩"
+			"séji tó gbojúmó̩, ó hàn pákànpò̩ gan-an nis̩é̩ rè̩ bó dò̩la.\",\"h\":\"foo"
+			"\"}";
+
+	STFU_INFO("Setting the cache content via a the following JSON document:\n\t%s", complex_doc);
+	data_cache_set(mycache, "/",
+			complex_doc);
+	STFU_INFO("Now dumping the cache contents again:");
+	ftreenode_to_json(mycache->root, stdout);
 
 	data_cache_destroy(mycache);
 
