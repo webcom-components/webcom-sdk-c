@@ -239,8 +239,10 @@ void treenode_cleanup(struct treenode *node) {
 }
 
 void treenode_destroy(struct treenode *node) {
-	treenode_cleanup(node);
-	free(node);
+	if (node != NULL) {
+		treenode_cleanup(node);
+		free(node);
+	}
 }
 
 
