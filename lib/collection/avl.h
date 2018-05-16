@@ -43,6 +43,7 @@ unsigned avl_count(avl_t *avl);
 void *avl_get(avl_t *avl, void *key);
 void *avl_insert(avl_t *avl, void *data);
 void avl_remove(avl_t *avl, void *key);
+void avl_remove_all(avl_t *avl);
 void avl_walk(avl_t *avl, enum avl_order order, avl_walker_f walker, void* param);
 void avl_destroy(avl_t *avl);
 

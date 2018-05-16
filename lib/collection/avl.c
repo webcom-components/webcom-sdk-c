@@ -366,7 +366,11 @@ static void avl_destroyer_walker(avl_t *avl, void *data, void *param) {
 	free(avl_node_from_data(data));
 }
 
-void avl_destroy(avl_t *avl) {
+void avl_remove_all(avl_t *avl) {
 	avl_walk(avl, AVL_POSTORDER, avl_destroyer_walker, NULL);
+}
+
+void avl_destroy(avl_t *avl) {
+	avl_remove_all(avl);
 	free(avl);
 }
