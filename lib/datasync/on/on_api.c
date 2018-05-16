@@ -20,21 +20,33 @@
  *
  */
 
+
+#include <json-c/json.h>
+
 #include "../../webcom_base_priv.h"
 #include "../path.h"
-
-#include "on_base.h"
+#include "../cache/treenode_cache.h"
 #include "on_registry.h"
 
-#if 0
+#include "on_api.h"
+
 void wc_datasync_on_value(wc_context_t *ctx, char *path, on_value_f callback) {
-	struct on_sub *sub;
-
-	sub = on_sub_new(ON_VALUE, path, (union on_callback) callback);
-
-	on_registry_attach(ctx->datasync.on_reg, sub);
+	on_registry_add_on_value(ctx->datasync.on_reg, ctx->datasync.cache, path, callback);
 }
 
+
+void on_server_update_put(wc_context_t *ctx, char *path, json_object *data) {
+	wc_ds_path_t *parsed_path;
+
+	parsed_path = wc_datasync_path_new(path);
+	data_cache_set_ex(ctx->datasync.cache, parsed_path, data);
+	on_registry_dispatch_on_value_ex(ctx->datasync.on_reg, ctx->datasync.cache, parsed_path);
+	wc_datasync_path_destroy(parsed_path);
+
+}
+
+
+#if 0
 void wc_datasync_on_child_added(wc_context_t *ctx, char *path, on_child_added_f callback) {
 	struct on_sub *sub;
 
