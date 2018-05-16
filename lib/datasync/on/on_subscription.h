@@ -33,12 +33,6 @@ enum on_sub_type {
 	ON_CHILD_REMOVED,
 	ON_VALUE,
 };
-/*
-enum on_status {
-	ON_STATUS_PENDING,
-	ON_STATUS_WATCHING
-};
-*/
 
 typedef int(*on_value_f)(char * data);
 typedef int(*on_child_added_f)(char * data, char *prev_child);
@@ -52,22 +46,6 @@ union on_callback {
 	on_child_changed_f on_child_changed_cb;
 	on_child_removed_f on_child_removed_cb;
 };
-
-union on_hash_store {
-	treenode_hash_t single;
-	avl_t *list;
-};
-
-/*
-struct on_sub {
-	enum on_sub_type type;
-	enum on_status status;
-	union on_callback cb;
-	union on_hash_store hash;
-	struct wc_ds_path path;
-};
-
-*/
 
 struct on_value_sub {
 	on_value_f cb;
