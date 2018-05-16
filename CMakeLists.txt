@@ -112,7 +112,7 @@ add_library(
 	lib/datasync/cache/treenode.c
 	lib/datasync/cache/treenode_cache.c
 
-	lib/datasync/on/on_base.c
+	lib/datasync/on/on_api.c
 	lib/datasync/on/on_registry.c
 	lib/datasync/on/on_subscription.c
 
