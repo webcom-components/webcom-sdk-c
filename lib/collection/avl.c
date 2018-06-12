@@ -368,6 +368,8 @@ static void avl_destroyer_walker(avl_t *avl, void *data, void *param) {
 
 void avl_remove_all(avl_t *avl) {
 	avl_walk(avl, AVL_POSTORDER, avl_destroyer_walker, NULL);
+	avl->root = NULL;
+	avl->count = 0;
 }
 
 void avl_destroy(avl_t *avl) {
