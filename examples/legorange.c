@@ -37,7 +37,7 @@ typedef enum {
 	NO_BRICK = 0, WHITE_BRICK, GREEN_BRICK, RED_BRICK, GREY_BRICK, BLUE_BRICK,
 	YELLOW_BRICK, BROWN_BRICK, OTHER_BRICK
 } legorange_brick_t;
-char *board_name;
+char *namespace;
 extern const char *bricks[];
 int max_l = 250, max_c = 250;
 static void on_connected(wc_context_t *ctx);
@@ -48,7 +48,7 @@ static void draw_rgb_brick(int x, int y, int r, int g, int b);
 static void move_to(int x, int y);
 static void clear_screen();
 void stdin_cb (EV_P_ ev_io *w, int revents);
-static void on_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
+void on_child_event(wc_context_t *ctx, char *data, char *cur, char *prev);
 static void on_brick_update(char *key, json_object *data);
 /*
  * end of boredom
@@ -135,6 +135,7 @@ int main(int argc, char *argv[]) {
 
 	/* enter the event loop */
 	ev_run(loop, 0);
+	wc_context_destroy(ctx);
 
 	return 0;
 }
@@ -144,16 +145,13 @@ int main(int argc, char *argv[]) {
  * established
  */
 static void on_connected(wc_context_t *ctx) {
-	/*
-	 * let's configure a route: if some data update happens on the given path,
-	 * we instruct the SDK to call on_data_update()
+	/* once connected, register to a bunch events on the path representing
+	 * the board : call the on_child_event whether a new child (brick) appears
+	 * changes (color change) or disappears
 	 */
-	wc_datasync_route_data(ctx, board_name, on_data_update, NULL);
-
-	/*
-	 * now that the route is configured, let's subscribe to the path
-	 */
-	wc_datasync_listen(ctx, board_name, NULL);
+	wc_datasync_on_child_added(ctx, namespace, on_child_event);
+	wc_datasync_on_child_changed(ctx, namespace, on_child_event);
+	wc_datasync_on_child_removed(ctx, namespace, on_child_event);
 
 	clear_screen();
 }
@@ -162,9 +160,9 @@ static void on_connected(wc_context_t *ctx) {
  * called by the SDK on disconnection
  */
 static int on_disconnected(wc_context_t *ctx) {
-	APP_INFO("on disconnect");
+	APP_INFO("disconnected");
 	clear_screen();
-	return 1;
+	return 0;
 }
 
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
@@ -172,39 +170,11 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 	return 1;
 }
 
-/*
- * called by the SDK if some data update (put or merge) happens on the
- * registered path
- * (we configured it with wc_on_data(..., on_data_update, ...) )
- */
-static void on_data_update(
-		UNUSED_PARAM(wc_context_t *cnx),
-		UNUSED_PARAM(ws_on_data_event_t event),
-		char *path,
-		char *json_data,
-		UNUSED_PARAM(void *param))
-{
-	json_object *data;
-
-	data = json_tokener_parse(json_data);
-
-	if (strcmp(board_name, path) == 0) {
-		/* we got informations for the entire board */
-		if (data == NULL) {
-			/* the board was reset */
-			clear_screen();
-		} else {
-			json_object_object_foreach(data, key, val) {
-				on_brick_update(key, val);
-			}
-		}
-	} else if (strncmp(board_name, path, strlen(board_name)) == 0
-			&& path[strlen(board_name)] == '/') {
-		/* just one single brick data was modified */
-		on_brick_update(path + strlen(board_name) + 1, data);
-	}
-
-	json_object_put(data);
+void on_child_event(wc_context_t *ctx, char *data, char *cur, char *prev) {
+	json_object *json_data;
+	json_data = json_tokener_parse(data);
+	on_brick_update(cur, json_data);
+	json_object_put(json_data);
 }
 
 /*
