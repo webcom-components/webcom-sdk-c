@@ -37,6 +37,10 @@
 #include "../webcom_base_priv.h"
 #include "webcom-c/webcom.h"
 
+#include "on/on_registry.h"
+#include "cache/treenode_cache.h"
+#include "listen/listen_registry.h"
+
 #define WEBCOM_PROTOCOL_VERSION "5"
 #define WEBCOM_WS_PATH "/_wss/.ws"
 
@@ -48,6 +52,7 @@ static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 		ctx->datasync.time_offset = now - msg->u.ctrl.u.handshake.ts;
 		ctx->datasync.state = WC_CNX_STATE_CONNECTED;
 		ctx->datasync.time_offset = wc_datasync_now() - msg->u.ctrl.u.handshake.ts;
+		ctx->datasync.stamp++;
 		ctx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, ctx, msg, sizeof(wc_msg_t));
 		ta.ms = 50000;
 		ta.repeat = 1;
@@ -55,11 +60,15 @@ static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 		ctx->datasync.ws_next_reconnect_timer = 0;
 		ctx->callback(WC_EVENT_SET_TIMER, ctx, &ta, 0);
 	} else if (msg->type == WC_MSG_DATA
-			&& msg->u.data.type == WC_DATA_MSG_PUSH
-			&& (msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT
-					|| msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_MERGE))
+			&& msg->u.data.type == WC_DATA_MSG_PUSH)
 	{
-		wc_datasync_dispatch_data(ctx, &msg->u.data.u.push);
+		if (msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_PUT) {
+			data_cache_set(ctx->datasync.cache, msg->u.data.u.push.u.update_put.path, msg->u.data.u.push.u.update_put.data);
+			on_registry_dispatch_on_event(ctx->datasync.on_reg, ctx->datasync.cache, msg->u.data.u.push.u.update_put.path);
+		} else if (msg->u.data.u.push.type == WC_PUSH_DATA_UPDATE_MERGE) {
+			data_cache_merge(ctx->datasync.cache, msg->u.data.u.push.u.update_put.path, msg->u.data.u.push.u.update_put.data);
+			on_registry_dispatch_on_event(ctx->datasync.on_reg, ctx->datasync.cache, msg->u.data.u.push.u.update_put.path);
+		}
 	} else if (msg->type == WC_MSG_DATA && msg->u.data.type == WC_DATA_MSG_RESPONSE) {
 		wc_datasync_req_response_dispatch(ctx, &msg->u.data.u.response);
 	}
@@ -288,6 +297,11 @@ wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 	ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 
 	ctx->datasync_init = 1;
+	ctx->datasync.stamp = 0;
+
+	ctx->datasync.cache = data_cache_new();
+	ctx->datasync.on_reg = on_registry_new();
+	ctx->datasync.listen_reg = listen_registry_new();
 
 	return &ctx->datasync;
 }
@@ -308,16 +322,16 @@ void wc_datasync_connect(wc_context_t *ctx) {
 
 void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx) {
 	if (ds_ctx->lws_cci.path != NULL) free((char*)ds_ctx->lws_cci.path);
-	//TODO add destrucors in base / auth
-	//if (ctx->app_name != NULL) free(ctx->app_name);
-	//if (ctx->host != NULL) free(ctx->host);
-	//if (ctx->auth_form_data != NULL) free(ctx->auth_form_data);
-	//if (ctx->auth_url != NULL) free(ctx->auth_url);
+
 	if (ds_ctx->lws_cci.context != NULL) lws_context_destroy(ds_ctx->lws_cci.context);
 	if (ds_ctx->parser != NULL) wc_datasync_parser_free(ds_ctx->parser);
 
 	wc_datasync_cleanup_data_routes(ds_ctx->data_routes);
 	wc_datasync_free_pending_trans(ds_ctx->pending_req_table);
+
+	data_cache_destroy(ds_ctx->cache);
+	on_registry_destroy(ds_ctx->on_reg);
+	listen_registry_destroy(ds_ctx->listen_reg);
 }
 
 int wc_datasync_keepalive(wc_context_t *ctx) {

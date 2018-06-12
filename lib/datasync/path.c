@@ -29,6 +29,8 @@
 
 #include "path.h"
 
+static char * empty_path_norm = "/";
+
 wc_ds_path_t path_root = {.nparts = 0};
 
 wc_ds_path_t *wc_datasync_path_new(const char *path) {
@@ -64,11 +66,14 @@ int wc_datasync_path_parse(const char *path, struct wc_ds_path *parsed) {
 	 */
 	uint16_t offsets[WC_DS_MAX_DEPTH];
 	char *path_cpy;
+	char *p;
+	size_t path_norm_len;
 	unsigned nparts = 0;
 	unsigned i = 0, part_begin;
 	int state = 0;
 
 	path_cpy = strdup(path);
+
 	if (path_cpy == NULL) {
 		return 0;
 	}
@@ -118,15 +123,32 @@ int wc_datasync_path_parse(const char *path, struct wc_ds_path *parsed) {
 end:
 	if (nparts > 0) {
 		parsed->_buf = path_cpy;
+
+		path_norm_len = 0;
+		for (i = 0 ; i < nparts ; i++) {
+			parsed->offsets[i] = offsets[i];
+			path_norm_len += strlen(&parsed->_buf[offsets[i]]) + 1;
+		}
+
+		parsed->_norm = malloc(path_norm_len + 1);
+
+		parsed->_norm[path_norm_len] = 0;
+
+		p = parsed->_norm;
+
+		for (i = 0 ; i < nparts ; i++) {
+			*p++ = '/';
+			strcpy(p, &parsed->_buf[offsets[i]]);
+			p += strlen(&parsed->_buf[offsets[i]]);
+		}
+
 	} else {
 		free(path_cpy);
 		parsed->_buf = NULL;
+		parsed->_norm = empty_path_norm;
 	}
 	parsed->nparts = nparts;
 
-	for (i = 0 ; i < nparts ; i++) {
-		parsed->offsets[i] = offsets[i];
-	}
 
 	return 1;
 }
@@ -144,6 +166,7 @@ char *wc_datasync_path_get_part(wc_ds_path_t *path, unsigned part) {
 void wc_datasync_path_cleanup(wc_ds_path_t *path) {
 	if (path->nparts > 0) {
 		free(path->_buf);
+		free(path->_norm);
 	}
 }
 
@@ -232,4 +255,25 @@ int wc_datasync_path_starts_with(wc_ds_path_t *path, wc_ds_path_t *prefix) {
 	}
 end:
 	return ret;
+}
+
+void wc_datasync_path_copy(const wc_ds_path_t *from, wc_ds_path_t *to) {
+	size_t path_buf_len;
+
+	to->nparts = from->nparts;
+	if (from->nparts > 0) {
+		path_buf_len = from->offsets[from->nparts - 1] + strlen(from->_buf + from->offsets[from->nparts - 1]);
+		to->_buf = malloc(path_buf_len + 1);
+		memcpy(to->_buf, from->_buf, path_buf_len + 1);
+		memcpy(to->offsets, from->offsets, from->nparts * sizeof(*from->offsets));
+
+		to->_norm = strdup(from->_norm);
+	} else {
+		to->_buf = NULL;
+		to->_norm = empty_path_norm;
+	}
+}
+
+char *wc_datasync_path_to_str(wc_ds_path_t *path) {
+	return path->_norm;
 }

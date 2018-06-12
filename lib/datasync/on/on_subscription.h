@@ -23,47 +23,28 @@
 #ifndef LIB_DATASYNC_ON_ON_SUBSCRIPTION_H_
 #define LIB_DATASYNC_ON_ON_SUBSCRIPTION_H_
 
+#include "webcom-c/webcom.h"
+
+
 #include "../path.h"
 #include "../cache/treenode.h"
 #include "../../collection/avl.h"
 
-enum on_sub_type {
-	ON_CHILD_ADDED,
-	ON_CHILD_CHANGED,
-	ON_CHILD_REMOVED,
-	ON_VALUE,
+
+struct on_cb_list {
+	on_callback_f cb;
+	struct on_cb_list *next;
 };
 
-typedef int(*on_value_f)(char * data);
-typedef int(*on_child_added_f)(char * data, char *prev_child);
-typedef int(*on_child_changed_f)(char * data, char *prev_child);
-typedef int(*on_child_removed_f)(char * data);
-typedef int(*on_child_f)(char * data, char *prev_child);
-
-union on_callback {
-	on_value_f on_value_cb;
-	on_child_added_f on_child_added_cb;
-	on_child_changed_f on_child_changed_cb;
-	on_child_removed_f on_child_removed_cb;
-};
-
-struct on_value_sub {
-	on_value_f cb;
+struct on_sub {
+	wc_context_t *ctx;
+	struct on_cb_list *cb_list[ON_EVENT_TYPE_COUNT];
+	avl_t *children_hashes;
 	treenode_hash_t hash;
 	struct wc_ds_path path;
 };
 
-#define ON_VALUE_STRUCT_MAX_SIZE (sizeof(struct on_value_sub) + PATH_STRUCT_MAX_FLEXIBLE_SIZE)
+#define ON_SUB_STRUCT_MAX_SIZE (sizeof(struct on_sub) + PATH_STRUCT_MAX_FLEXIBLE_SIZE)
 
-struct on_child_sub {
-	on_child_f cb;
-	avl_t *hashes;
-	struct wc_ds_path path;
-};
-
-#define ON_CHILD_STRUCT_MAX_SIZE (sizeof(struct on_child_sub) + PATH_STRUCT_MAX_FLEXIBLE_SIZE)
-
-struct on_sub *on_sub_new(enum on_sub_type type, char *path, union on_callback cb);
-void on_sub_destroy(struct on_sub *sub);
 
 #endif /* LIB_DATASYNC_ON_ON_SUBSCRIPTION_H_ */

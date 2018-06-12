@@ -29,7 +29,7 @@ int main(void) {
 	path1 = wc_datasync_path_new("/////ababa/foo/////");
 	path2 = wc_datasync_path_new("");
 	path3 = wc_datasync_path_new("/////");
-	path4 = wc_datasync_path_new("/////ababa/foo/qsdqsd/retert");
+	path4 = wc_datasync_path_new("/////ababa/foo////qsdqsd/retert");
 	path5 = wc_datasync_path_new("ababa/foo/azerty/oooo/");
 	path6 = wc_datasync_path_new("/a/z/e/r/t/y/u/i/o/p/q/s/d/f/g/h/j/k/l/m/w/x/c/v/b/n/0/1/2/3/4/5/BOOM/7/8/9/");
 	path7 = wc_datasync_path_new("/ababa/fop");
@@ -42,11 +42,17 @@ int main(void) {
 	STFU_TRUE("'' has 0 parts",
 			wc_datasync_path_get_part_count(path2) == 0);
 
+	STFU_STR_EQ("'' normalized is '/'",
+			wc_datasync_path_to_str(path2), "/");
+
 	STFU_TRUE("'/////' has 0 parts",
 			wc_datasync_path_get_part_count(path3) == 0);
 
-	STFU_TRUE("'/////ababa/foo/qsdqsd/retert' has 4 parts",
+	STFU_TRUE("'/////ababa/foo////qsdqsd/retert' has 4 parts",
 			wc_datasync_path_get_part_count(path4) == 4);
+
+	STFU_STR_EQ("'/////ababa/foo////qsdqsd/retert' normalized is '/ababa/foo/qsdqsd/retert'",
+			wc_datasync_path_to_str(path4), "/ababa/foo/qsdqsd/retert");
 
 	STFU_TRUE("'ababa/foo/azerty/oooo/' has 4 parts",
 			wc_datasync_path_get_part_count(path5) == 4);

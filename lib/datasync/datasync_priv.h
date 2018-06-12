@@ -73,6 +73,8 @@ struct wc_datasync_context {
 	unsigned ws_next_reconnect_timer;
 	struct on_registry *on_reg;
 	data_cache_t *cache;
+	struct listen_registry *listen_reg;
+	unsigned stamp;
 };
 
 static inline int64_t wc_datasync_now() {

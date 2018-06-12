@@ -185,6 +185,7 @@
 #include "webcom-datasync.h"
 #include "webcom-req.h"
 #include "webcom-event.h"
+#include "webcom-on.h"
 
 /* Authentication */
 #include "webcom-auth.h"

@@ -28,12 +28,13 @@
 #include "../hash.h"
 
 #define WC_DS_MAX_DEPTH	32
-#define WC_DS_MAX_PATH_LEN	256
+#define WC_DS_MAX_PATH_ELEMENT_LEN	256
 
 
 
 typedef struct wc_ds_path {
 	char *_buf;
+	char *_norm;
 	unsigned nparts;
 	uint16_t offsets[];
 } wc_ds_path_t;
@@ -52,6 +53,8 @@ int wc_datasync_path_cmp(wc_ds_path_t *a, wc_ds_path_t *b);
 int wc_datasync_key_cmp(const char *sa, const char *sb);
 wc_hash_t wc_datasync_path_hash(wc_ds_path_t *path);
 int wc_datasync_path_starts_with(wc_ds_path_t *path, wc_ds_path_t *prefix);
+void wc_datasync_path_copy(const wc_ds_path_t *from, wc_ds_path_t *to);
+char *wc_datasync_path_to_str(wc_ds_path_t *path);
 
 extern wc_ds_path_t path_root;
 

@@ -23,6 +23,10 @@
 #ifndef LIB_DATASYNC_ON_ON_REGISTRY_H_
 #define LIB_DATASYNC_ON_ON_REGISTRY_H_
 
+#include <stdio.h>
+
+#include "webcom-c/webcom.h"
+
 #include "on_subscription.h"
 
 #include "../cache/treenode_cache.h"
@@ -31,11 +35,13 @@
 struct on_registry;
 
 struct on_registry *on_registry_new();
-void on_registry_add_on_value(struct on_registry* reg, data_cache_t *cache, char *path, on_value_f cb);
+void on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_callback_f cb);
+int on_registry_remove(wc_context_t *ctx, wc_ds_path_t *path, int type_mask, on_callback_f cb);
+
 void on_registry_destroy(struct on_registry *);
 
-void on_registry_dispatch_on_value(struct on_registry* reg, data_cache_t *cache, char *path);
-void on_registry_dispatch_on_value_ex(struct on_registry* reg, data_cache_t *cache, wc_ds_path_t *parsed_path);
+void on_registry_dispatch_on_event(struct on_registry* reg, data_cache_t *cache, char *path);
 
+void dump_on_registry(struct on_registry* reg, FILE *f);
 
 #endif /* LIB_DATASYNC_ON_ON_REGISTRY_H_ */

@@ -266,3 +266,38 @@ target_link_libraries(
 	webcom-test-on
 	webcom-c
 )
+
+## tests for on_value events
+add_executable(
+	webcom-test-on-value
+	test-on-value.c
+)
+
+target_include_directories(
+	webcom-test-on-value
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-on-value
+	webcom-c
+)
+
+## tests for on_child events
+add_executable(
+	webcom-test-on-child
+	test-on-child.c
+)
+
+target_include_directories(
+	webcom-test-on-child
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-on-child
+	webcom-c
+)
+

@@ -108,13 +108,14 @@ add_library(
 	lib/datasync/event.c
 	lib/datasync/path.c
 	lib/datasync/json.c
+	lib/datasync/listen/listen_registry.c
 
 	lib/datasync/cache/treenode.c
 	lib/datasync/cache/treenode_cache.c
 
 	lib/datasync/on/on_api.c
 	lib/datasync/on/on_registry.c
-	lib/datasync/on/on_subscription.c
+	#lib/datasync/on/on_subscription.c
 
 	lib/auth/auth.c
 )

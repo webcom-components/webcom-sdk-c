@@ -33,6 +33,7 @@ typedef struct wc_action_trans {
 	wc_action_type_t type;
 	wc_on_req_result_t callback;
 	struct wc_action_trans *next;
+	void *user;
 } wc_action_trans_t;
 
 inline static size_t pending_req_hash(int64_t id) {
@@ -43,7 +44,8 @@ static void wc_req_store_pending(
 		wc_context_t *cnx,
 		int64_t id,
 		wc_action_type_t type,
-		wc_on_req_result_t callback)
+		wc_on_req_result_t callback,
+		void *user)
 {
 	wc_action_trans_t *trans;
 	size_t slot;
@@ -57,6 +59,7 @@ static void wc_req_store_pending(
 	trans->id = id;
 	trans->type = type;
 	trans->callback = callback;
+	trans->user = user;
 
 	slot = pending_req_hash(id);
 
@@ -92,7 +95,8 @@ void wc_datasync_req_response_dispatch(wc_context_t *cnx, wc_response_t *respons
 					trans->type,
 					strcmp(response->status, "ok") == 0 ? WC_REQ_OK : WC_REQ_ERROR,
 					response->status,
-					response->data);
+					response->data,
+					trans->user);
 		}
 		free(trans);
 	}
@@ -114,7 +118,7 @@ void wc_datasync_free_pending_trans(wc_action_trans_t **table) {
 
 #define DEFINE_REQ_FUNC(__name, __type, ... /* args */)						\
 	int64_t wc_datasync_ ## __name(wc_context_t *ctx, ## __VA_ARGS__,		\
-			wc_on_req_result_t callback) {									\
+			wc_on_req_result_t callback, void *user) {						\
 		wc_msg_t msg;														\
 		wc_action_ ## __name ## _t *req;									\
 		int ret;															\
@@ -126,7 +130,7 @@ void wc_datasync_free_pending_trans(wc_action_trans_t **table) {
 		msg.u.data.u.action.r = reqnum;										\
 		req = &msg.u.data.u.action.u.__name;								\
 		msg.u.data.u.action.type = (__type);								\
-		wc_req_store_pending(ctx, reqnum, (__type), callback);
+		wc_req_store_pending(ctx, reqnum, (__type), callback, user);
 #define END_DEFINE_REQ_FUNC													\
 		ret = wc_datasync_send_msg(ctx, &msg);								\
 		return ret > 0 ? reqnum : -1l;										\
@@ -172,7 +176,7 @@ DEFINE_REQ_FUNC (on_disc_cancel, WC_ACTION_ON_DISCONNECT_CANCEL, char *path)
 	req->path = path;
 END_DEFINE_REQ_FUNC
 
-int64_t wc_datasync_push(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback) {
+int64_t wc_datasync_push(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback, void *user) {
 	int64_t ret;
 	size_t path_l;
 
@@ -184,7 +188,7 @@ int64_t wc_datasync_push(wc_context_t *cnx, char *path, char *json, wc_on_req_re
 	wc_datasync_push_id(&cnx->datasync.pids, (uint64_t)wc_datasync_server_now(wc_get_datasync(cnx)), push_path + path_l + 1);
 	push_path[path_l + 21] = '\0';
 
-	ret = wc_datasync_put(cnx, push_path, json, callback);
+	ret = wc_datasync_put(cnx, push_path, json, callback, user);
 
 	return ret;
 }

@@ -22,40 +22,39 @@
 
 #include "stfu.h"
 
+#include "webcom-c/webcom.h"
+#include "../lib/webcom_base_priv.h"
 #include "../lib/datasync/cache/treenode_cache.h"
 #include "../lib/datasync/on/on_registry.h"
 
-int on_value1(char * data) {
+void on_value1(wc_context_t *ctx, char * data) {
 	STFU_INFO("on_value1: %s", data);
-
-	return 0;
 }
 
-int on_value2(char * data) {
+void on_value2(wc_context_t *ctx, char * data) {
 	STFU_INFO("on_value2: %s", data);
-
-	return 0;
 }
 
-int on_value3(char * data) {
+void on_value3(wc_context_t *ctx, char * data) {
 	STFU_INFO("on_value3: %s", data);
-
-	return 0;
 }
 
-int on_value4(char * data) {
+void on_value4(wc_context_t *ctx, char * data) {
 	STFU_INFO("on_value4: %s", data);
-
-	return 0;
 }
 
 int main(void) {
 	data_cache_t *cache;
 	struct on_registry *reg;
+	wc_context_t ctx;
+
 
 	cache = data_cache_new();
 
 	reg = cache->registry;
+
+	ctx.datasync.on_reg = reg;
+	ctx.datasync.cache = cache;
 
 	data_cache_set_leaf(cache, "/foo/bar", TREENODE_TYPE_LEAF_NUMBER, (union treenode_value) 42.);
 	data_cache_set_leaf(cache, "/foo/baz", TREENODE_TYPE_LEAF_NUMBER, (union treenode_value) 3.14);
@@ -65,23 +64,23 @@ int main(void) {
 	data_cache_set_leaf(cache, "/foo/qux/ccc/azerty", TREENODE_TYPE_LEAF_NUMBER, (union treenode_value) 0.);
 
 
-	on_registry_add_on_value(reg, cache, "/foo/qux", on_value1);
-	on_registry_add_on_value(reg, cache, "/", on_value2);
-	on_registry_add_on_value(reg, cache, "/foo/qux/ccc", on_value3);
-	on_registry_add_on_value(reg, cache, "/foo/qux/ddd", on_value4);
+	on_registry_add_on_value(&ctx, "/foo/qux", on_value1);
+	on_registry_add_on_value(&ctx, "/", on_value2);
+	on_registry_add_on_value(&ctx, "/foo/qux/ccc", on_value3);
+	on_registry_add_on_value(&ctx, "/foo/qux/ddd", on_value4);
 
 	data_cache_set_leaf(cache, "/foo/qux/ddd", TREENODE_TYPE_LEAF_STRING, (union treenode_value) "DDD");
 
-	on_registry_dispatch_on_value(reg, cache, "/foo/qux");
-	on_registry_dispatch_on_value(reg, cache, "/foo/qux");
+	on_registry_dispatch_on_event(reg, cache, "/foo/qux");
+	on_registry_dispatch_on_event(reg, cache, "/foo/qux");
 
 	data_cache_set_leaf(cache, "/foo/qux/ddd", TREENODE_TYPE_LEAF_STRING, (union treenode_value) "FFF");
 
-	on_registry_dispatch_on_value(reg, cache, "/foo/qux");
+	on_registry_dispatch_on_event(reg, cache, "/foo/qux");
 
 	data_cache_set_leaf(cache, "/foo/qux/ccc", TREENODE_TYPE_LEAF_STRING, (union treenode_value) "CCC");
 
-	on_registry_dispatch_on_value(reg, cache, "/foo/qux");
+	on_registry_dispatch_on_event(reg, cache, "/foo/qux");
 
 	STFU_TRUE("",
 			0);
