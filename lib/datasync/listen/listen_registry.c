@@ -50,11 +50,11 @@ size_t listen_item_data_size(void *data) {
 	return sizeof(*node) + sizeof(*node->path.offsets) * node->path.nparts;
 }
 
+/* shallow copy, duplicate the path buffers before insert */
 void copy_listen_item_data(void *from, void *to) {
 	struct listen_item *node_from = from, *node_to = to;
 
 	memcpy(node_to, node_from, listen_item_data_size(node_from));
-	wc_datasync_path_copy(&node_from->path, &node_to->path);
 }
 
 static inline struct listen_item *listen_item_from_path(wc_ds_path_t *parsed_path) {
