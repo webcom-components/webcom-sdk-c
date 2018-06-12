@@ -51,6 +51,8 @@ struct ev_loop *loop;
 static int _do_exit = 0;
 static int connected = 0;
 
+FILE *out;
+
 wc_ds_path_t root_path = {._buf = "", ._norm = "/", .nparts = 0, .offsets = {}};
 
 wc_ds_path_t *cwd = &root_path;
@@ -70,9 +72,10 @@ int main(int argc, char *argv[]) {
 			.on_disconnected = on_disconnected,
 			.on_error = on_error,
 	};
+	out = stderr;
 
 
-	while ((opt = getopt(argc, argv, "s:p:n:h")) != -1) {
+	while ((opt = getopt(argc, argv, "s:p:n:o:h")) != -1) {
 		switch((char)opt) {
 		case 's':
 			options.host = optarg;
@@ -83,6 +86,13 @@ int main(int argc, char *argv[]) {
 		case 'n':
 			options.app_name = optarg;
 			break;
+		case 'o':
+			out = fopen(optarg, "w");
+			if (out == NULL) {
+				perror(optarg);
+				exit(1);
+			}
+			break;
 		case 'h':
 			printf(
 					"%s [OPTIONS]\n"
@@ -90,6 +100,7 @@ int main(int argc, char *argv[]) {
 					"-s HOST      : Connect to the specified host (current \"%s\")\n"
 					"-p PORT      : Connect on the specified port (current %" PRIu16 ")\n"
 					"-n NAMESPACE : Connect to the specified namespace (current \"%s\")\n"
+					"-o FILE      : Print the notifications to the given file instead of stderr)\n"
 					"-h           : Displays help\n",
 					*argv, options.host, options.port, options.app_name);
 			exit(0);
@@ -121,41 +132,43 @@ int main(int argc, char *argv[]) {
 	ev_run(loop, 0);
 
 	puts("");
+
+	wc_context_destroy(ctx);
 	return 0;
 }
 
 static void on_connected(wc_context_t *ctx) {
 	connected = 1;
-	fprintf(stderr, "Connected.\n");
+	fprintf(out, "Connected.\n");
 }
 
 static int on_disconnected(wc_context_t *ctx) {
 	connected = 0;
-	fprintf(stderr, "Disconnected.\n");
+	fprintf(out, "Disconnected.\n");
 	return 0;
 }
 
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
 	connected = 0;
-	fprintf(stderr, "connection error in ctx %p, %.*s, next attempt in: %u seconds\n", ctx, error_len, error, next_try);
+	fprintf(out, "connection error in ctx %p, %.*s, next attempt in: %u seconds\n", ctx, error_len, error, next_try);
 	return 1;
 }
 
 
 void on_value_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	fprintf(stderr, "Value changed: %s\n", data);
+	fprintf(out, "Value changed: %s\n", data);
 }
 
 void on_child_added_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	fprintf(stderr, "Child added: [%s] %s\n", cur, data);
+	fprintf(out, "Child added: [%s] %s\n", cur, data);
 }
 
 void on_child_removed_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	fprintf(stderr, "Child removed: [%s]\n", cur);
+	fprintf(out, "Child removed: [%s]\n", cur);
 }
 
 void on_child_changed_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	fprintf(stderr, "Child changed: [%s] %s\n", cur, data);
+	fprintf(out, "Child changed: [%s] %s\n", cur, data);
 }
 
 static void exec_on(int argc, char **argv) {
