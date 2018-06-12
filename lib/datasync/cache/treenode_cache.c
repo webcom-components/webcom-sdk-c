@@ -21,6 +21,7 @@
  */
 
 #include <string.h>
+#include <stddef.h>
 #include <assert.h>
 #include <json-c/json.h>
 
@@ -33,7 +34,7 @@
 #include "treenode_cache.h"
 #include "treenode.h"
 
-static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path);
+static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path, int reset_hash, int empty_target);
 static struct treenode *data_cache_get_r(struct treenode *node, wc_ds_path_t *path, unsigned depth);
 
 data_cache_t *data_cache_new() {
@@ -93,7 +94,7 @@ void data_cache_set_leaf(data_cache_t *cache, char *path, enum treenode_type typ
 		char *key;
 
 		parsed_path->nparts--; /* push(hack) */
-		data_cache_mkpath_w(cache, parsed_path);
+		data_cache_mkpath_w(cache, parsed_path, 1, 0);
 		n = data_cache_get_r(cache->root, parsed_path, 0);
 		parsed_path->nparts++; /* pop() */
 
@@ -200,9 +201,11 @@ void data_cache_set_ex(data_cache_t *cache, wc_ds_path_t * parsed_path, json_obj
 		struct treenode *n;
 
 		parsed_path->nparts--; /* push(hack) */
-		data_cache_mkpath_w(cache, parsed_path);
+		data_cache_mkpath_w(cache, parsed_path, 1, 0);
 		n = data_cache_get_r(cache->root, parsed_path, 0);
 		parsed_path->nparts++; /* pop() */
+
+		internal_remove(n, wc_datasync_path_get_part(parsed_path, nparts - 1));
 
 		data_cache_set_r(cache, n, wc_datasync_path_get_part(parsed_path, nparts - 1), parsed_json);
 	}
@@ -256,7 +259,55 @@ static void data_cache_set_r(data_cache_t *cache, struct treenode *root, char *k
 	}
 }
 
-static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
+
+void data_cache_merge(data_cache_t *cache, char *path, char *json_doc) {
+	wc_ds_path_t *parsed_path;
+	json_object *parsed_json;
+
+	size_t merge_path_max_len = strlen(path) + 1 + WC_DS_MAX_PATH_ELEMENT_LEN;
+	char merge_path[merge_path_max_len + 1];
+
+	parsed_json = json_tokener_parse(json_doc);
+
+	if (json_object_get_type(parsed_json) == json_type_object) {
+		json_object_object_foreach(parsed_json, key, val) {
+			snprintf(merge_path, merge_path_max_len + 1, "%s/%s", path, key);
+			merge_path[merge_path_max_len] = 0;
+
+			parsed_path = wc_datasync_path_new(merge_path);
+			data_cache_set_ex(cache, parsed_path, val);
+			wc_datasync_path_destroy(parsed_path);
+		}
+	}
+
+	json_object_put(parsed_json);
+}
+
+void data_cache_merge_ex(data_cache_t *cache, wc_ds_path_t * parsed_path, json_object *parsed_json) {
+	unsigned nparts;
+
+	assert(json_object_get_type(parsed_json) == json_type_object);
+
+	nparts = wc_datasync_path_get_part_count(parsed_path);
+	if (nparts == 0) {
+		data_cache_empty(cache);
+
+		data_cache_set_r(cache, NULL, NULL, parsed_json);
+	} else {
+		struct treenode *n;
+
+		data_cache_mkpath_w(cache, parsed_path, 1, 0);
+		n = data_cache_get_r(cache->root, parsed_path, 0);
+
+		json_object_object_foreach(parsed_json, obj_key, obj_val) {
+			avl_remove(n->uval.children, &obj_key);
+			data_cache_set_r(cache, n, obj_key, obj_val);
+		}
+	}
+}
+
+
+static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path, int reset_hash, int empty_target) {
 	struct treenode *cur;
 	struct treenode *prev;
 	char *key;
@@ -270,7 +321,7 @@ static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
 
 	prev = cache->root;
 
-	cache->root->hash_cached = 0;
+	cache->root->hash_cached = reset_hash ? 0 : cache->root->hash_cached;
 
 	for (i = 0 ; i < wc_datasync_path_get_part_count(path) ; i++) {
 		key = wc_datasync_path_get_part(path, i);
@@ -283,15 +334,19 @@ static void data_cache_mkpath_w(data_cache_t *cache, wc_ds_path_t *path) {
 
 			cur = internal_add_new_internal(prev, key);
 		} else {
-			cur->hash_cached = 0;
+			cur->hash_cached = reset_hash ? 0 : cur->hash_cached;
 		}
 		prev = cur;
+	}
+
+	if (empty_target) {
+		avl_remove_all(prev->uval.children);
 	}
 }
 
 void data_cache_mkpath(data_cache_t *cache, char *path) {
 	wc_ds_path_t *parsed_path = wc_datasync_path_new(path);
-	data_cache_mkpath_w(cache, parsed_path);
+	data_cache_mkpath_w(cache, parsed_path, 1, 0);
 	wc_datasync_path_destroy(parsed_path);
 }
 

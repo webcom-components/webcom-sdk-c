@@ -35,11 +35,6 @@
 #include "../../base64.h"
 #include "../path.h"
 
-struct internal_node_element {
-	char *key;
-	struct treenode node;
-};
-
 static int internal_element_key_cmp(void *a, void *b) {
 	struct internal_node_element *ea = a;
 	struct internal_node_element *eb = b;

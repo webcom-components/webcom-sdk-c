@@ -54,9 +54,9 @@ struct treenode {
 	char hash[];
 };
 
-struct treenode_ex {
-	struct treenode n;
-	treenode_hash_t h;
+struct internal_node_element {
+	char *key;
+	struct treenode node;
 };
 
 #define TREENODE_STATIC(_name, _type, _val) \
