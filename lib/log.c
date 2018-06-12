@@ -29,6 +29,7 @@
 
 static enum wc_log_backend {
 	be_stderr,
+	be_custom,
 #ifdef WITH_SYSLOG
 	be_syslog,
 #endif
@@ -36,6 +37,8 @@ static enum wc_log_backend {
 	be_journald,
 #endif
 } backend = be_stderr;
+
+static wc_log_f _log_custom;
 
 char *wc_log_facility_names[] = {
 	"LWS",
@@ -161,6 +164,11 @@ void wc_log_use_stderr(void) {
 	backend = be_stderr;
 }
 
+void wc_log_use_custom(wc_log_f f) {
+	backend = be_custom;
+	_log_custom = f;
+}
+
 #ifdef WITH_SYSLOG
 #include <syslog.h>
 static void _log_syslog(enum wc_log_facility f, enum wc_log_level l, const char *file, int line,  const char *message) {
@@ -210,6 +218,9 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
 	switch (backend) {
 	case be_stderr:
 		_log_stderr(f, l, file, line, msg);
+		break;
+	case be_custom:
+		_log_custom(f, l, file, func, line, msg);
 		break;
 #ifdef WITH_SYSLOG
 	case be_syslog:

@@ -67,6 +67,8 @@ enum wc_log_level {
 	                       completely disable logging in a facility */
 };
 
+typedef void(*wc_log_f)(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *message);
+
 /**
  * Sets the log verbosity for a facility
  *
@@ -140,6 +142,16 @@ void wc_log_use_journald(void);
  * Use stderror as the log backend (default)
  */
 void wc_log_use_stderr(void);
+
+
+/**
+ * Use a custom C function as log backend
+ *
+ * @param f the custom log function
+ */
+void wc_log_use_custom(wc_log_f f);
+
+
 
 /**
  * Send a formatted message to the log backend
