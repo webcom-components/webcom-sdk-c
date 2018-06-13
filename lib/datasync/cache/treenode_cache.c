@@ -40,10 +40,7 @@ static struct treenode *data_cache_get_r(struct treenode *node, wc_ds_path_t *pa
 data_cache_t *data_cache_new() {
 	data_cache_t *ret = calloc(1, sizeof (*ret));
 
-	struct treenode *root = calloc(1, sizeof (*root));
-
-	root->type = TREENODE_TYPE_LEAF_NULL;
-	ret->root = root;
+	ret->root = treenode_new_null();
 
 	ret->registry = on_registry_new();
 
@@ -139,6 +136,9 @@ static struct treenode *treenode_from_json_val(json_object *val) {
 		break;
 	case json_type_string:
 		ret = treenode_new_string((char*)json_object_get_string(val));
+		break;
+	case json_type_null:
+		ret = treenode_new_null();
 		break;
 	default:
 		break;
