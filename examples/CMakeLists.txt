@@ -122,36 +122,11 @@ target_link_libraries(
 	${NCURSES_LIBRARIES}
 )
 
-## wcsh
-
-add_executable(
-	wcsh
-	wcsh.c
-)
-
-target_include_directories(
-	wcsh
-	PRIVATE
-	${webcom-sdk-c-examples_SOURCE_DIR}/../include
-	${JSONC_INCLUDE_DIRS}
-	${NCURSES_INCLUDE_DIRS}
-)
-
-target_link_libraries(
-	wcsh
-	webcom-c
-	${JSONC_LIBRARIES}
-	${LIBEV}
-	${NCURSES_LIBRARIES}
-)
-
-
 #### install
 
 install(TARGETS
 	legorange
 	wcchat
-	wcsh
 	RUNTIME DESTINATION bin
 )
 

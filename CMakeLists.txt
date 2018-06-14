@@ -31,6 +31,7 @@ option(WITH_LIBEVENT "Enable libevent event loop support" OFF)
 set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 
 find_package(PkgConfig REQUIRED)
+find_package(Readline REQUIRED)
 include(FindCURL REQUIRED)
 
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
@@ -237,3 +238,36 @@ set_target_properties(webcom-c
 
 #### packaging
 include("${webcom-sdk-c_SOURCE_DIR}/pkg/pkg.cmake")
+
+
+### Tools
+
+## wcsh
+
+add_executable(
+	wcsh
+	tools/wcsh.c
+)
+
+target_include_directories(
+	wcsh
+	PRIVATE
+	${webcom-sdk-c_SOURCE_DIR}/include
+	${JSONC_INCLUDE_DIRS}
+	${READLINE_INCLUDE_DIR}
+)
+
+target_link_libraries(
+	wcsh
+	webcom-c
+	${JSONC_LIBRARIES}
+	${LIBEV}
+	${READLINE_LIBRARY}
+)
+
+install(
+	TARGETS
+		wcsh
+	RUNTIME DESTINATION
+		bin
+)
