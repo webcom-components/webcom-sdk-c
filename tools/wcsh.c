@@ -55,6 +55,7 @@ char **wcsh_completion(const char *, int, int);
 char *command_generator (const char *text, int state);
 
 static void exec_ls(int, char **);
+static void exec_log(int, char **);
 static void exec_cd(int, char **);
 static void exec_connect(int, char **);
 static void exec_disconnect(int, char **);
@@ -63,11 +64,12 @@ static void exec_help(int, char **);
 static void exec_on(int, char **);
 static void exec_off(int, char **);
 static void exec_show(int, char **);
-
+static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message);
 
 static wc_context_t *ctx;
 struct ev_loop *loop;
-static int _do_exit = 0;
+static int done = 0;
+static int disconnect = 0;
 static int connected = 0;
 
 FILE *out;
@@ -87,6 +89,7 @@ struct command {
 char *on_off_args[] = {"child_added", "child_changed", "child_removed","value", NULL};
 char *dump_args[] = {"cache", "listen", "on", NULL};
 char *help_args[] = {"", "cd", "connect", "disconnect", "exit", "help", "ls", "off", "on", "show", NULL};
+char *log_args[] = {"off", "on", "verbose", NULL};
 
 /* keep this array in alphabetical order since we use binary search on it */
 static struct command commands[] = {
@@ -105,7 +108,10 @@ static struct command commands[] = {
 		{"help",       "Shows available commands or shows help about a command",
 		               "help [COMMAND]",
 		               0, 1, exec_help, help_args},
-		{"ls",         "displays the cached contents of the datasync database at the current path or at the specified path",
+		{"log",         "Enable or disables logs",
+		               "log {on,off,verbose}",
+		               1, 1, exec_log, log_args},
+		{"ls",         "Displays the cached contents of the datasync database at the current path or at the specified path",
 		               "ls [PATH]",
 		               0, 1, exec_ls},
 		{"off",        "Unregisters from a given data event, or all data events on a given path",
@@ -179,12 +185,12 @@ int main(int argc, char *argv[]) {
 
 	loop = EV_DEFAULT;
 
-	wc_set_log_level(WC_LOG_APPLICATION, WC_LOG_INFO);
-
 	ctx = wc_context_create_with_libev(
 			&options,
 			loop,
 			&cb);
+
+	wc_log_use_custom(wcsh_log);
 
 	wc_datasync_init(ctx);
 
@@ -230,6 +236,10 @@ static void printf_async(char *fmt, ...) {
 	free(saved_line);
 }
 
+static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message) {
+	printf_async("[%s] (%s:%d) %s: %s", l, file, line, f, message);
+}
+
 static void on_connected(wc_context_t *ctx) {
 	connected = 1;
 	update_prompt();
@@ -240,7 +250,7 @@ static int on_disconnected(wc_context_t *ctx) {
 	connected = 0;
 	update_prompt();
 	printf_async("Disconnected.\n");
-	return 0;
+	return !done && !disconnect;
 }
 
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
@@ -277,7 +287,7 @@ static void exec_on(int argc, char **argv) {
 	} else if (strcmp("child_changed", argv[0]) == 0) {
 		wc_datasync_on_child_changed(ctx, argv[1], on_child_changed_cb);
 	} else {
-		printf("Usage:\n on {value,child_added,child_removed_child_changed} PATH\n");
+		fprintf(stderr, "Usage:\n on {value,child_added,child_removed_child_changed} PATH\n");
 	}
 }
 
@@ -368,16 +378,30 @@ static void exec_ls(int argc, char **argv) {
 	}
 }
 
+static void exec_log(int argc, char **argv) {
+	if (strcmp(argv[0], "on") == 0) {
+		wc_set_log_level(WC_LOG_ALL, WC_LOG_INFO);
+	} else if (strcmp(argv[0], "off") == 0) {
+		wc_set_log_level(WC_LOG_ALL, WC_LOG_CRIT);
+	} else if (strcmp(argv[0], "verbose") == 0) {
+		wc_set_log_level(WC_LOG_ALL, WC_LOG_DEBUG);
+	} else {
+
+	}
+}
+
 static void exec_connect(int argc, char **argv) {
+	disconnect = 0;
 	wc_datasync_connect(ctx);
 }
 
 static void exec_disconnect(int argc, char **argv) {
+	disconnect = 1;
 	wc_datasync_close_cnx(ctx);
 }
 
 static void exec_exit(int argc, char **argv) {
-	_do_exit = 1;
+	done = 1;
 }
 
 struct command *find_command(char *name, size_t len) {
@@ -443,11 +467,6 @@ static void execl0(int argc, char **argv) {
 			cmd->execute(--argc, ++argv);
 		}
 	}
-}
-
-char *skip_spaces(char *s) {
-	while (isspace(*s)) s++;
-	return s;
 }
 
 int count_heading_blanks(char *s) {
@@ -579,7 +598,7 @@ static void rlhandler(char* line) {
 	int argc;
 	char **argv;
 	if(line == NULL) {
-		_do_exit = 1;
+		done = 1;
 	} else {
 		if (*line != 0) {
 			add_history(line);
@@ -600,7 +619,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 		rl_callback_read_char();
 	}
 
-	if (_do_exit) {
+	if (done) {
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
 	}
