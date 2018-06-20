@@ -37,7 +37,7 @@ typedef enum {
 	NO_BRICK = 0, WHITE_BRICK, GREEN_BRICK, RED_BRICK, GREY_BRICK, BLUE_BRICK,
 	YELLOW_BRICK, BROWN_BRICK, OTHER_BRICK
 } legorange_brick_t;
-char *namespace;
+static char *board_name;
 extern const char *bricks[];
 int max_l = 250, max_c = 250;
 static void on_connected(wc_context_t *ctx);
@@ -149,9 +149,9 @@ static void on_connected(wc_context_t *ctx) {
 	 * the board : call the on_child_event whether a new child (brick) appears
 	 * changes (color change) or disappears
 	 */
-	wc_datasync_on_child_added(ctx, namespace, on_child_event);
-	wc_datasync_on_child_changed(ctx, namespace, on_child_event);
-	wc_datasync_on_child_removed(ctx, namespace, on_child_event);
+	wc_datasync_on_child_added(ctx, board_name, on_child_event);
+	wc_datasync_on_child_changed(ctx, board_name, on_child_event);
+	wc_datasync_on_child_removed(ctx, board_name, on_child_event);
 
 	clear_screen();
 }
