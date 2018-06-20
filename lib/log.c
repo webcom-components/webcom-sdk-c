@@ -220,7 +220,7 @@ void wc_log(enum wc_log_facility f, enum wc_log_level l, const char *file, const
 		_log_stderr(f, l, file, line, msg);
 		break;
 	case be_custom:
-		_log_custom(f, l, file, func, line, msg);
+		_log_custom(wc_log_facility_names[f], wc_log_level_names[l], _basename(file), func, line, msg);
 		break;
 #ifdef WITH_SYSLOG
 	case be_syslog:

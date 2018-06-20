@@ -67,7 +67,7 @@ enum wc_log_level {
 	                       completely disable logging in a facility */
 };
 
-typedef void(*wc_log_f)(enum wc_log_facility f, enum wc_log_level l, const char *file, const char *func, int line, const char *message);
+typedef void(*wc_log_f)(const char *f, const char *l, const char *file, const char *func, int line, const char *message);
 
 /**
  * Sets the log verbosity for a facility
