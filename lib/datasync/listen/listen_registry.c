@@ -32,6 +32,7 @@
 
 static void mask_listen_request(wc_context_t *ctx, wc_ds_path_t *parsed_path);
 static void unmask_listen_request(wc_context_t *ctx, wc_ds_path_t *parsed_path);
+static void on_listen_result(wc_context_t *ctx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data, void *user);
 
 static int compare_listen_item_data(void *a, void *b) {
 	wc_ds_path_t *pa = &(((struct listen_item *)a)->path);
@@ -88,7 +89,8 @@ static int is_masked(struct listen_registry* lr, wc_ds_path_t *parsed_path) {
 
 	for (parsed_path->nparts = 0 ; parsed_path->nparts < nparts ; parsed_path->nparts++) {
 		if ((li = avl_get(lr->list, k)) != NULL
-				&& li->status == LISTEN_ACTIVE) {
+				&& (li->status == LISTEN_ACTIVE
+						|| li->status == LISTEN_REQUIRED)) {
 			ret = 1;
 			break;
 		}
@@ -96,6 +98,35 @@ static int is_masked(struct listen_registry* lr, wc_ds_path_t *parsed_path) {
 
 	parsed_path->nparts = nparts;
 	return ret;
+}
+
+void wc_listen_suspend_all(wc_context_t *ctx) {
+	struct listen_item *li;
+	struct avl_it it;
+	struct listen_registry* lr = ctx->datasync.listen_reg;
+
+	avl_it_start(&it, lr->list);
+
+	while ((li = avl_it_next(&it)) != NULL) {
+		if (li->status == LISTEN_ACTIVE || li->status == LISTEN_PENDING) {
+			li->status = LISTEN_REQUIRED;
+		}
+	}
+}
+
+void wc_listen_resume_all(wc_context_t *ctx) {
+	struct listen_item *li;
+	struct avl_it it;
+	struct listen_registry* lr = ctx->datasync.listen_reg;
+
+	avl_it_start(&it, lr->list);
+
+	while ((li = avl_it_next(&it)) != NULL) {
+		if (li->status == LISTEN_REQUIRED || li->status == LISTEN_PENDING) {
+			li->status = LISTEN_PENDING;
+			wc_datasync_listen(ctx, wc_datasync_path_to_str(&li->path), on_listen_result, li);
+		}
+	}
 }
 
 struct listen_item *listen_registry_add(struct listen_registry* lr, char *path) {
@@ -160,9 +191,14 @@ void wc_datasync_watch(wc_context_t *ctx, char *path) {
 
 	li = listen_registry_add_ex(ctx->datasync.listen_reg, parsed_path);
 
-	if (li->status == LISTEN_REQUIRED || li->status == LISTEN_FAILED) {
-		li->status = LISTEN_PENDING;
-		wc_datasync_listen(ctx, wc_datasync_path_to_str(parsed_path), on_listen_result, li);
+	if (li->status == LISTEN_REQUIRED || li->status == LISTEN_FAILED)
+	{
+		if (ctx->datasync.state == WC_CNX_STATE_CONNECTED) {
+			li->status = LISTEN_PENDING;
+			wc_datasync_listen(ctx, wc_datasync_path_to_str(parsed_path), on_listen_result, li);
+		} else {
+			li->status = LISTEN_REQUIRED;
+		}
 		mask_listen_request(ctx, parsed_path);
 	}
 	wc_datasync_path_destroy(parsed_path);
@@ -185,8 +221,12 @@ static void unmask_listen_request(wc_context_t *ctx, wc_ds_path_t *parsed_path) 
 		} else {
 			if (li->status == LISTEN_MASKED) {
 				top_path = &li->path;
-				li->status = LISTEN_PENDING;
-				wc_datasync_listen(ctx, wc_datasync_path_to_str(&li->path), on_listen_result, li);
+				if (ctx->datasync.state == WC_CNX_STATE_CONNECTED) {
+					li->status = LISTEN_PENDING;
+					wc_datasync_listen(ctx, wc_datasync_path_to_str(&li->path), on_listen_result, li);
+				} else {
+					li->status = LISTEN_REQUIRED;
+				}
 			}
 		}
 	}
@@ -197,7 +237,7 @@ static void mask_listen_request(wc_context_t *ctx, wc_ds_path_t *parsed_path) {
 	struct listen_item *li;
 
 	avl_it_start_at(&it, ctx->datasync.listen_reg->list, listen_item_from_path(parsed_path));
-
+	avl_it_next(&it);
 	while (
 			(li = avl_it_next(&it)) != NULL
 			&& wc_datasync_path_starts_with(&li->path, parsed_path)
@@ -206,6 +246,8 @@ static void mask_listen_request(wc_context_t *ctx, wc_ds_path_t *parsed_path) {
 		if (li->status == LISTEN_ACTIVE) {
 			li->status = LISTEN_MASKED;
 			wc_datasync_unlisten(ctx, wc_datasync_path_to_str(&li->path), NULL, NULL);
+		} else if (li->status == LISTEN_PENDING || li->status == LISTEN_REQUIRED) {
+			li->status = LISTEN_MASKED;
 		}
 	}
 }
@@ -245,6 +287,9 @@ static char *listen_status_to_str(enum listen_status status) {
 	case LISTEN_PENDING:
 		ret = "PENDING";
 		break;
+	case LISTEN_REQUIRED:
+		ret = "REQUIRED";
+		break;
 	default:
 		ret = "unknown";
 		break;
@@ -260,7 +305,7 @@ void dump_listen_registry(struct listen_registry* lr, FILE *f) {
 	avl_it_start(&it, lr->list);
 
 	while ((li = avl_it_next(&it)) != NULL) {
-		fprintf(f, "[%7.7s] %s => %u refs\n",
+		fprintf(f, "[%8.8s] %s => %u refs\n",
 				listen_status_to_str(li->status),
 				wc_datasync_path_to_str(&li->path),
 				li->ref);

@@ -54,6 +54,7 @@ static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 		ctx->datasync.time_offset = wc_datasync_now() - msg->u.ctrl.u.handshake.ts;
 		ctx->datasync.stamp++;
 		ctx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, ctx, msg, sizeof(wc_msg_t));
+		wc_listen_resume_all(ctx);
 		ta.ms = 50000;
 		ta.repeat = 1;
 		ta.timer = WC_TIMER_DATASYNC_KEEPALIVE;
@@ -170,6 +171,7 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 	case LWS_CALLBACK_CLIENT_CONNECTION_ERROR:
 		ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 		WL_ERR("connection error \"%.*s\"", (int)len, (char*)in);
+		wc_listen_suspend_all(ctx);
 		if (ctx->callback(WC_EVENT_ON_CNX_ERROR, ctx, in, len)) {
 			_wc_datasync_schedule_reconnect(ctx);
 		}
@@ -183,6 +185,7 @@ static int _wc_lws_callback(UNUSED_PARAM(struct lws *wsi), enum lws_callback_rea
 		ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
 		wcta.timer = WC_TIMER_DATASYNC_KEEPALIVE;
 		ctx->callback(WC_EVENT_DEL_TIMER, ctx, &wcta.timer, 0);
+		wc_listen_suspend_all(ctx);
 		if (ctx->callback(WC_EVENT_ON_CNX_CLOSED, ctx, NULL, 0)) {
 			_wc_datasync_schedule_reconnect(ctx);
 		}

@@ -64,6 +64,8 @@ void wc_datasync_watch(wc_context_t *ctx, char *path);
 void wc_datasync_watch_ex(wc_context_t *ctx, wc_ds_path_t *parsed_path);
 
 void wc_datasync_unwatch_ex(wc_context_t *ctx, wc_ds_path_t *parsed_path, int ref_dec);
+void wc_listen_suspend_all(wc_context_t *ctx);
+void wc_listen_resume_all(wc_context_t *ctx);
 void dump_listen_registry(struct listen_registry* lr, FILE *f) ;
 
 #endif /* LIB_DATASYNC_LISTEN_REGISTRY_H_ */
