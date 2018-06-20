@@ -334,60 +334,6 @@ int on_registry_remove(wc_context_t *ctx, wc_ds_path_t *path, int type_mask, on_
 
 	return removed;
 }
-#if 0
-
-int on_registry_remove_all(wc_context_t *ctx) {
-	avl_remove_all(ctx->datasync.on_reg->sub_list);
-}
-void on_registry_dispatch_on_event_ex(struct on_registry* reg, data_cache_t *cache, wc_ds_path_t *parsed_path) {
-	struct on_sub *sub, *key;
-	unsigned u, nparts;
-	struct avl_it it;
-
-	key = on_child_sub_from_path(parsed_path);
-
-	nparts = key->path.nparts;
-
-	/* try to trigger the subscriptions starting from the cache root
-	 * e.g.:
-	 *     on_registry_dispatch_on_value("/foo/bar/baz");
-	 *   will look for subscriptions for the following paths:
-	 *     /
-	 *     /foo/
-	 *     /foo/bar/
-	 */
-	for (u = 0 ; u < nparts ; u++) {
-		key->path.nparts = u;
-		sub = avl_get(reg->sub_list, key);
-		on_value_trigger_maybe(sub, cache);
-		on_child_trigger_maybe(sub, cache);
-	}
-
-	key->path.nparts = nparts;
-
-	/* then try to trigger any subscription "higher or equal" to the current path:
-	 * e.g.:
-	 *     on_registry_dispatch_on_value("/foo/bar/baz");
-	 *   will look for subscriptions for the following paths:
-	 *     /foo/bar/baz/
-	 *     /foo/bar/baz/buzz/
-	 *     /foo/bar/baz/fizz/
-	 *     /foo/bar/baz/fizz/qux/
-	 *     ...
-	 *
-	 * this is done by browsing the on_value list, that is conveniently sorted,
-	 * from the given path, until the next path does not begin with the given
-	 * path
-	 */
-
-	avl_it_start_at(&it, reg->sub_list, key);
-
-	while ((sub = avl_it_next(&it)) != NULL && wc_datasync_path_starts_with(&sub->path, &key->path)) {
-		on_value_trigger_maybe(sub, cache);
-		on_child_trigger_maybe(sub, cache);
-	}
-}
-#endif
 
 static void on_val_trig(struct on_sub *sub, data_cache_t *cache) {
 	treenode_hash_t *cached_hash;
