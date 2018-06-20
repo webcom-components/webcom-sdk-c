@@ -6,17 +6,16 @@ project("webcom-sdk-c-examples"
 find_package(PkgConfig)
 
 pkg_search_module(JSONC REQUIRED json-c)
-pkg_search_module(NCURSES REQUIRED ncurses)
 
 option(WITH_LIBUV "Enable libuv event loop support" OFF)
 option(WITH_LIBEVENT "Enable libevent event loop support" OFF)
 
 link_directories(
 	${JSONC_LIBRARY_DIRS}
-	${NCURSES_LIBRARY_DIRS}
 	)
 
 find_library(LIBEV ev)
+find_library(READLINE readline)
 
 find_path(
 	LIBEV_INCLUDE_DIR
@@ -111,15 +110,14 @@ target_include_directories(
 	PRIVATE
 	${webcom-sdk-c-examples_SOURCE_DIR}/../include
 	${JSONC_INCLUDE_DIRS}
-	${NCURSES_INCLUDE_DIRS}
 )
 
 target_link_libraries(
 	wcchat
 	webcom-c
 	${JSONC_LIBRARIES}
+	${READLINE}
 	${LIBEV}
-	${NCURSES_LIBRARIES}
 )
 
 #### install

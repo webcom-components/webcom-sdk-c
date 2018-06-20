@@ -22,28 +22,34 @@
 
 #define _GNU_SOURCE
 #include <string.h>
+#include <stdio.h>
+#include <stdarg.h>
 #include <getopt.h>
 #include <unistd.h>
 #include <webcom-c/webcom.h>
 #include <webcom-c/webcom-libev.h>
 #include <ev.h>
-#include <ncurses.h>
 #include <json-c/json.h>
+#include <readline/readline.h>
+#include <readline/history.h>
 
 static void on_connected(wc_context_t *ctx);
 static int on_disconnected(wc_context_t *ctx);
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len);
 void stdin_cb (EV_P_ ev_io *w, int revents);
+void on_child_added_cb(wc_context_t *ctx, char *data, char *cur, char *prev);
 void print_new_message(json_object *message);
-void process_message_data_update(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param);
+static void printf_async(char *fmt, ...);
+static void rlhandler(char* line);
 
-WINDOW *chat, *chatbox;
-WINDOW *input, *inputbox;
+static wc_context_t *ctx;
+static int done = 0;
+
+
 char *name = NULL;
 const char *escaped_name;
 
 int main(int argc, char *argv[]) {
-	wc_context_t *ctx;
 	int wc_fd;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
@@ -93,31 +99,19 @@ int main(int argc, char *argv[]) {
 	wc_datasync_init(ctx);
 	wc_datasync_connect(ctx);
 
-	/* if stdin has data to read, call stdin_watcher() */
-	ev_io_init(&stdin_watcher, stdin_cb, fileno(stdin), EV_READ);
-	stdin_watcher.data = ctx;
-	ev_io_start (loop, &stdin_watcher);
-
-	initscr();
-
-	keypad(stdscr, FALSE);
-
-	chatbox = subwin(stdscr, LINES - 3, COLS, 0, 0);
-	chat = derwin(chatbox, LINES - 5, COLS - 2, 1, 1);
-	inputbox = subwin(stdscr, 3, COLS, LINES - 3, 0);
-	input = derwin(inputbox, 1, COLS - 2, 1, 1);
-	box(chatbox, ACS_VLINE, ACS_HLINE);
-	box(inputbox, ACS_VLINE, ACS_HLINE);
-	scrollok(chat, TRUE);
-	wrefresh(stdscr);
-
 	json_name = json_object_new_string(name);
 	escaped_name = json_object_to_json_string(json_name);
 
+	rl_prep_terminal(0);
+	rl_callback_handler_install("> ", rlhandler);
+
+	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);
+	stdin_watcher.data = ctx;
+	ev_io_start (loop, &stdin_watcher);
+
 	ev_run(loop, 0);
-
-	endwin();
-
+	rl_callback_handler_remove();
+	rl_deprep_terminal();
 	json_object_put(json_name);
 	return 0;
 }
@@ -128,43 +122,24 @@ int main(int argc, char *argv[]) {
  */
 static void on_connected(wc_context_t *ctx) {
 
-	wc_datasync_route_data(ctx, "/", process_message_data_update, NULL);
-	wc_datasync_listen(ctx, "/", NULL);
-
-	wprintw(chat, "*** [INFO] Connected\n");
-	wrefresh(chat);
+	wc_datasync_on_child_added(ctx, "/", on_child_added_cb);
+	printf_async("*** [INFO] Connected\n");
 
 }
 
 static int on_disconnected(wc_context_t *ctx) {
-	wprintw(chat, "*** [INFO] Disconnected (connection closed)\n");
-	wrefresh(chat);
+	printf_async("*** [INFO] Disconnected (connection closed)\n");
 	return 1;
 }
 
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
-	wprintw(chat, "*** [INFO] Disconnected (%.*s)\n", error_len, error);
+	printf_async("*** [INFO] Disconnected (%.*s)\n", error_len, error);
 	return 1;
 }
 
-void process_message_data_update(
-		UNUSED_PARAM(wc_context_t *cnx),
-		UNUSED_PARAM(ws_on_data_event_t event),
-		char *path,
-		char *json_data,
-		UNUSED_PARAM(void *param))
-{
-	json_object *json = json_tokener_parse(json_data);
-	if (json != NULL) {
-		if(strcmp(path, "/") == 0) {
-			json_object_object_foreach(json, key, val) {
-				UNUSED_VAR(key);
-				print_new_message(val);
-			}
-		} else {
-			print_new_message(json);
-		}
-	}
+void on_child_added_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
+	json_object *json = json_tokener_parse(data);
+	print_new_message(json);
 	json_object_put(json);
 }
 
@@ -175,43 +150,66 @@ void print_new_message(json_object *message) {
 	json_object_object_get_ex(message, "name", &name);
 	json_object_object_get_ex(message, "text", &text);
 
-	wprintw(chat, "%*s: %s\n",
+	printf_async("%*s: %s\n",
 			15,
 			name == NULL ? "<Anonymous>" : json_object_get_string(name),
 			text == NULL ? "<NULL>" : json_object_get_string(text));
-	wrefresh(chat);
-	werase(input);
-	wrefresh(input);
 }
 
 /*
  * libev callback when data is available on stdin
  */
 void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
-	wc_context_t *cnx = (wc_context_t *)w->data;
-	static char buf[2048];
-	json_object *text;
+	if (revents & EV_READ) {
+		rl_callback_read_char();
+	}
+
+	if (done) {
+		ev_io_stop(EV_A_ w);
+		ev_break(EV_A_ EVBREAK_ALL);
+	}
+}
+
+static void rlhandler(char* line) {
 	char *json_str;
 	const char *escaped_text;
+	json_object *text;
 
-	if (wgetnstr(input, buf, sizeof(buf)) == OK) {
-		if(strcmp(buf, "/quit") == 0) {
-			ev_io_stop(EV_A_ w);
-			ev_break(EV_A_ EVBREAK_ALL);
-			wc_datasync_close_cnx(cnx);
-		} else {
-			text = json_object_new_string(buf);
+	if(line == NULL) {
+		done = 1;
+	} else {
+		if (*line != 0) {
+			add_history(line);
+			text = json_object_new_string(line);
 			escaped_text = json_object_to_json_string(text);
 			asprintf(&json_str, "{\"name\":%s,\"text\":%s}", escaped_name, escaped_text);
-			wc_datasync_push(cnx, "/", json_str, NULL);
+			wc_datasync_push(ctx, "/", json_str, NULL, NULL);
 			free(json_str);
 			json_object_put(text);
 		}
+
+		free(line);
 	}
-	if (feof(stdin)) {
-		/* quit if EOF on stdin */
-		ev_io_stop(EV_A_ w);
-		ev_break(EV_A_ EVBREAK_ALL);
-		wc_datasync_close_cnx(cnx);
-	}
+}
+
+static void printf_async(char *fmt, ...) {
+    char *saved_line;
+	int saved_point;
+
+	saved_point = rl_point;
+	saved_line = rl_copy_text(0, rl_end);
+	rl_save_prompt();
+	rl_replace_line("", 0);
+	rl_redisplay();
+
+	va_list args;
+	va_start(args, fmt);
+	vprintf(fmt, args);
+	va_end(args);
+
+	rl_restore_prompt();
+	rl_replace_line(saved_line, 0);
+	rl_point = saved_point;
+	rl_redisplay();
+	free(saved_line);
 }
