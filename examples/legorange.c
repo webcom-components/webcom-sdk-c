@@ -245,7 +245,7 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 					"\"y\":%d}", col_str, x, y);
 
 			/* send the put message to the webcom server */
-			if (wc_datasync_put(cnx, path, data, NULL) > 0) {
+			if (wc_datasync_put(cnx, path, data, NULL, NULL) > 0) {
 				puts("OK");
 			} else {
 				puts("ERROR");
