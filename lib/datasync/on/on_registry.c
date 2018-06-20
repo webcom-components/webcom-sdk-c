@@ -410,6 +410,11 @@ static void on_val_trig(struct on_sub *sub, data_cache_t *cache) {
 				p_cb->cb(sub->ctx, data_snapshot, NULL, NULL);
 				p_cb = p_cb->next;
 			} while (p_cb != NULL);
+			if (cached_hash != NULL) {
+				sub->hash = *cached_hash;
+			} else {
+				sub->hash = (treenode_hash_t ) { .bytes = { 0 } };
+			}
 			free(data_snapshot);
 		}
 	}
