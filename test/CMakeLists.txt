@@ -97,26 +97,6 @@ add_test(
 	COMMAND webcom-test-cnx
 )
 
-## on data handlers hashtable
-
-add_executable(
-	webcom-test-data-handlers
-	test-on-data.c
-)
-
-target_include_directories(
-	webcom-test-data-handlers
-	PRIVATE
-	${webcom-sdk-c-tests_SOURCE_DIR}/../include
-	${JSONC_INCLUDE_DIRS}
-	${WEBSOCKETS_INCLUDE_DIRS}
-)
-
-add_test(
-	NAME "data-handlers"
-	COMMAND webcom-test-data-handlers
-)
-
 ## pending request handlers hashtable
 
 add_executable(

@@ -141,7 +141,6 @@
  * 	@}
  * 	@defgroup webcom-requests		Send requests: subscribe to data change, send data, ...
  * 	@defgroup webcom-auth			Retrieve authentication tokens from the Webcom server
- *	@defgroup webcom-event			Route data events to callbacks
  *	@defgroup webcom-log			Logging functions
  *
  * @}
@@ -184,7 +183,6 @@
 #include "webcom-parser.h"
 #include "webcom-datasync.h"
 #include "webcom-req.h"
-#include "webcom-event.h"
 #include "webcom-on.h"
 
 /* Authentication */

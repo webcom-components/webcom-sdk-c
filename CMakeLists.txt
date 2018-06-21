@@ -106,7 +106,6 @@ add_library(
 	lib/datasync/datasync.c
 	lib/datasync/datasync_utils.c
 	lib/datasync/request.c
-	lib/datasync/event.c
 	lib/datasync/path.c
 	lib/datasync/json.c
 	lib/datasync/listen/listen_registry.c

@@ -329,7 +329,6 @@ void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx) {
 	if (ds_ctx->lws_cci.context != NULL) lws_context_destroy(ds_ctx->lws_cci.context);
 	if (ds_ctx->parser != NULL) wc_datasync_parser_free(ds_ctx->parser);
 
-	wc_datasync_cleanup_data_routes(ds_ctx->data_routes);
 	wc_datasync_free_pending_trans(ds_ctx->pending_req_table);
 
 	data_cache_destroy(ds_ctx->cache);
