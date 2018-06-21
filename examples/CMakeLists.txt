@@ -48,56 +48,6 @@ target_link_libraries(
 	${LIBEV}
 )
 
-## legorange-libuv
-if(${WITH_LIBUV})
-	pkg_search_module(LIBUV REQUIRED libuv)
-
-	add_executable(
-		legorange-libuv
-		legorange-libuv.c
-	)
-
-	target_include_directories(
-		legorange-libuv
-		PRIVATE
-		${webcom-sdk-c-examples_SOURCE_DIR}/../include
-		${JSONC_INCLUDE_DIRS}
-		${LIBUV_INCLUDE_DIR}
-	)
-
-	target_link_libraries(
-		legorange-libuv
-		webcom-c
-		${JSONC_LIBRARIES}
-		${LIBUV_LIBRARIES}
-	)
-endif()
-
-## legorange-libevent
-if(${WITH_LIBEVENT})
-	pkg_search_module(LIBEVENT REQUIRED libevent)
-
-	add_executable(
-		legorange-libevent
-		legorange-libevent.c
-	)
-
-	target_include_directories(
-		legorange-libevent
-		PRIVATE
-		${webcom-sdk-c-examples_SOURCE_DIR}/../include
-		${JSONC_INCLUDE_DIRS}
-		${LIBEVENT_INCLUDE_DIR}
-	)
-
-	target_link_libraries(
-		legorange-libevent
-		webcom-c
-		${JSONC_LIBRARIES}
-		${LIBEVENT_LIBRARIES}
-	)
-endif()
-
 ## wcchat
 
 add_executable(
