@@ -230,23 +230,6 @@ target_link_libraries(
 	webcom-c
 )
 
-## tests on data-cache callback triggering
-add_executable(
-	webcom-test-on
-	test-on.c
-)
-
-target_include_directories(
-	webcom-test-on
-	PRIVATE
-	${webcom-sdk-c-tests_SOURCE_DIR}/../include
-)
-
-target_link_libraries(
-	webcom-test-on
-	webcom-c
-)
-
 ## tests for on_value events
 add_executable(
 	webcom-test-on-value
