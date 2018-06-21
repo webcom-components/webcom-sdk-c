@@ -50,7 +50,6 @@ char *name = NULL;
 const char *escaped_name;
 
 int main(int argc, char *argv[]) {
-	int wc_fd;
 	struct ev_loop *loop = EV_DEFAULT;
 	ev_io stdin_watcher;
 	int opt;
