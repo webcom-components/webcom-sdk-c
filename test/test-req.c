@@ -52,21 +52,21 @@ void wc_datasync_msg_init(UNUSED_PARAM(wc_msg_t *msg)) {}
 
 int listen_response = 0, put_response = 0, auth_response = 0;
 
-void cb_listen(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
+void cb_listen(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data, void *user) {
 	printf("\t[%p:%d:%"PRId64"] %s \"%s\"\n", cnx, type, id, status == WC_REQ_OK ? "WC_REQ_OK" : "WC_REQ_ERROR", reason);
 	if(type == WC_ACTION_LISTEN) {
 		listen_response = 1;
 	}
 }
 
-void cb_put(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
+void cb_put(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data, void *user) {
 	printf("\t[%p:%d:%"PRId64"] %s \"%s\"\n", cnx, type, id, status == WC_REQ_OK ? "WC_REQ_OK" : "WC_REQ_ERROR", reason);
 	if(type == WC_ACTION_PUT) {
 		put_response = 1;
 	}
 }
 
-void cb_auth(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
+void cb_auth(wc_context_t *cnx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data, void *user) {
 	printf("\t[%p:%d:%"PRId64"] %s \"%s\"\n", cnx, type, id, status == WC_REQ_OK ? "WC_REQ_OK" : "WC_REQ_ERROR", reason);
 	if(type == WC_ACTION_AUTHENTICATE) {
 		auth_response = 1;
@@ -86,7 +86,7 @@ int main(void)
 	cnx.datasync_init = 1;
 
 	for (i = 0 ; i < 4096 ; i++) {
-		wc_req_store_pending(&cnx, wc_datasync_next_reqnum(&cnx.datasync), WC_ACTION_LISTEN, NULL);
+		wc_req_store_pending(&cnx, wc_datasync_next_reqnum(&cnx.datasync), WC_ACTION_LISTEN, NULL, NULL);
 	}
 	c = 0;
 	for (i = 0 ; i < (1 << PENDING_ACTION_HASH_FACTOR) ; i++) {
@@ -114,13 +114,13 @@ int main(void)
 
 	STFU_TRUE("Requests table is empty after all getting all entries", c == 0);
 
-	wc_datasync_listen(&cnx, "/foo/", cb_listen);
+	wc_datasync_listen(&cnx, "/foo/", cb_listen, NULL);
 	STFU_TRUE("Callback was called for listen request", listen_response);
 
-	wc_datasync_put(&cnx, "/bar/", "{\"foo\": 1337}", cb_put);
+	wc_datasync_put(&cnx, "/bar/", "{\"foo\": 1337}", cb_put, NULL);
 	STFU_TRUE("Callback was called for put request", put_response);
 
-	wc_datasync_auth(&cnx, "S3CRET", cb_auth);
+	wc_datasync_auth(&cnx, "S3CRET", cb_auth, NULL);
 	STFU_TRUE("Callback was called for auth request", auth_response);
 
 	STFU_SUMMARY();

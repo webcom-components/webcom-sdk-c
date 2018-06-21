@@ -179,6 +179,11 @@ target_link_libraries(
 	webcom-c
 )
 
+add_test(
+	NAME path
+	COMMAND webcom-test-path
+)
+
 ## tests on the treenode objects
 add_executable(
 	webcom-test-treenode
@@ -194,6 +199,11 @@ target_include_directories(
 target_link_libraries(
 	webcom-test-treenode
 	webcom-c
+)
+
+add_test(
+	NAME treenode
+	COMMAND webcom-test-treenode
 )
 
 ## tests on the treenode cache
@@ -213,6 +223,11 @@ target_link_libraries(
 	webcom-c
 )
 
+add_test(
+	NAME cache
+	COMMAND webcom-test-cache
+)
+
 ## tests on the AVL container
 add_executable(
 	webcom-test-avl
@@ -228,6 +243,11 @@ target_include_directories(
 target_link_libraries(
 	webcom-test-avl
 	webcom-c
+)
+
+add_test(
+	NAME avl
+	COMMAND webcom-test-avl
 )
 
 ## tests for on_value events

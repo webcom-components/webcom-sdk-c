@@ -43,28 +43,17 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 	return 0;
 }
 
-void on_data(wc_context_t *cnx, ws_on_data_event_t event, char *path, char *json_data, void *param) {
+void on_data(wc_context_t *ctx, char * data, char *current_key, char *previous_key) {
 	STFU_TRUE("Successfully received the test data", 1);
-	printf("\t%s\n", json_data);
+	printf("\t%s\n", data);
 	ev_break(EV_DEFAULT, EVBREAK_ALL);
 }
 
-void wc_on_ws_listen_response(wc_context_t *ctx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
-	if (status == WC_REQ_OK) {
-		STFU_TRUE("Successfully listened to the test path", 1);
-	} else {
-		STFU_TRUE("Failed to listen to the test path", 0);
-		printf("\t%s\n", reason);
-		ev_break(EV_DEFAULT, EVBREAK_ALL);
-	}
-}
-
-void wc_on_ws_auth_response(wc_context_t *ctx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data) {
+void wc_on_ws_auth_response(wc_context_t *ctx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data, void *_) {
 	if (status == WC_REQ_OK) {
 		STFU_TRUE("Successful authentication on the datasync websocket", 1);
 		if (read_path) {
-			wc_datasync_route_data(ctx, read_path, on_data, NULL);
-			wc_datasync_listen(ctx, read_path, wc_on_ws_listen_response);
+			wc_datasync_on_value(ctx, read_path, on_data);
 		} else {
 			ev_break(EV_DEFAULT, EVBREAK_ALL);
 		}
@@ -109,7 +98,7 @@ void on_auth_error(wc_context_t *ctx, char* error) {
 static void on_connected(wc_context_t *ctx) {
 	STFU_TRUE("Connected to the datasync server", 1);
 
-	wc_datasync_auth(ctx, token, wc_on_ws_auth_response);
+	wc_datasync_auth(ctx, token, wc_on_ws_auth_response, NULL);
 }
 static int on_disconnected(wc_context_t *ctx) {
 	STFU_TRUE("The connection to the datasync server was closed", 1);
@@ -120,7 +109,6 @@ static int on_disconnected(wc_context_t *ctx) {
 int main(int argc, char **argv) {
 	struct ev_loop *loop = EV_DEFAULT;
 	wc_context_t *ctx;
-	ev_io ev_wc_readable;
 	char *server = "io.datasync.orange.com";
 	char *app = "test";
 	uint16_t port = 443;

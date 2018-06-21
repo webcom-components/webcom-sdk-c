@@ -29,11 +29,11 @@
 
 #include "stfu.h"
 
-void callback1(wc_context_t *ctx, char *data) {
+void callback1(wc_context_t *ctx, char *data, char *_, char *__) {
 	STFU_INFO("callback1: %s", data);
 }
 
-void callback2(wc_context_t *ctx, char *data) {
+void callback2(wc_context_t *ctx, char *data, char *_, char *__) {
 	STFU_INFO("callback2: %s", data);
 }
 
