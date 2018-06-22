@@ -53,8 +53,8 @@ static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 		ctx->datasync.state = WC_CNX_STATE_CONNECTED;
 		ctx->datasync.time_offset = wc_datasync_now() - msg->u.ctrl.u.handshake.ts;
 		ctx->datasync.stamp++;
-		ctx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, ctx, msg, sizeof(wc_msg_t));
 		wc_listen_resume_all(ctx);
+		ctx->callback(WC_EVENT_ON_SERVER_HANDSHAKE, ctx, msg, sizeof(wc_msg_t));
 		ta.ms = 50000;
 		ta.repeat = 1;
 		ta.timer = WC_TIMER_DATASYNC_KEEPALIVE;

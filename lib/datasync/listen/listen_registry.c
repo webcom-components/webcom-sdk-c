@@ -90,7 +90,8 @@ static int is_masked(struct listen_registry* lr, wc_ds_path_t *parsed_path) {
 	for (parsed_path->nparts = 0 ; parsed_path->nparts < nparts ; parsed_path->nparts++) {
 		if ((li = avl_get(lr->list, k)) != NULL
 				&& (li->status == LISTEN_ACTIVE
-						|| li->status == LISTEN_REQUIRED)) {
+						|| li->status == LISTEN_REQUIRED
+						|| li->status == LISTEN_PENDING)) {
 			ret = 1;
 			break;
 		}
