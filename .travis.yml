@@ -1,20 +1,11 @@
 language: c
-
-addons:
-    apt:
-        packages:
-            - doxygen
-            - graphviz
+sudo: required
+services:
+    - docker
 
 script:
-    - cd build
-    - cmake ../doc -DBUILD_HTML_DOCUMENTATION=ON -DBUILD_MAN_PAGES=OFF
-    - make
-
-deploy:
-    provider: pages
-    skip_cleanup: true
-    local_dir: $TRAVIS_BUILD_DIR/build/html
-    github_token: $GITHUB_TOKEN
-    on:
-        branch: master
+    - docker image build build-images -t webcom-sdk-c
+    - docker container run --workdir /tmp/webcom-sdk-c/build --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c sleep 10000 > .container_id
+    - docker container exec $(cat .container_id) cmake ..
+    - docker container exec $(cat .container_id) make
+    - docker container exec $(cat .container_id) make test
