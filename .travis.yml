@@ -6,6 +6,8 @@ services:
 stages:
     - compile
     - test
+    - name: deploy_doc
+      if: branch = master
 
 jobs:
     include:
@@ -23,3 +25,15 @@ jobs:
             - docker container exec $(cat .container_id) cmake ..
             - docker container exec $(cat .container_id) make
             - docker container exec $(cat .container_id) make test
+
+        - stage: deploy_doc
+          script:
+            - docker image build build-images -t webcom-sdk-c
+            - docker container run --workdir /tmp/webcom-sdk-c/build --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c sleep 10000 > .container_id
+            - docker container exec $(cat .container_id) cmake ../doc -DBUILD_HTML_DOCUMENTATION=ON
+            - docker container exec $(cat .container_id) make doc
+          deploy:
+            provider: pages
+            skip_cleanup: true
+            local_dir: build/html
+            github_token: $GITHUB_TOKEN
