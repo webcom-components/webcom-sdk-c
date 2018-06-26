@@ -40,7 +40,6 @@ static void on_connected(wc_context_t *ctx) {
 }
 static int on_disconnected(wc_context_t *ctx) {
 	STFU_TRUE("The connection was closed", 1);
-	wc_context_destroy(ctx);
 	ev_break(EV_DEFAULT, EVBREAK_ALL);
 	return 0;
 }
@@ -87,6 +86,7 @@ int main(void) {
 
 
 	ev_run(loop, 0);
+	wc_context_destroy(cnx1);
 
 end:
 	STFU_SUMMARY();
