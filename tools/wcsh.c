@@ -589,7 +589,7 @@ static int parse_cmd_line(char *buf,int *argc, char ***argv) {
 
 static void update_prompt() {
 	snprintf(prompt, sizeof(prompt), "%s@%s:%"PRIu16"(%s) %s> ", options.app_name, options.host, options.port, connected ? "C":"D", wc_datasync_path_to_str(cwd));
-	prompt[sizeof(prompt)] = 0;
+	prompt[sizeof(prompt) - 1] = 0;
 
 	rl_set_prompt(prompt);
 }
