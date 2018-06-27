@@ -52,7 +52,6 @@ if(BUILD_HTML_DOCUMENTATION OR BUILD_MAN_PAGES)
 		install(
 			FILES
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-connection.3"
-				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-event.3"
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-general.3"
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-messages.3"
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-parser.3"
