@@ -1,0 +1,11 @@
+FROM alpine:3.7
+
+RUN apk update
+
+RUN apk add cmake make
+
+RUN apk add doxygen graphviz
+
+RUN apk add ttf-liberation
+
+VOLUME /tmp/webcom-sdk-c/

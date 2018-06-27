@@ -1,0 +1,9 @@
+FROM alpine:3.7
+
+RUN apk update
+
+RUN apk add cmake gcc make pkgconf musl-dev
+
+RUN apk add json-c-dev libwebsockets-dev openssl-dev curl-dev libev-dev readline-dev doxygen
+
+VOLUME /tmp/webcom-sdk-c/
