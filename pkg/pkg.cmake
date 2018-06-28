@@ -13,27 +13,27 @@ set(CPACK_PACKAGE_DESCRIPTION_FILE "${webcom-sdk-c_SOURCE_DIR}/pkg/description.t
 if(PACKAGE_FLAVOUR)
 	if(PACKAGE_FLAVOUR STREQUAL "debian9")
 		set(CPACK_GENERATOR "DEB")
-		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets8, libjson-c3, libssl1.1, libev4, libreadline7, libc6, ca-certificates")
+		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets8, libjson-c3, libssl1.1, libev4, libcurl3, libreadline7, libc6, ca-certificates")
 		set(CPACK_SYSTEM_NAME "deb9")
 
 	elseif(PACKAGE_FLAVOUR STREQUAL "ubuntu16.04")
 		set(CPACK_GENERATOR "DEB")
-		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets7, libjson-c2, libssl1.0.0, libev4, libreadline6, libc6, ca-certificates")
+		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets7, libjson-c2, libssl1.0.0, libev4, libcurl3, libreadline6, libc6, ca-certificates")
 		set(CPACK_SYSTEM_NAME "xenial")
 
 	elseif(PACKAGE_FLAVOUR STREQUAL "ubuntu18.04")
 		set(CPACK_GENERATOR "DEB")
-		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets8, libjson-c3, libssl1.1, libev4, libreadline7, libc6, ca-certificates")
+		set(CPACK_DEBIAN_PACKAGE_DEPENDS  "libsystemd0, libwebsockets8, libjson-c3, libssl1.1, libev4, libcurl4, libreadline7, libc6, ca-certificates")
 		set(CPACK_SYSTEM_NAME "bionic")
 
 	elseif(PACKAGE_FLAVOUR STREQUAL "centos7")
 		set(CPACK_GENERATOR "RPM")
-		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, readline")
+		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, libcurl, readline")
 		set(CPACK_SYSTEM_NAME "el7")
 
 	elseif(PACKAGE_FLAVOUR STREQUAL "fedora28")
 		set(CPACK_GENERATOR "RPM")
-		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, readline")
+		set(CPACK_RPM_PACKAGE_REQUIRES "systemd-libs, libwebsockets, json-c, openssl-libs, libev, libcurl, readline")
 		set(CPACK_SYSTEM_NAME "fc28")
 
 	else()
