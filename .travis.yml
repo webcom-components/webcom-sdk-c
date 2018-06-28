@@ -42,10 +42,19 @@ jobs:
         - stage: package
           script:
             - mkdir packages
+            # Ubuntu 16.04
             - docker image build -f build-images/Dockerfile.ubuntu16.04.build-deb build-images -t webcom-sdk-c-package-ubuntu16.04
             - mkdir build-ubuntu16.04
             - docker container run --workdir /tmp/webcom-sdk-c/build-ubuntu16.04 --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-package-ubuntu16.04 sleep 1000 > .container_id
             - docker container exec $(cat .container_id) cmake .. -DPACKAGE_FLAVOUR=ubuntu16.04 -DCPACK_OUTPUT_FILE_PREFIX=/tmp/webcom-sdk-c/packages
+            - docker container exec $(cat .container_id) make
+            - docker container exec $(cat .container_id) make test
+            - docker container exec $(cat .container_id) make package
+            # Ubuntu 18.04
+            - docker image build -f build-images/Dockerfile.ubuntu18.04.build-deb build-images -t webcom-sdk-c-package-ubuntu18.04
+            - mkdir build-ubuntu18.04
+            - docker container run --workdir /tmp/webcom-sdk-c/build-ubuntu18.04 --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-package-ubuntu18.04 sleep 1000 > .container_id
+            - docker container exec $(cat .container_id) cmake .. -DPACKAGE_FLAVOUR=ubuntu18.04 -DCPACK_OUTPUT_FILE_PREFIX=/tmp/webcom-sdk-c/packages
             - docker container exec $(cat .container_id) make
             - docker container exec $(cat .container_id) make test
             - docker container exec $(cat .container_id) make package
