@@ -227,7 +227,7 @@ static void data_cache_set_r(data_cache_t *cache, struct treenode *root, char *k
 			sub = internal_add_new_internal(root, key);
 		}
 
-		for (i = 0 ; i < json_object_array_length(value) ; i++) {
+		for (i = 0 ; i < (int)json_object_array_length(value) ; i++) {
 			snprintf(sidx, sizeof(sidx) - 1, "%d", i);
 			data_cache_set_r(cache, sub, sidx, json_object_array_get_idx(value, i));
 		}
