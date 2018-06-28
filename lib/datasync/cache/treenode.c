@@ -255,7 +255,7 @@ static treenode_hash_t bool_hash[] = {
 #define _U (const unsigned char *)
 
 void treenode_hash(struct treenode *n) {
-	SHA1_CTX ctx;
+	wc_SHA1_CTX ctx;
 	char hexnum[17];
 	unsigned char digest[20];
 	treenode_hash_t *child_hash;
@@ -267,18 +267,18 @@ void treenode_hash(struct treenode *n) {
 		uint64_t i;
 	} conv;
 
-	SHA1Init(&ctx);
+	wc_SHA1Init(&ctx);
 
 	switch (n->type) {
 	case TREENODE_TYPE_LEAF_NUMBER:
 		conv.d = n->uval.number;
 		snprintf(hexnum, 17, "%016"PRIx64, conv.i);
-		SHA1Update(&ctx, _U "number:", 7);
-		SHA1Update(&ctx, _U hexnum, 16);
+		wc_SHA1Update(&ctx, _U "number:", 7);
+		wc_SHA1Update(&ctx, _U hexnum, 16);
 		break;
 	case TREENODE_TYPE_LEAF_STRING:
-		SHA1Update(&ctx, _U "string:", 7);
-		SHA1Update(&ctx, _U n->uval.str, strlen(n->uval.str));
+		wc_SHA1Update(&ctx, _U "string:", 7);
+		wc_SHA1Update(&ctx, _U n->uval.str, strlen(n->uval.str));
 		break;
 	case TREENODE_TYPE_INTERNAL:
 		avl_it_start(&it, n->uval.children);
@@ -286,10 +286,10 @@ void treenode_hash(struct treenode *n) {
 		while ((p = avl_it_next(&it)) != NULL) {
 			if (p->node.type != TREENODE_TYPE_LEAF_NULL) {
 				child_hash = treenode_hash_get(&p->node);
-				SHA1Update(&ctx, _U":", 1);
-				SHA1Update(&ctx, _U p->key, strlen(p->key));
-				SHA1Update(&ctx, _U":", 1);
-				SHA1Update(&ctx, _U child_hash->bytes, 28);
+				wc_SHA1Update(&ctx, _U":", 1);
+				wc_SHA1Update(&ctx, _U p->key, strlen(p->key));
+				wc_SHA1Update(&ctx, _U":", 1);
+				wc_SHA1Update(&ctx, _U child_hash->bytes, 28);
 			}
 		}
 
@@ -298,7 +298,7 @@ void treenode_hash(struct treenode *n) {
 		break;
 	}
 
-	SHA1Final(digest, &ctx);
+	wc_SHA1Final(digest, &ctx);
 
 	base64_enc_20(digest, n->hash);
 }

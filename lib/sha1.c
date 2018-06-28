@@ -50,7 +50,7 @@
 
 /* Hash a single 512-bit block. This is the core of the algorithm. */
 
-void SHA1Transform(uint32_t state[5], const unsigned char buffer[64]) {
+void wc_SHA1Transform(uint32_t state[5], const unsigned char buffer[64]) {
 	uint32_t a, b, c, d, e;
 
 	typedef union {
@@ -172,7 +172,7 @@ void SHA1Transform(uint32_t state[5], const unsigned char buffer[64]) {
 
 /* SHA1Init - Initialize new context */
 
-void SHA1Init(SHA1_CTX * context) {
+void wc_SHA1Init(wc_SHA1_CTX * context) {
 	/* SHA1 initialization constants */
 	context->state[0] = 0x67452301;
 	context->state[1] = 0xEFCDAB89;
@@ -184,7 +184,7 @@ void SHA1Init(SHA1_CTX * context) {
 
 /* Run your data through this. */
 
-void SHA1Update(SHA1_CTX * context, const unsigned char *data, uint32_t len) {
+void wc_SHA1Update(wc_SHA1_CTX * context, const unsigned char *data, uint32_t len) {
 	uint32_t i;
 
 	uint32_t j;
@@ -196,9 +196,9 @@ void SHA1Update(SHA1_CTX * context, const unsigned char *data, uint32_t len) {
 	j = (j >> 3) & 63;
 	if ((j + len) > 63) {
 		memcpy(&context->buffer[j], data, (i = 64 - j));
-		SHA1Transform(context->state, context->buffer);
+		wc_SHA1Transform(context->state, context->buffer);
 		for (; i + 63 < len; i += 64) {
-			SHA1Transform(context->state, &data[i]);
+			wc_SHA1Transform(context->state, &data[i]);
 		}
 		j = 0;
 	} else
@@ -208,7 +208,7 @@ void SHA1Update(SHA1_CTX * context, const unsigned char *data, uint32_t len) {
 
 /* Add padding and return the message digest. */
 
-void SHA1Final(unsigned char digest[20], SHA1_CTX * context) {
+void wc_SHA1Final(unsigned char digest[20], wc_SHA1_CTX * context) {
 	unsigned i;
 
 	unsigned char finalcount[8];
@@ -238,12 +238,12 @@ void SHA1Final(unsigned char digest[20], SHA1_CTX * context) {
 	}
 #endif
 	c = 0200;
-	SHA1Update(context, &c, 1);
+	wc_SHA1Update(context, &c, 1);
 	while ((context->count[0] & 504) != 448) {
 		c = 0000;
-		SHA1Update(context, &c, 1);
+		wc_SHA1Update(context, &c, 1);
 	}
-	SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
+	wc_SHA1Update(context, finalcount, 8); /* Should cause a SHA1Transform() */
 	for (i = 0; i < 20; i++) {
 		digest[i] = (unsigned char) ((context->state[i >> 2]
 				>> ((3 - (i & 3)) * 8)) & 255);
@@ -253,14 +253,14 @@ void SHA1Final(unsigned char digest[20], SHA1_CTX * context) {
 	memset(&finalcount, '\0', sizeof(finalcount));
 }
 
-void SHA1(char *hash_out, const char *str, int len) {
-	SHA1_CTX ctx;
+void wc_SHA1(char *hash_out, const char *str, int len) {
+	wc_SHA1_CTX ctx;
 	int ii;
 
-	SHA1Init(&ctx);
+	wc_SHA1Init(&ctx);
 	for (ii = 0; ii < len; ii += 1)
-		SHA1Update(&ctx, (const unsigned char*) str + ii, 1);
-	SHA1Final((unsigned char *) hash_out, &ctx);
+		wc_SHA1Update(&ctx, (const unsigned char*) str + ii, 1);
+	wc_SHA1Final((unsigned char *) hash_out, &ctx);
 	hash_out[20] = '\0';
 }
 
