@@ -84,3 +84,14 @@ jobs:
             - docker container exec $(cat .container_id) make package
 
             - ls -la packages
+          deploy:
+            provider: releases
+            api_key: $GITHUB_TOKEN
+            file_glob: true
+            file:
+                - packages/*.rpm
+                - packages/*.deb
+            skip_cleanup: true
+            draft: true
+            on:
+                tags: true
