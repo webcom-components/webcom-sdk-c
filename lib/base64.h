@@ -25,7 +25,7 @@
 
 #include <stddef.h>
 
-void base64_enc(const unsigned char *restrict in, char *restrict out, size_t in_len);
+void base64_enc(const unsigned char *in, char *out, size_t in_len);
 void base64_enc_20(const unsigned char in[20], char out[28]);
 
 #endif /* SRC_BASE64_H_ */

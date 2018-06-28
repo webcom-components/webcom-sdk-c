@@ -39,7 +39,7 @@ static const char base[] = {
 #define XX______ 0xc0
 #define XXXX____ 0xf0
 
-void base64_enc(const unsigned char *restrict in, char *restrict out, size_t in_len) {
+void base64_enc(const unsigned char *in, char *out, size_t in_len) {
 	const unsigned char *const in_end = in + in_len;
 
 	/*
