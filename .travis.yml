@@ -42,6 +42,14 @@ jobs:
         - stage: package
           script:
             - mkdir packages
+            # Debian 9
+            - docker image build -f build-images/Dockerfile.debian9.build-deb build-images -t webcom-sdk-c-package-debian9
+            - mkdir build-debian9
+            - docker container run --workdir /tmp/webcom-sdk-c/build-debian9 --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-package-debian9 sleep 1000 > .container_id
+            - docker container exec $(cat .container_id) cmake .. -DPACKAGE_FLAVOUR=debian9 -DCPACK_OUTPUT_FILE_PREFIX=/tmp/webcom-sdk-c/packages
+            - docker container exec $(cat .container_id) make
+            - docker container exec $(cat .container_id) make test
+            - docker container exec $(cat .container_id) make package
             # Ubuntu 16.04
             - docker image build -f build-images/Dockerfile.ubuntu16.04.build-deb build-images -t webcom-sdk-c-package-ubuntu16.04
             - mkdir build-ubuntu16.04

@@ -1,0 +1,19 @@
+FROM debian:9
+
+RUN apt-get update
+
+# build tools
+RUN apt-get -y install gcc cmake make pkg-config
+
+# SDK build dependencies
+RUN apt-get -y install libjson-c-dev libwebsockets-dev libsystemd-dev libcurl4-openssl-dev libev-dev
+
+# examples build dependencies
+RUN apt-get -y install libreadline-dev
+
+# documentation build dependencies
+RUN apt-get -y install doxygen
+
+RUN apt-get -y install dpkg-dev
+
+VOLUME /tmp/webcom-sdk-c/
