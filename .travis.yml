@@ -66,3 +66,21 @@ jobs:
             - docker container exec $(cat .container_id) make
             - docker container exec $(cat .container_id) make test
             - docker container exec $(cat .container_id) make package
+            # CentOS 7
+            - docker image build -f build-images/Dockerfile.centos7.build-rpm build-images -t webcom-sdk-c-package-centos7
+            - mkdir build-centos7
+            - docker container run --workdir /tmp/webcom-sdk-c/build-centos7 --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-package-centos7 sleep 1000 > .container_id
+            - docker container exec $(cat .container_id) cmake3 .. -DPACKAGE_FLAVOUR=centos7 -DCPACK_OUTPUT_FILE_PREFIX=/tmp/webcom-sdk-c/packages
+            - docker container exec $(cat .container_id) make
+            - docker container exec $(cat .container_id) make test
+            - docker container exec $(cat .container_id) make package
+            # Fedora 28
+            - docker image build -f build-images/Dockerfile.fedora28.build-rpm build-images -t webcom-sdk-c-package-fedora28
+            - mkdir build-fedora28
+            - docker container run --workdir /tmp/webcom-sdk-c/build-fedora28 --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-package-fedora28 sleep 1000 > .container_id
+            - docker container exec $(cat .container_id) cmake .. -DPACKAGE_FLAVOUR=fedora28 -DCPACK_OUTPUT_FILE_PREFIX=/tmp/webcom-sdk-c/packages
+            - docker container exec $(cat .container_id) make
+            - docker container exec $(cat .container_id) make test
+            - docker container exec $(cat .container_id) make package
+
+            - ls -la packages

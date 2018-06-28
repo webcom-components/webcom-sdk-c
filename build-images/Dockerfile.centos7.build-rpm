@@ -1,0 +1,16 @@
+FROM centos:7
+
+RUN yum install -y epel-release
+
+# build tools
+RUN yum install -y cmake3 gcc make pkgconfig
+
+# SDK build dependencies
+RUN yum install -y json-c-devel libwebsockets-devel openssl-devel systemd-devel libev-devel libcurl-devel readline-devel
+
+# documentation build dependencies
+RUN yum install -y doxygen
+
+RUN yum install -y rpm-build
+
+VOLUME /tmp/webcom-sdk-c/
