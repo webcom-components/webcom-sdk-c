@@ -4,22 +4,14 @@ services:
     - docker
 
 stages:
-    - compile
-    - test
+    - compile_and_test
     - name: deploy_doc
       if: branch = master
     - package
 
 jobs:
     include:
-        - stage: compile
-          script:
-            - docker image build -f build-images/Dockerfile.alpine build-images -t webcom-sdk-c-build
-            - docker container run --workdir /tmp/webcom-sdk-c/build --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-build sleep 1000 > .container_id
-            - docker container exec $(cat .container_id) cmake ..
-            - docker container exec $(cat .container_id) make
-
-        - stage: test
+        - stage: compile_and_test
           script:
             - docker image build -f build-images/Dockerfile.alpine build-images -t webcom-sdk-c-build
             - docker container run --workdir /tmp/webcom-sdk-c/build --detach -v "$(pwd):/tmp/webcom-sdk-c/" webcom-sdk-c-build sleep 1000 > .container_id
