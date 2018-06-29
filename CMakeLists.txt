@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project("webcom-sdk-c"
 	LANGUAGES C
-	VERSION 1.0.0
+	VERSION 2.0.0
 )
 
 # Extra version information appearing after "Major.minor.patch" in the library
@@ -9,7 +9,7 @@ project("webcom-sdk-c"
 # set to "false" to disable
 # set to "git" to use the current git revision abbbreviated hash
 # set to anything else to specify anything else
-set(PROJECT_VERSION_EXTRA false)
+set(PROJECT_VERSION_EXTRA "pre1")
 
 
 if(PROJECT_VERSION_EXTRA)
