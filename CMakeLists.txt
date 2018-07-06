@@ -33,6 +33,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/cmake")
 find_package(PkgConfig REQUIRED)
 find_package(Readline REQUIRED)
 include(FindCURL REQUIRED)
+include(FindOpenSSL REQUIRED)
 
 pkg_search_module(WEBSOCKETS REQUIRED libwebsockets)
 pkg_search_module(JSONC REQUIRED json-c)
@@ -64,9 +65,18 @@ link_directories(
 include(CheckIncludeFile)
 include(CheckSymbolExists)
 
+find_file(
+	ENDIAN_H
+		endian.h
+	PATH_SUFFIXES
+		sys
+		machine
+)
+
 check_symbol_exists("srand48_r" "stdlib.h" HAVE_RAND48_R)
-check_include_file("endian.h" HAVE_ENDIAN_H)
-check_include_file("sys/endian.h" HAVE_SYS_ENDIAN_H)
+check_symbol_exists("htobe64" ${ENDIAN_H} HAVE_HTOBE64)
+check_symbol_exists("rl_copy_text" "readline/readline.h" HAVE_REAL_READLINE)
+
 check_include_file("syslog.h" WITH_SYSLOG)
 check_include_file("systemd/sd-journal.h" WITH_JOURNALD)
 
@@ -130,10 +140,17 @@ target_compile_options(
 
 target_include_directories(
 	webcom-c
+	SYSTEM
 	PRIVATE
 	${JSONC_INCLUDE_DIRS}
 	${WEBSOCKETS_INCLUDE_DIRS}
 	${CURL_INCLUDE_DIRS}
+	${OPENSSL_INCLUDE_DIR}
+)
+
+target_include_directories(
+	webcom-c
+	PRIVATE
 	${webcom-sdk-c_SOURCE_DIR}/include
 )
 
@@ -248,12 +265,23 @@ add_executable(
 	tools/wcsh.c
 )
 
+if(NOT HAVE_REAL_READLINE)
+	target_compile_definitions(wcsh	PRIVATE -DFAKE_READLINE)
+endif()
+
+target_include_directories(
+	wcsh
+	SYSTEM
+	PRIVATE
+	${JSONC_INCLUDE_DIRS}
+	${READLINE_INCLUDE_DIR}
+	${OPENSSL_INCLUDE_DIR}
+)
+
 target_include_directories(
 	wcsh
 	PRIVATE
 	${webcom-sdk-c_SOURCE_DIR}/include
-	${JSONC_INCLUDE_DIRS}
-	${READLINE_INCLUDE_DIR}
 )
 
 target_link_libraries(

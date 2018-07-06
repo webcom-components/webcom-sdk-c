@@ -19,7 +19,8 @@
 
 #include <stdio.h>
 #include <string.h>
-#include <endian.h>
+
+#include "compat.h"
 
 /* for uint32_t */
 #include <stdint.h>
