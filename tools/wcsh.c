@@ -590,13 +590,16 @@ char **wcsh_completion(const char *text, int start, int end) {
 	return matches;
 }
 
-static int parse_cmd_line(char *buf,int *argc, char ***argv) {
-	int state;
+static int parse_cmd_line(char *buf, int *argc, char ***argv) {
+	int state; /* 0: inside a blank, 1: inside a token */
 	char *p;
 
 	*argc = 0;
+	/* count the number of tokens */
 	for (state = 0, p = buf ; *p ; p++) {
-		if (isspace(*p)) {
+		if (state == 0 && *p == '#') {
+			break;
+		} else if (isspace(*p)) {
 			state = 0;
 		} else {
 			if (state == 0) {
@@ -610,11 +613,14 @@ static int parse_cmd_line(char *buf,int *argc, char ***argv) {
 	*argc = 0;
 
 	for (state = 0, p = buf ; *p ; p++) {
-		if (isspace(*p)) {
+		if (state == 0 && *p == '#') { /* comments */
+			*p = 0;
+			break;
+		} else if (isspace(*p)) { /* in a blank */
 			state = 0;
 			*p = 0;
-		} else {
-			if (state == 0) {
+		} else { /* not in a blank */
+			if (state == 0) { /* if we were previously in a blank, start a new token */
 				state = 1;
 				(*argv)[*argc] = p;
 				(*argc)++;
