@@ -36,6 +36,8 @@
 #include <readline/readline.h>
 #include <readline/history.h>
 
+#include <json-c/json.h>
+
 #include "../lib/webcom_base_priv.h"
 #include "../lib/datasync/cache/treenode_cache.h"
 #include "../lib/datasync/on/on_registry.h"
@@ -56,6 +58,7 @@ char *command_generator (const char *text, int state);
 
 static void exec_ls(int, char **);
 static void exec_log(int, char **);
+static void exec_cache(int argc, char **argv);
 static void exec_cd(int, char **);
 static void exec_connect(int, char **);
 static void exec_disconnect(int, char **);
@@ -63,7 +66,7 @@ static void exec_exit(int, char **);
 static void exec_help(int, char **);
 static void exec_on(int, char **);
 static void exec_off(int, char **);
-static void exec_show(int, char **);
+static void exec_info(int, char **);
 static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message);
 
 static wc_context_t *ctx;
@@ -87,12 +90,16 @@ struct command {
 
 /* keep these arrays in alphabetical order since we use binary search on them */
 char *on_off_args[] = {"child_added", "child_changed", "child_removed","value", NULL};
-char *dump_args[] = {"cache", "listen", "on", NULL};
-char *help_args[] = {"", "cd", "connect", "disconnect", "exit", "help", "ls", "off", "on", "show", NULL};
+char *info_args[] = {"listen", "on", NULL};
+char *help_args[] = {"", "cache", "cd", "connect", "disconnect", "exit", "help", "info", "ls", "off", "on", NULL};
 char *log_args[] = {"off", "on", "verbose", NULL};
+char *cache_args[] = {"dump", "load", "save", NULL};
 
 /* keep this array in alphabetical order since we use binary search on it */
 static struct command commands[] = {
+		{"cache",      "Displays internal informations about the \"on\"-subscriptions, listen status",
+		               "show {cache,on,listen}",
+		               1, 2, exec_cache, cache_args},
 		{"cd",         "Sets the current working path to \"/\", or to the specified path",
 		               "cd [PATH]",
 		               0, 1, exec_cd},
@@ -108,7 +115,10 @@ static struct command commands[] = {
 		{"help",       "Shows available commands or shows help about a command",
 		               "help [COMMAND]",
 		               0, 1, exec_help, help_args},
-		{"log",         "Enable or disables logs",
+		{"info",       "Displays internal informations about the \"on\"-subscriptions, listen status",
+		               "info {on,listen}",
+		               1, 1, exec_info, info_args},
+		{"log",        "Enable or disables logs",
 		               "log {on,off,verbose}",
 		               1, 1, exec_log, log_args},
 		{"ls",         "Displays the cached contents of the datasync database at the current path or at the specified path",
@@ -120,9 +130,6 @@ static struct command commands[] = {
 		{"on",         "Registers to a given data event on a gven path",
 		               "on {value,child_added,child_removed,child_changed} PATH",
 		               2, 2, exec_on, on_off_args},
-		{"show",       "Displays internal informations about the cache, \"on\"-subscriptions, listen status",
-		               "show {cache,on,listen}",
-		               1, 1, exec_show, dump_args},
 		{NULL}
 };
 
@@ -307,22 +314,52 @@ static void exec_off(int argc, char **argv) {
 	}
 }
 
-static void exec_show(int argc, char **argv) {
+static void exec_info(int argc, char **argv) {
 	if (argc == 0) {
-		printf("Usage:\n dump {cache,on,listen}\n");
-	} else if (strcmp("cache", argv[0]) == 0) {
-		if (ctx->datasync_init) {
-			ftreenode_to_json(ctx->datasync.cache->root, stdout);
-			puts("");
-		}
+		printf("Usage:\n info {on,listen}\n");
 	} else if (strcmp("on", argv[0]) == 0) {
-		if (ctx->datasync_init) {
-			dump_on_registry(ctx->datasync.on_reg, stdout);
-		}
+		dump_on_registry(ctx->datasync.on_reg, stdout);
 	} else if (strcmp("listen", argv[0]) == 0) {
-		if (ctx->datasync_init) {
-			dump_listen_registry(ctx->datasync.listen_reg, stdout);
+		dump_listen_registry(ctx->datasync.listen_reg, stdout);
+	}
+}
+
+static void exec_cache_save(int argc, char **argv) {
+	FILE *f;
+
+	if (argc == 1) {
+		f = fopen(*argv, "w");
+		if (f == NULL) {
+			perror(*argv);
+		} else {
+			ftreenode_to_json(ctx->datasync.cache->root, f);
+			fclose(f);
 		}
+	}
+}
+
+static void exec_cache_load(int argc, char **argv) {
+	json_object *json;
+
+	if (argc == 1) {
+		if ((json = json_object_from_file(*argv)) != NULL) {
+			data_cache_set_ex(ctx->datasync.cache, &root_path, json);
+		} else {
+			fprintf(stderr, "error opening \"%s\"", *argv);
+		}
+	}
+}
+
+static void exec_cache(int argc, char **argv) {
+	if (argc == 0) {
+		printf("Usage:\n cache {dump,save,load}\n");
+	} else if (strcmp("dump", argv[0]) == 0) {
+		ftreenode_to_json(ctx->datasync.cache->root, stdout);
+		puts("");
+	} else if (strcmp("load", argv[0]) == 0) {
+		exec_cache_load(--argc, ++argv);
+	} else if (strcmp("save", argv[0]) == 0) {
+		exec_cache_save(--argc, ++argv);
 	}
 }
 
