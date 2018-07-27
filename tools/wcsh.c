@@ -64,8 +64,11 @@ static void exec_connect(int, char **);
 static void exec_disconnect(int, char **);
 static void exec_exit(int, char **);
 static void exec_help(int, char **);
+static void exec_merge(int, char **);
 static void exec_on(int, char **);
 static void exec_off(int, char **);
+static void exec_push(int, char **);
+static void exec_put(int, char **);
 static void exec_info(int, char **);
 static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message);
 
@@ -91,7 +94,7 @@ struct command {
 /* keep these arrays in alphabetical order since we use binary search on them */
 char *on_off_args[] = {"child_added", "child_changed", "child_removed","value", NULL};
 char *info_args[] = {"listen", "on", NULL};
-char *help_args[] = {"", "cache", "cd", "connect", "disconnect", "exit", "help", "info", "ls", "off", "on", NULL};
+char *help_args[] = {"", "cache", "cd", "connect", "disconnect", "exit", "help", "info", "ls", "merge", "off", "on", "push", "put", NULL};
 char *log_args[] = {"off", "on", "verbose", NULL};
 char *cache_args[] = {"dump", "load", "save", NULL};
 
@@ -124,12 +127,21 @@ static struct command commands[] = {
 		{"ls",         "Displays the cached contents of the datasync database at the current path or at the specified path",
 		               "ls [PATH]",
 		               0, 1, exec_ls},
+		{"merge",      "Sends a merge request on a given path, with a given json document",
+		               "merge PATH JSON",
+		               2, 2, exec_merge},
 		{"off",        "Unregisters from a given data event, or all data events on a given path",
 		               "off [{value,child_added,child_removed,child_changed}] PATH",
 		               1, 2, exec_off, on_off_args},
 		{"on",         "Registers to a given data event on a gven path",
 		               "on {value,child_added,child_removed,child_changed} PATH",
 		               2, 2, exec_on, on_off_args},
+		{"push",       "Sends a push request on a given path, with a given json document",
+		               "push PATH JSON",
+		               2, 2, exec_push},
+		{"put",        "Sends a put request on a given path, with a given json document",
+		               "put PATH JSON",
+		               2, 2, exec_put},
 		{NULL}
 };
 
@@ -463,6 +475,18 @@ struct command *find_command(char *name, size_t len) {
 	}
 
 	return ret;
+}
+
+static void exec_merge(int argc, char **argv) {
+	wc_datasync_merge(ctx, argv[0], argv[1], NULL, NULL);
+}
+
+static void exec_push(int argc, char **argv) {
+	wc_datasync_push(ctx, argv[0], argv[1], NULL, NULL);
+}
+
+static void exec_put(int argc, char **argv) {
+	wc_datasync_put(ctx, argv[0], argv[1], NULL, NULL);
 }
 
 static void exec_help(int argc, char **argv) {
