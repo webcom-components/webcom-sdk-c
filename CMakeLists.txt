@@ -246,6 +246,9 @@ include("${webcom-sdk-c_SOURCE_DIR}/pkg/pkg.cmake")
 add_executable(
 	wcsh
 	tools/wcsh.c
+	tools/wcsh_parse.c
+	tools/wcsh_program.c
+	tools/fsm.c
 )
 
 target_include_directories(

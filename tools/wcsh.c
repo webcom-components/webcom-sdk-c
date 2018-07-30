@@ -38,6 +38,10 @@
 
 #include <json-c/json.h>
 
+#include "wcsh.h"
+#include "wcsh_parse.h"
+#include "wcsh_program.h"
+
 #include "../lib/webcom_base_priv.h"
 #include "../lib/datasync/cache/treenode_cache.h"
 #include "../lib/datasync/on/on_registry.h"
@@ -51,6 +55,7 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 static void update_prompt();
 static void rlhandler(char* line);
 void stdin_cb (EV_P_ ev_io *w, int revents);
+void script_data_event (EV_P_ ev_io *w, UNUSED_PARAM(int revents));
 static void printf_async(char *fmt, ...);
 
 char **wcsh_completion(const char *, int, int);
@@ -70,6 +75,7 @@ static void exec_off(int, char **);
 static void exec_push(int, char **);
 static void exec_put(int, char **);
 static void exec_info(int, char **);
+static void exec_sleep(int, char **);
 static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message);
 
 static wc_context_t *ctx;
@@ -77,6 +83,7 @@ struct ev_loop *loop;
 static int done = 0;
 static int disconnect = 0;
 static int connected = 0;
+static int script = 0;
 
 FILE *out;
 char prompt[65];
@@ -142,6 +149,9 @@ static struct command commands[] = {
 		{"put",        "Sends a put request on a given path, with a given json document",
 		               "put PATH JSON",
 		               2, 2, exec_put},
+		{"sleep",      "Suspends the interpreter for a given number of seconds",
+		               "sleep SECONDS",
+		               1, 1, exec_sleep},
 		{NULL}
 };
 
@@ -158,8 +168,9 @@ struct wc_context_options options = {
 };
 
 int main(int argc, char *argv[]) {
-	ev_io stdin_watcher;
+	ev_io input_watcher;
 	int opt;
+	int script_fd;
 
 	struct wc_eli_callbacks cb = {
 			.on_connected = on_connected,
@@ -189,7 +200,8 @@ int main(int argc, char *argv[]) {
 			break;
 		case 'h':
 			printf(
-					"%s [OPTIONS]\n"
+					"%s [OPTIONS] [SCRIPT_FILE]\n"
+					"Opens a new Webcom shell in interactive mode, or execute the script if a SCRIPT_FILE argument is given"
 					"Options:\n"
 					"-s HOST      : Connect to the specified host (current \"%s\")\n"
 					"-p PORT      : Connect on the specified port (current %" PRIu16 ")\n"
@@ -199,6 +211,15 @@ int main(int argc, char *argv[]) {
 					*argv, options.host, options.port, options.app_name);
 			exit(0);
 			break;
+		}
+	}
+
+	if (optind < argc) {
+		script = 1;
+		script_fd = open(argv[optind], O_RDONLY);
+		if (script_fd == -1) {
+			perror(argv[optind]);
+			return 1;
 		}
 	}
 
@@ -213,21 +234,30 @@ int main(int argc, char *argv[]) {
 
 	wc_datasync_init(ctx);
 
-	rl_prep_terminal(0);
-	update_prompt();
-	rl_callback_handler_install(prompt, rlhandler);
-	rl_attempted_completion_function = wcsh_completion;
 
-	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);
-	stdin_watcher.data = ctx;
-	ev_io_start (loop, &stdin_watcher);
+	if (script) {
+		ev_io_init(&input_watcher, script_data_event, script_fd, EV_READ);
+		input_watcher.data = ctx;
+		ev_io_start (loop, &input_watcher);
+	} else {
+		rl_prep_terminal(0);
+		update_prompt();
+		rl_callback_handler_install(prompt, rlhandler);
+		rl_attempted_completion_function = wcsh_completion;
 
+		ev_io_init(&input_watcher, stdin_cb, STDIN_FILENO, EV_READ);
+		input_watcher.data = ctx;
+		ev_io_start (loop, &input_watcher);
+	}
 
 	ev_run(loop, 0);
-	rl_callback_handler_remove();
-	rl_deprep_terminal();
 
-	puts("");
+	if (!script) {
+		rl_callback_handler_remove();
+		rl_deprep_terminal();
+
+		puts("");
+	}
 
 	wc_context_destroy(ctx);
 	return 0;
@@ -237,22 +267,26 @@ static void printf_async(char *fmt, ...) {
     char *saved_line;
 	int saved_point;
 
-	saved_point = rl_point;
-	saved_line = rl_copy_text(0, rl_end);
-	rl_save_prompt();
-	rl_replace_line("", 0);
-	rl_redisplay();
+	if (!script) {
+		saved_point = rl_point;
+		saved_line = rl_copy_text(0, rl_end);
+		rl_save_prompt();
+		rl_replace_line("", 0);
+		rl_redisplay();
+	}
 
 	va_list args;
 	va_start(args, fmt);
 	vprintf(fmt, args);
 	va_end(args);
 
-	rl_restore_prompt();
-	rl_replace_line(saved_line, 0);
-	rl_point = saved_point;
-	rl_redisplay();
-	free(saved_line);
+	if (!script) {
+		rl_restore_prompt();
+		rl_replace_line(saved_line, 0);
+		rl_point = saved_point;
+		rl_redisplay();
+		free(saved_line);
+	}
 }
 
 static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message) {
@@ -386,6 +420,19 @@ static void exec_cd(int argc, char **argv) {
 	}
 }
 
+static void sleep_cb (struct ev_loop *loop, ev_timer *w, int revents) {
+	wcsh_program_resume();
+}
+
+static void exec_sleep(int argc, char **argv) {
+	static ev_timer ev_sleep;
+	unsigned t;
+	if (sscanf(argv[0],"%u",&t) == 1) {
+		ev_timer_init(&ev_sleep, sleep_cb, (ev_tstamp) t, 0);
+		ev_timer_start(loop, &ev_sleep);
+		wcsh_program_pause();
+	}
+}
 
 static void print_treenode_entry(struct treenode *n, char *key) {
 	switch(n->type) {
@@ -453,7 +500,7 @@ static void exec_exit(int argc, char **argv) {
 	done = 1;
 }
 
-struct command *find_command(char *name, size_t len) {
+struct command *find_command(char *name) {
 	int min = 0, max = commands_len - 1;
 	int mid;
 	int cmp;
@@ -462,8 +509,7 @@ struct command *find_command(char *name, size_t len) {
 	while (min <= max) {
 		mid = min + (max - min) / 2;
 
-		cmp = strncmp(commands[mid].name, name, len);
-
+		cmp = strcmp(commands[mid].name, name);
 		if (cmp < 0) {
 			min = mid + 1;
 		} else if (cmp > 0) {
@@ -499,7 +545,7 @@ static void exec_help(int argc, char **argv) {
 			printf("  - %s: %s\n", commands[i].name, commands[i].help);
 		}
 	} else {
-		cmd = find_command(argv[0], strlen(argv[0]));
+		cmd = find_command(argv[0]);
 		if (cmd == NULL) {
 			printf("Unknown command \"%s\", see \"help\" for available commands\n", argv[0]);
 		} else {
@@ -508,10 +554,10 @@ static void exec_help(int argc, char **argv) {
 	}
 }
 
-static void execl0(int argc, char **argv) {
+void wcsh_exec(int argc, char **argv) {
 	struct command *cmd;
 
-	cmd = find_command(argv[0], strlen(argv[0]));
+	cmd = find_command(argv[0]);
 
 	if (cmd == NULL) {
 		printf("Unknown command \"%s\", see \"help\"\n", argv[0]);
@@ -594,7 +640,7 @@ char *arg_generator (const char *text, int state) {
 
 char **wcsh_completion(const char *text, int start, int end) {
 	char **matches = NULL;
-	int command_start, command_len;
+	int command_start;
 	struct command *cmd = NULL;
 
 	command_start = count_heading_blanks(rl_line_buffer);
@@ -602,8 +648,7 @@ char **wcsh_completion(const char *text, int start, int end) {
 	if (start == command_start) {
 		matches = rl_completion_matches(text, command_generator);
 	} else {
-		command_len = count_non_blanks(rl_line_buffer + command_start);
-		cmd = find_command(rl_line_buffer + command_start, command_len);
+		cmd = find_command(rl_line_buffer + command_start);
 		if (cmd != NULL && cmd->complete_args != NULL) {
 			arg_choices_list = cmd->complete_args;
 			matches = rl_completion_matches(text, arg_generator);
@@ -612,46 +657,6 @@ char **wcsh_completion(const char *text, int start, int end) {
 
 	rl_attempted_completion_over = 1;
 	return matches;
-}
-
-static int parse_cmd_line(char *buf, int *argc, char ***argv) {
-	int state; /* 0: inside a blank, 1: inside a token */
-	char *p;
-
-	*argc = 0;
-	/* count the number of tokens */
-	for (state = 0, p = buf ; *p ; p++) {
-		if (state == 0 && *p == '#') {
-			break;
-		} else if (isspace(*p)) {
-			state = 0;
-		} else {
-			if (state == 0) {
-				state = 1;
-				(*argc)++;
-			}
-		}
-	}
-
-	*argv = malloc(*argc * sizeof (char *));
-	*argc = 0;
-
-	for (state = 0, p = buf ; *p ; p++) {
-		if (state == 0 && *p == '#') { /* comments */
-			*p = 0;
-			break;
-		} else if (isspace(*p)) { /* in a blank */
-			state = 0;
-			*p = 0;
-		} else { /* not in a blank */
-			if (state == 0) { /* if we were previously in a blank, start a new token */
-				state = 1;
-				(*argv)[*argc] = p;
-				(*argc)++;
-			}
-		}
-	}
-	return 1;
 }
 
 static void update_prompt() {
@@ -669,11 +674,7 @@ static void rlhandler(char* line) {
 	} else {
 		if (*line != 0) {
 			add_history(line);
-			parse_cmd_line(line, &argc, &argv);
-			if (argc > 0) {
-				execl0(argc, argv);
-			}
-			free(argv);
+			wcsh_cmdline_eval(line);
 		}
 
 		free(line);
@@ -689,5 +690,28 @@ void stdin_cb (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
 	if (done) {
 		ev_io_stop(EV_A_ w);
 		ev_break(EV_A_ EVBREAK_ALL);
+	}
+}
+
+void script_data_event (EV_P_ ev_io *w, UNUSED_PARAM(int revents)) {
+	char buf[2];
+	size_t len;
+	int done_reading = 0;
+	static char *end = "exit";
+
+	if (revents & EV_READ) {
+		len = read(w->fd, buf, sizeof(buf));
+		if (len > 0) {
+			wcsh_chunk_eval(buf, len);
+		} else {
+			wcsh_chunk_eval(NULL, 0);
+			done_reading = 1;
+			wcsh_program_append(1, &end);
+		}
+
+	}
+
+	if (done_reading) {
+		ev_io_stop(EV_A_ w);
 	}
 }
