@@ -367,15 +367,16 @@ static void on_val_trig(struct on_sub *sub, data_cache_t *cache) {
 }
 
 static void trig(struct on_sub *sub, data_cache_t *cache) {
-	if (sub->cb_list[ON_VALUE]) {
-		on_val_trig(sub, cache);
-	} else if (sub->cb_list[ON_CHILD_ADDED]
+	if (sub->cb_list[ON_CHILD_ADDED]
 				|| sub->cb_list[ON_CHILD_CHANGED]
 				|| sub->cb_list[ON_CHILD_REMOVED])
 	{
 		on_child_trig(sub, cache);
 	}
 
+	if (sub->cb_list[ON_VALUE]) {
+		on_val_trig(sub, cache);
+	}
 }
 
 void on_registry_dispatch_on_event_ex(struct on_registry* reg, data_cache_t *cache, wc_ds_path_t *parsed_path) {
