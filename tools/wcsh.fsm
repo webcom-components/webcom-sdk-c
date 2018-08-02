@@ -6,7 +6,7 @@ FSM (wcsh_parse_script)
 			WHEN ("'")         EXEC (on_group_start) GOTO (STATE_GROUP)
 			WHEN ("#")                               GOTO (STATE_COMMENT)
 			WHEN ("\n;")       EXEC (on_command_end) GOTO (STATE_BLANK)
-			WHEN (token_char)  EXEC (on_token_start) GOTO (STATE_TOKEN)
+			ELSE               EXEC (on_token_start) GOTO (STATE_TOKEN)
 		END_TRANSITIONS
 	END_STATE
 
@@ -16,7 +16,7 @@ FSM (wcsh_parse_script)
 			WHEN ("\t ")       EXEC (save_token)     GOTO (STATE_BLANK)
 			WHEN ("#")         EXEC (save_token)     GOTO (STATE_COMMENT)
 			WHEN ("\n;")       EXEC (save_token_end_command) GOTO (STATE_BLANK)
-			WHEN (token_char)  EXEC (save_char)      GOTO (STATE_TOKEN)
+			ELSE               EXEC (save_char)      GOTO (STATE_TOKEN)
 		END_TRANSITIONS
 	END_STATE
 
@@ -24,7 +24,7 @@ FSM (wcsh_parse_script)
 		TRANSITIONS
 			WHEN ("'")         EXEC (save_token)     GOTO (STATE_GROUP_END)
 			WHEN ("\\")                              GOTO (STATE_ESCAPE)
-			WHEN (group_char)  EXEC (save_char)      GOTO (STATE_GROUP)
+			ELSE               EXEC (save_char)      GOTO (STATE_GROUP)
 		END_TRANSITIONS
 	END_STATE
 
@@ -37,7 +37,7 @@ FSM (wcsh_parse_script)
 	STATE(STATE_GROUP_END)
 		ACCEPT
 		TRANSITIONS
-			WHEN ("\n;")      EXEC (on_command_end)  GOTO (STATE_BLANK)
+			WHEN ("\n;")       EXEC (on_command_end) GOTO (STATE_BLANK)
 			WHEN ("\t ")                             GOTO (STATE_BLANK)
 		END_TRANSITIONS
 	END_STATE
@@ -45,7 +45,7 @@ FSM (wcsh_parse_script)
 	STATE(STATE_COMMENT)
 		ACCEPT
 		TRANSITIONS
-			WHEN ("\n")       EXEC (on_command_end)  GOTO (STATE_BLANK)
+			WHEN ("\n")        EXEC (on_command_end) GOTO (STATE_BLANK)
 			ELSE                                     GOTO (STATE_COMMENT)
 		END_TRANSITIONS
 	END_STATE
