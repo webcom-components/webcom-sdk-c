@@ -53,6 +53,7 @@
 static void on_connected(wc_context_t *ctx);
 static int on_disconnected(wc_context_t *ctx);
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len);
+static void redraw_prompt();
 static void update_prompt();
 static void rlhandler(char* line);
 void stdin_cb (EV_P_ ev_io *w, int revents);
@@ -318,7 +319,8 @@ static void wcsh_log(const char *f, const char *l, const char *file, const char 
 static void on_connected(wc_context_t *ctx) {
 	connected = 1;
 	update_prompt();
-	printf_async("%sConnected.%s\n", VT(fg_green), VT(reset));
+	//printf_async("%sConnected.%s\n", VT(fg_green), VT(reset));
+	redraw_prompt();
 	if (waiting.connected) {
 		waiting.connected = 0;
 		wcsh_program_resume();
@@ -328,7 +330,8 @@ static void on_connected(wc_context_t *ctx) {
 static int on_disconnected(wc_context_t *ctx) {
 	connected = 0;
 	update_prompt();
-	printf_async("Disconnected.\n");
+	//printf_async("Disconnected.\n");
+	redraw_prompt();
 	if (waiting.disconnected) {
 		waiting.disconnected = 0;
 		wcsh_program_resume();
@@ -741,6 +744,24 @@ char **wcsh_completion(const char *text, int start, int end) {
 	return matches;
 }
 
+static void redraw_prompt() {
+	char *saved_line;
+	int saved_point;
+
+	if (is_interactive) {
+		saved_point = rl_point;
+		saved_line = rl_copy_text(0, rl_end);
+		rl_save_prompt();
+		rl_replace_line("", 0);
+		rl_redisplay();
+		rl_restore_prompt();
+		rl_replace_line(saved_line, 0);
+		rl_point = saved_point;
+		rl_redisplay();
+		free(saved_line);
+	}
+}
+
 static void update_prompt() {
 	snprintf(prompt,
 			 sizeof(prompt),
@@ -761,6 +782,7 @@ static void update_prompt() {
 static void rlhandler(char* line) {
 	if(line == NULL) {
 		done = 1;
+		rl_set_prompt("");
 	} else {
 		if (*line != 0) {
 			add_history(line);
