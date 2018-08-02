@@ -27,6 +27,8 @@
 #include <stdlib.h>
 #include <assert.h>
 
+#include <json-c/json.h>
+
 #include "treenode.h"
 
 #include "../json.h"
@@ -94,6 +96,19 @@ struct treenode *internal_get(struct treenode *internal, char *key) {
 	tmp = avl_get(internal->uval.children, &key);
 
 	return tmp != NULL ? &tmp->node : NULL;
+}
+
+void internal_add(struct treenode *internal, char *key, struct treenode *node) {
+	struct internal_node_element tmp;
+
+	assert(internal->type == TREENODE_TYPE_INTERNAL);
+
+	tmp.key = key;
+	tmp.node = *node;
+
+	avl_insert(internal->uval.children, &tmp);
+
+	treenode_destroy(node);
 }
 
 void internal_remove(struct treenode *internal, char *key) {
@@ -479,4 +494,65 @@ int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2) {
 	}
 
 	return memcmp(h1, h2, sizeof(*h1)) == 0;
+}
+
+void treenode_hash_copy(treenode_hash_t *from, treenode_hash_t *to) {
+	if (from == NULL) {
+		*to = (treenode_hash_t) {};
+	} else {
+		*to = *from;
+	}
+}
+
+struct treenode *treenode_from_json_r(json_object *j) {
+	struct treenode *ret = NULL;
+	int i;
+	char sidx[32];
+
+	sidx[31] = 0;
+
+	switch (json_object_get_type(j)) {
+	case json_type_array:
+		ret = treenode_new_internal();
+
+		for (i = 0 ; i < (int)json_object_array_length(j) ; i++) {
+			snprintf(sidx, sizeof(sidx) - 1, "%d", i);
+			internal_add(ret, sidx, treenode_from_json_r(json_object_array_get_idx(j, i)));
+		}
+		break;
+	case json_type_boolean:
+		ret = treenode_new_null();
+		break;
+	case json_type_double:
+		ret = treenode_new_number(json_object_get_double(j));
+		break;
+	case json_type_int:
+		ret = treenode_new_number((double)json_object_get_int(j));
+		break;
+	case json_type_null:
+		ret = treenode_new_null();
+		break;
+	case json_type_object:
+		ret = treenode_new_internal();
+		json_object_object_foreach(j, obj_key, obj_val) {
+			internal_add(ret, obj_key, treenode_from_json_r(obj_val));
+		}
+		break;
+	case json_type_string:
+		ret = treenode_new_string((char *)json_object_get_string(j));
+		break;
+	}
+
+	return ret;
+}
+
+struct treenode *treenode_from_json(char *json) {
+	struct treenode *ret;
+	json_object *j = json_tokener_parse(json);
+
+	ret = treenode_from_json_r(j);
+
+	json_object_put(j);
+
+	return ret;
 }

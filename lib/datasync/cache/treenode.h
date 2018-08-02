@@ -86,4 +86,7 @@ struct treenode *treenode_new_string(char *string);
 struct treenode *treenode_new_null();
 struct treenode *treenode_new_internal();
 
+struct treenode *treenode_from_json(char *json);
+void treenode_hash_copy(treenode_hash_t *from, treenode_hash_t *to);
+
 #endif /* SRC_TREENODE_H_ */
