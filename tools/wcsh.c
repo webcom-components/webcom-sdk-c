@@ -104,12 +104,13 @@ char *on_off_args[] = {"child_added", "child_changed", "child_removed","value", 
 char *info_args[] = {"listen", "on", NULL};
 char *help_args[] = {"", "cache", "cd", "connect", "disconnect", "exit", "help", "info", "ls", "merge", "off", "on", "push", "put", NULL};
 char *log_args[] = {"off", "on", "verbose", NULL};
-char *cache_args[] = {"dump", "load", "save", NULL};
+char *cache_args[] = {"print", "load", "save", NULL};
+char *wait_args[] = {"connected", "data", "disconnected", NULL};
 
 /* keep this array in alphabetical order since we use binary search on it */
 static struct command commands[] = {
-		{"cache",      "Displays internal informations about the \"on\"-subscriptions, listen status",
-		               "show {cache,on,listen}",
+		{"cache",      "Prints, loads from a file or stores in a file the contents of the cache",
+		               "cache {print,load,save}",
 		               1, 2, exec_cache, cache_args},
 		{"cd",         "Sets the current working path to \"/\", or to the specified path",
 		               "cd [PATH]",
@@ -141,7 +142,7 @@ static struct command commands[] = {
 		{"off",        "Unregisters from a given data event, or all data events on a given path",
 		               "off [{value,child_added,child_removed,child_changed}] PATH",
 		               1, 2, exec_off, on_off_args},
-		{"on",         "Registers to a given data event on a gven path",
+		{"on",         "Registers to a given data event on a given path",
 		               "on {value,child_added,child_removed,child_changed} PATH",
 		               2, 2, exec_on, on_off_args},
 		{"push",       "Sends a push request on a given path, with a given json document",

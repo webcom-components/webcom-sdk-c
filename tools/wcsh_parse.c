@@ -149,7 +149,6 @@ void wcsh_cmdline_eval(char *buf) {
 	struct wcsh_cmd_parse user = {};
 	size_t len = strlen(buf);
 	struct fsm *fsm = fsm_new(wcsh_parse_script, STATE_BLANK, &user);
-	enum parse_result res;
 
 	buf[len] = '\n';
 
@@ -165,7 +164,6 @@ void wcsh_cmdline_eval(char *buf) {
 void wcsh_chunk_eval(char *buf, size_t len) {
 	static struct wcsh_cmd_parse user = {};
 	static struct fsm *fsm = NULL;
-	enum parse_result res;
 
 	if (fsm == NULL) {
 		fsm = fsm_new(wcsh_parse_script, STATE_BLANK, &user);
