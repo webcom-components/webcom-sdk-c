@@ -100,20 +100,19 @@ enum parse_result fsm_feed(struct fsm *fsm, char *buf, size_t len) {
 		found = 0;
 
 		for (tr = (fsm->fsm[fsm->state].transitions) ; tr->valid ; tr++) {
-			if (tr->match == NULL) {
+			if (tr->match == NULL
+			    || binsearch(buf[pos], tr->match, tr->match_len)
+			   ) {
 				found = 1;
-				fsm->state = tr->next;
-				break;
-			} else if (binsearch(buf[pos], tr->match, tr->match_len)) {
-				found = 1;
-				if (tr->exec) {
-					tr->exec(buf[pos], fsm->user);
-				}
-				fsm->state = tr->next;
 				break;
 			}
 		}
-		if (!found) {
+		if (found) {
+			if (tr->exec) {
+				tr->exec(buf[pos], fsm->user);
+			}
+			fsm->state = tr->next;
+		} else {
 			fsm->ps = PARSE_UNEXPECTED_INPUT;
 			break;
 		}
