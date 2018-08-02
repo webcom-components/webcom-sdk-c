@@ -26,6 +26,7 @@
 #include <ev.h>
 
 
+extern int is_interactive;
 extern struct ev_loop *loop;
 void wcsh_exec(int argc, char **argv);
 

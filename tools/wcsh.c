@@ -76,6 +76,7 @@ static void exec_push(int, char **);
 static void exec_put(int, char **);
 static void exec_info(int, char **);
 static void exec_sleep(int, char **);
+static void exec_wait(int, char **);
 static void wcsh_log(const char *f, const char *l, const char *file, const char *func, int line, const char *message);
 
 static wc_context_t *ctx;
@@ -83,7 +84,7 @@ struct ev_loop *loop;
 static int done = 0;
 static int disconnect = 0;
 static int connected = 0;
-static int script = 0;
+int is_interactive = 1;
 
 FILE *out;
 char prompt[65];
@@ -152,6 +153,9 @@ static struct command commands[] = {
 		{"sleep",      "Suspends the interpreter for a given number of seconds",
 		               "sleep SECONDS",
 		               1, 1, exec_sleep},
+		{"wait",       "Waits for a particular event before executing the following statements",
+		               "wait {connected,disconnected} | wait data PATH JSON",
+		               1, 3, exec_wait},
 		{NULL}
 };
 
@@ -166,6 +170,16 @@ struct wc_context_options options = {
 		.port = 443,
 		.app_name = "playground"
 };
+
+static struct {
+	unsigned
+		connected:1,
+		disconnected:1,
+		data:1;
+
+	on_handle_t data_cb;
+	treenode_hash_t data_hash;
+} waiting = {};
 
 int main(int argc, char *argv[]) {
 	ev_io input_watcher;
@@ -215,7 +229,7 @@ int main(int argc, char *argv[]) {
 	}
 
 	if (optind < argc) {
-		script = 1;
+		is_interactive = 0;
 		script_fd = open(argv[optind], O_RDONLY);
 		if (script_fd == -1) {
 			perror(argv[optind]);
@@ -235,24 +249,25 @@ int main(int argc, char *argv[]) {
 	wc_datasync_init(ctx);
 
 
-	if (script) {
-		ev_io_init(&input_watcher, script_data_event, script_fd, EV_READ);
-		input_watcher.data = ctx;
-		ev_io_start (loop, &input_watcher);
-	} else {
+	if (is_interactive) {
 		rl_prep_terminal(0);
-		update_prompt();
+				update_prompt();
 		rl_callback_handler_install(prompt, rlhandler);
 		rl_attempted_completion_function = wcsh_completion;
 
 		ev_io_init(&input_watcher, stdin_cb, STDIN_FILENO, EV_READ);
+		input_watcher.data = ctx;
+		ev_io_start(loop, &input_watcher);
+
+	} else {
+		ev_io_init(&input_watcher, script_data_event, script_fd, EV_READ);
 		input_watcher.data = ctx;
 		ev_io_start (loop, &input_watcher);
 	}
 
 	ev_run(loop, 0);
 
-	if (!script) {
+	if (is_interactive) {
 		rl_callback_handler_remove();
 		rl_deprep_terminal();
 
@@ -267,7 +282,7 @@ static void printf_async(char *fmt, ...) {
     char *saved_line;
 	int saved_point;
 
-	if (!script) {
+	if (is_interactive) {
 		saved_point = rl_point;
 		saved_line = rl_copy_text(0, rl_end);
 		rl_save_prompt();
@@ -280,7 +295,7 @@ static void printf_async(char *fmt, ...) {
 	vprintf(fmt, args);
 	va_end(args);
 
-	if (!script) {
+	if (is_interactive) {
 		rl_restore_prompt();
 		rl_replace_line(saved_line, 0);
 		rl_point = saved_point;
@@ -297,12 +312,20 @@ static void on_connected(wc_context_t *ctx) {
 	connected = 1;
 	update_prompt();
 	printf_async("Connected.\n");
+	if (waiting.connected) {
+		waiting.connected = 0;
+		wcsh_program_resume();
+	}
 }
 
 static int on_disconnected(wc_context_t *ctx) {
 	connected = 0;
 	update_prompt();
 	printf_async("Disconnected.\n");
+	if (waiting.disconnected) {
+		waiting.disconnected = 0;
+		wcsh_program_resume();
+	}
 	return !done && !disconnect;
 }
 
@@ -498,6 +521,50 @@ static void exec_disconnect(int argc, char **argv) {
 
 static void exec_exit(int argc, char **argv) {
 	done = 1;
+}
+void data_wait_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+	treenode_hash_t *cached_hash;
+
+	if (handle == waiting.data_cb) {
+		cached_hash = treenode_hash_get(data_cache_get(ctx->datasync.cache, wc_datasync_on_handle_get_path(handle)));
+
+		if (treenode_hash_eq(&waiting.data_hash, cached_hash)) {
+			waiting.data = 0;
+			wcsh_program_resume();
+		}
+	}
+}
+
+static void exec_wait(int argc, char **argv) {
+	struct treenode *n;
+	treenode_hash_t *cached_hash;
+	treenode_hash_t *wanted_hash;
+
+	if (strcmp(argv[0], "connected") == 0) {
+		if (!connected) {
+			waiting.connected = 1;
+			wcsh_program_pause();
+		}
+	} else if (strcmp(argv[0], "disconnected") == 0) {
+		if (connected) {
+			waiting.disconnected = 1;
+			wcsh_program_pause();
+		}
+	} else if (strcmp(argv[0], "data") == 0 && argc == 3) {
+		n = treenode_from_json(argv[2]);
+
+		cached_hash = treenode_hash_get(data_cache_get(ctx->datasync.cache, argv[1]));
+		wanted_hash = treenode_hash_get(n);
+
+		if (!treenode_hash_eq(wanted_hash, cached_hash)) {
+			treenode_hash_copy(wanted_hash, &waiting.data_hash);
+			waiting.data = 1;
+			waiting.data_cb = wc_datasync_on_value(ctx, argv[1], data_wait_cb);
+			wcsh_program_pause();
+		}
+
+		treenode_destroy(n);
+	}
 }
 
 struct command *find_command(char *name) {

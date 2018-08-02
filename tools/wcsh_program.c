@@ -82,7 +82,7 @@ static void remove_head() {
 
 		if (pending_commands == 0) {
 			program_tail = &program_head;
-			wcsh_program_pause();
+			program_state = PAUSED;
 		}
 	}
 }
