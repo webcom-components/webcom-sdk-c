@@ -97,6 +97,8 @@ enum parse_result fsm_feed(struct fsm *fsm, char *buf, size_t len) {
 		fsm->stream_index++;
 		fsm->col++;
 
+		found = 0;
+
 		for (tr = (fsm->fsm[fsm->state].transitions) ; tr->valid ; tr++) {
 			if (tr->match == NULL) {
 				found = 1;
