@@ -221,6 +221,18 @@ add_custom_target(
 		${webcom-sdk-c_SOURCE_DIR}
 )
 
+add_custom_target(
+	cppcheck-tools
+	COMMAND
+		cppcheck --enable=warning,performance,portability,style
+		--std=posix --verbose --quiet --template=gcc
+		"-I${JSONC_INCLUDE_DIRS}" "-I${webcom-sdk-c_SOURCE_DIR}/include"
+		tools/
+	WORKING_DIRECTORY
+		${webcom-sdk-c_SOURCE_DIR}
+
+)
+
 #### sub-projects
 add_subdirectory(examples)
 add_subdirectory(doc)
