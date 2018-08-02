@@ -34,6 +34,7 @@
 struct on_cb_list {
 	on_callback_f cb;
 	struct on_cb_list *next;
+	struct on_sub *sub;
 };
 
 struct on_sub {

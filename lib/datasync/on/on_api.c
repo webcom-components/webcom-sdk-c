@@ -30,25 +30,34 @@
 #include "on_registry.h"
 
 
-void wc_datasync_on_value(wc_context_t *ctx, char *path, on_callback_f callback) {
-	on_registry_add(ctx, ON_VALUE, path, callback);
+on_handle_t wc_datasync_on_value(wc_context_t *ctx, char *path, on_callback_f callback) {
+	on_handle_t ret = on_registry_add(ctx, ON_VALUE, path, callback);
 	wc_datasync_watch(ctx, path);
+	return ret;
+}
+
+char *wc_datasync_on_handle_get_path(on_handle_t h) {
+	struct on_cb_list *p_cb = h;
+	return wc_datasync_path_to_str(&p_cb->sub->path);
 }
 
 
-void wc_datasync_on_child_added(wc_context_t *ctx, char *path, on_callback_f callback) {
-	on_registry_add(ctx, ON_CHILD_ADDED, path, callback);
+on_handle_t wc_datasync_on_child_added(wc_context_t *ctx, char *path, on_callback_f callback) {
+	on_handle_t ret = on_registry_add(ctx, ON_CHILD_ADDED, path, callback);
 	wc_datasync_watch(ctx, path);
+	return ret;
 }
 
-void wc_datasync_on_child_changed(wc_context_t *ctx, char *path, on_callback_f callback) {
-	on_registry_add(ctx, ON_CHILD_CHANGED, path, callback);
+on_handle_t wc_datasync_on_child_changed(wc_context_t *ctx, char *path, on_callback_f callback) {
+	on_handle_t ret = on_registry_add(ctx, ON_CHILD_CHANGED, path, callback);
 	wc_datasync_watch(ctx, path);
+	return ret;
 }
 
-void wc_datasync_on_child_removed(wc_context_t *ctx, char *path, on_callback_f callback) {
-	on_registry_add(ctx, ON_CHILD_REMOVED, path, callback);
+on_handle_t wc_datasync_on_child_removed(wc_context_t *ctx, char *path, on_callback_f callback) {
+	on_handle_t ret = on_registry_add(ctx, ON_CHILD_REMOVED, path, callback);
 	wc_datasync_watch(ctx, path);
+	return ret;
 }
 
 static void wc_datasync_off_w(wc_context_t *ctx, char *path, int event_mask, on_callback_f cb) {

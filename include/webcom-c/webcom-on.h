@@ -25,7 +25,9 @@
 
 #include "webcom-base.h"
 
-typedef void (*on_callback_f)(wc_context_t *ctx, char * data, char *current_key, char *previous_key);
+typedef void *on_handle_t;
+
+typedef void (*on_callback_f)(wc_context_t *ctx, on_handle_t handle, char * data, char *current_key, char *previous_key);
 
 #define ON_EVENT_TYPE_COUNT (4)
 enum on_event_type {
@@ -35,10 +37,13 @@ enum on_event_type {
 	ON_VALUE,
 };
 
-void wc_datasync_on_value(wc_context_t *ctx, char *path, on_callback_f callback);
-void wc_datasync_on_child_added(wc_context_t *ctx, char *path, on_callback_f callback);
-void wc_datasync_on_child_changed(wc_context_t *ctx, char *path, on_callback_f callback);
-void wc_datasync_on_child_removed(wc_context_t *ctx, char *path, on_callback_f callback);
+
+on_handle_t wc_datasync_on_value(wc_context_t *ctx, char *path, on_callback_f callback);
+on_handle_t wc_datasync_on_child_added(wc_context_t *ctx, char *path, on_callback_f callback);
+on_handle_t wc_datasync_on_child_changed(wc_context_t *ctx, char *path, on_callback_f callback);
+on_handle_t wc_datasync_on_child_removed(wc_context_t *ctx, char *path, on_callback_f callback);
+
+char *wc_datasync_on_handle_get_path(on_handle_t h);
 
 void wc_datasync_off_path(wc_context_t *ctx, char *path);
 void wc_datasync_off_path_type(wc_context_t *ctx, char *path, enum on_event_type type);

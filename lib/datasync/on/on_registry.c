@@ -137,7 +137,7 @@ static void refresh_on_child_sub_hashes(struct on_sub *sub, struct treenode *cac
 	}
 }
 
-void on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_callback_f cb) {
+on_handle_t on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_callback_f cb) {
 	struct on_sub *sub, *tmp;
 	struct on_cb_list *p_cb;
 
@@ -147,12 +147,13 @@ void on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_
 
 	wc_datasync_path_parse(path, &sub->path);
 
+	p_cb = malloc(sizeof(struct on_cb_list));
+	p_cb->cb = cb;
+
 	tmp = avl_get(ctx->datasync.on_reg->sub_list, sub);
 
 	if (tmp == NULL) {
 		sub->ctx = ctx;
-		p_cb = malloc(sizeof(struct on_cb_list));
-		p_cb->cb = cb;
 		p_cb->next = NULL;
 
 		sub->cb_list[type] = p_cb;
@@ -167,15 +168,16 @@ void on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_
 			// TODO call the callback for the first time?
 		}
 
-		avl_insert(ctx->datasync.on_reg->sub_list, sub);
+		p_cb->sub = avl_insert(ctx->datasync.on_reg->sub_list, sub);
 	} else {
-		p_cb = malloc(sizeof(*p_cb));
-		p_cb->cb = cb;
+		p_cb->sub = tmp;
 		p_cb->next = tmp->cb_list[type];
 		tmp->cb_list[type] = p_cb;
 	}
 
 	wc_datasync_path_cleanup(&sub->path);
+
+	return p_cb;
 }
 
 #if 0
@@ -231,7 +233,7 @@ static void trigger_on_child_cb_list(wc_context_t *ctx, struct on_sub *sub, enum
 			data_snapshot = malloc(data_len + 1);
 			treenode_to_json(snapshot, data_snapshot);
 		}
-		p_cb->cb(ctx, snapshot == NULL ? "null" : data_snapshot, cur_key, prev_key);
+		p_cb->cb(ctx, p_cb, snapshot == NULL ? "null" : data_snapshot, cur_key, prev_key);
 	}
 
 	if (data_snapshot != NULL) free(data_snapshot);
@@ -353,7 +355,7 @@ static void on_val_trig(struct on_sub *sub, data_cache_t *cache) {
 			treenode_to_json(cached_data, data_snapshot);
 			p_cb = sub->cb_list[ON_VALUE];
 			do {
-				p_cb->cb(sub->ctx, data_snapshot, NULL, NULL);
+				p_cb->cb(sub->ctx, p_cb, data_snapshot, NULL, NULL);
 				p_cb = p_cb->next;
 			} while (p_cb != NULL);
 			if (cached_hash != NULL) {

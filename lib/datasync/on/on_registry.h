@@ -35,7 +35,7 @@
 struct on_registry;
 
 struct on_registry *on_registry_new();
-void on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_callback_f cb);
+on_handle_t on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_callback_f cb);
 int on_registry_remove(wc_context_t *ctx, wc_ds_path_t *path, int type_mask, on_callback_f cb);
 
 void on_registry_destroy(struct on_registry *);
