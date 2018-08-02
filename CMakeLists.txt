@@ -260,6 +260,7 @@ add_executable(
 	tools/wcsh.c
 	tools/wcsh_parse.c
 	tools/wcsh_program.c
+	tools/wcsh_vt100.c
 	tools/fsm.c
 )
 

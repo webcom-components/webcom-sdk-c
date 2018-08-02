@@ -72,7 +72,11 @@ void save_token(char c, struct wcsh_cmd_parse *user) {
 void on_command_end(char c, struct wcsh_cmd_parse *user) {
 	unsigned u;
 	if (user->token_list_len > 0) {
-		wcsh_program_append((int)user->token_list_len, user->token_list);
+		if (is_interactive) {
+			wcsh_exec((int)user->token_list_len, user->token_list);
+		} else {
+			wcsh_program_append((int)user->token_list_len, user->token_list);
+		}
 	}
 
 	for (u = 0 ; u < user->token_list_len ; u++)

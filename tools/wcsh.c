@@ -41,6 +41,7 @@
 #include "wcsh.h"
 #include "wcsh_parse.h"
 #include "wcsh_program.h"
+#include "wcsh_vt100.h"
 
 #include "../lib/webcom_base_priv.h"
 #include "../lib/datasync/cache/treenode_cache.h"
@@ -85,9 +86,10 @@ static int done = 0;
 static int disconnect = 0;
 static int connected = 0;
 int is_interactive = 1;
+int is_a_tty = 0;
 
 FILE *out;
-char prompt[65];
+char prompt[128];
 
 struct command {
 	char *name;
@@ -238,6 +240,10 @@ int main(int argc, char *argv[]) {
 		}
 	}
 
+	if (isatty(STDOUT_FILENO)) {
+		is_a_tty = 1;
+	}
+
 	loop = EV_DEFAULT;
 
 	ctx = wc_context_create_with_libev(
@@ -312,7 +318,7 @@ static void wcsh_log(const char *f, const char *l, const char *file, const char 
 static void on_connected(wc_context_t *ctx) {
 	connected = 1;
 	update_prompt();
-	printf_async("Connected.\n");
+	printf_async("%sConnected.%s\n", VT(fg_green), VT(reset));
 	if (waiting.connected) {
 		waiting.connected = 0;
 		wcsh_program_resume();
@@ -333,25 +339,29 @@ static int on_disconnected(wc_context_t *ctx) {
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len) {
 	connected = 0;
 	update_prompt();
-	printf_async("connection error in ctx %p, %.*s, next attempt in: %u seconds\n", ctx, error_len, error, next_try);
+	printf_async("%sconnection error in ctx %p, %.*s, next attempt in: %u seconds%s\n", VT(fg_red), ctx, error_len, error, next_try, VT(reset));
 	return 1;
 }
 
 
-void on_value_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	printf_async("Value changed: %s\n", data);
+void on_value_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+	char *path = wc_datasync_on_handle_get_path(handle);
+	printf_async("(%p) Value at %s%s%s: %s%s%s\n", handle, VT(fg_yellow), path, VT(reset), VT(fg_green), data, VT(reset));
 }
 
-void on_child_added_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	printf_async("Child added: [%s] %s\n", cur, data);
+void on_child_added_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+	char *path = wc_datasync_on_handle_get_path(handle);
+	printf_async("(%p) New child at %s%s/%s%s: %s%s%s\n", handle, VT(fg_yellow), path, cur, VT(reset), VT(fg_green), data, VT(reset));
 }
 
-void on_child_removed_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	printf_async("Child removed: [%s]\n", cur);
+void on_child_removed_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+	char *path = wc_datasync_on_handle_get_path(handle);
+	printf_async("(%p) Child removed at %s%s/%s%s\n", handle, VT(fg_yellow), path, cur, VT(reset));
 }
 
-void on_child_changed_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
-	printf_async("Child changed: [%s] %s\n", cur, data);
+void on_child_changed_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+	char *path = wc_datasync_on_handle_get_path(handle);
+	printf_async("(%p) Child changed at %s%s/%s%s: %s%s%s\n", handle, VT(fg_yellow), path, cur, VT(reset), VT(fg_green), data, VT(reset));
 }
 
 static void exec_on(int argc, char **argv) {
@@ -423,7 +433,7 @@ static void exec_cache_load(int argc, char **argv) {
 static void exec_cache(int argc, char **argv) {
 	if (argc == 0) {
 		printf("Usage:\n cache {dump,save,load}\n");
-	} else if (strcmp("dump", argv[0]) == 0) {
+	} else if (strcmp("print", argv[0]) == 0) {
 		ftreenode_to_json(ctx->datasync.cache->root, stdout);
 		puts("");
 	} else if (strcmp("load", argv[0]) == 0) {
@@ -610,7 +620,11 @@ static void exec_help(int argc, char **argv) {
 	if (argc == 0) {
 		printf("Available commands:\n");
 		for (i = 0 ; i < commands_len ; i++) {
-			printf("  - %s: %s\n", commands[i].name, commands[i].help);
+			printf("  - %s%s%s: %s\n",
+					VT(fg_yellow),
+					commands[i].name,
+					VT(reset),
+					commands[i].help);
 		}
 	} else {
 		cmd = find_command(argv[0]);
@@ -728,15 +742,23 @@ char **wcsh_completion(const char *text, int start, int end) {
 }
 
 static void update_prompt() {
-	snprintf(prompt, sizeof(prompt), "%s@%s:%"PRIu16"(%s) %s> ", options.app_name, options.host, options.port, connected ? "C":"D", wc_datasync_path_to_str(cwd));
+	snprintf(prompt,
+			 sizeof(prompt),
+			 "%s%s%s@%s%s%s %s>%s ",
+			 VT(bright),
+			 connected ? VT(fg_green) : VT(fg_white),
+			 options.app_name,
+			 options.host,
+			 VT(reset),
+			 VT(bright),
+			 wc_datasync_path_to_str(cwd),
+			 VT(reset));
 	prompt[sizeof(prompt) - 1] = 0;
 
 	rl_set_prompt(prompt);
 }
 
 static void rlhandler(char* line) {
-	int argc;
-	char **argv;
 	if(line == NULL) {
 		done = 1;
 	} else {
