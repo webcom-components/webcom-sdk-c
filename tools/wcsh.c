@@ -347,24 +347,28 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 }
 
 
-void on_value_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+int on_value_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	char *path = wc_datasync_on_handle_get_path(handle);
 	printf_async("(%p) Value at %s%s%s: %s%s%s\n", handle, VT(fg_yellow), path, VT(reset), VT(fg_green), data, VT(reset));
+	return 1;
 }
 
-void on_child_added_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+int on_child_added_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	char *path = wc_datasync_on_handle_get_path(handle);
 	printf_async("(%p) New child at %s%s/%s%s: %s%s%s\n", handle, VT(fg_yellow), path, cur, VT(reset), VT(fg_green), data, VT(reset));
+	return 1;
 }
 
-void on_child_removed_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+int on_child_removed_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	char *path = wc_datasync_on_handle_get_path(handle);
 	printf_async("(%p) Child removed at %s%s/%s%s\n", handle, VT(fg_yellow), path, cur, VT(reset));
+	return 1;
 }
 
-void on_child_changed_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+int on_child_changed_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	char *path = wc_datasync_on_handle_get_path(handle);
 	printf_async("(%p) Child changed at %s%s/%s%s: %s%s%s\n", handle, VT(fg_yellow), path, cur, VT(reset), VT(fg_green), data, VT(reset));
+	return 1;
 }
 
 static void exec_on(int argc, char **argv) {
@@ -536,7 +540,7 @@ static void exec_disconnect(int argc, char **argv) {
 static void exec_exit(int argc, char **argv) {
 	done = 1;
 }
-void data_wait_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
+int data_wait_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	treenode_hash_t *cached_hash;
 
 	if (handle == waiting.data_cb) {
@@ -545,8 +549,10 @@ void data_wait_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, 
 		if (treenode_hash_eq(&waiting.data_hash, cached_hash)) {
 			waiting.data = 0;
 			wcsh_program_resume();
+			return 0;
 		}
 	}
+	return 1;
 }
 
 static void exec_wait(int argc, char **argv) {
