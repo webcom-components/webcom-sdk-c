@@ -29,6 +29,7 @@
 #include "../path.h"
 #include "../json.h"
 #include "../../collection/avl.h"
+#include "../listen/listen_registry.h"
 
 struct on_registry {
 	avl_t *sub_list;
@@ -38,6 +39,13 @@ struct internal_hash {
 	char *key;
 	treenode_hash_t hash;
 };
+
+
+struct deleted_cb {
+	on_handle_t cb;
+	struct deleted_cb *next;
+};
+static struct deleted_cb *deleted_cb_list = NULL;
 
 
 static int compare_internal_hash_data(void *a, void *b) {
@@ -222,6 +230,31 @@ static int datasync_key_cmp_null(struct internal_node_element *a, struct interna
 	}
 }
 
+static void mark_cb_for_deletion(on_handle_t p_cb) {
+	struct deleted_cb *tmp;
+	tmp = malloc(sizeof *tmp);
+	tmp->cb = p_cb;
+	tmp->next = deleted_cb_list;
+	deleted_cb_list = tmp;
+}
+
+static void deleted_cb_gc() {
+	struct deleted_cb *next;
+	struct on_cb_list *p_cb;
+	wc_context_t *ctx;
+	struct on_sub *sub;
+
+	while (deleted_cb_list) {
+		p_cb = deleted_cb_list->cb;
+		next = deleted_cb_list->next;
+		sub = p_cb->sub;
+		ctx = sub->ctx;
+		wc_datasync_unwatch_ex(ctx, &sub->path, 1);
+		on_registry_remove(ctx, &sub->path, -1, p_cb);
+		deleted_cb_list = next;
+	}
+}
+
 static void trigger_on_child_cb_list(wc_context_t *ctx, struct on_sub *sub, enum on_event_type type, struct treenode *snapshot, char *cur_key, char *prev_key) {
 	struct on_cb_list *p_cb;
 	char *data_snapshot = NULL;
@@ -233,7 +266,10 @@ static void trigger_on_child_cb_list(wc_context_t *ctx, struct on_sub *sub, enum
 			data_snapshot = malloc(data_len + 1);
 			treenode_to_json(snapshot, data_snapshot);
 		}
-		p_cb->cb(ctx, p_cb, snapshot == NULL ? "null" : data_snapshot, cur_key, prev_key);
+
+		if(!p_cb->cb(ctx, p_cb, snapshot == NULL ? "null" : data_snapshot, cur_key, prev_key)) {
+			mark_cb_for_deletion(p_cb);
+		}
 	}
 
 	if (data_snapshot != NULL) free(data_snapshot);
@@ -295,9 +331,10 @@ static void on_child_trig(struct on_sub *sub, data_cache_t *cache) {
 			refresh_on_child_sub_hashes(sub, cached_value);
 		}
 	}
+
 }
 
-int on_registry_remove(wc_context_t *ctx, wc_ds_path_t *path, int type_mask, on_callback_f cb) {
+int on_registry_remove(wc_context_t *ctx, wc_ds_path_t *path, int type_mask, on_handle_t h) {
 	struct on_sub *sub, *key = on_child_sub_from_path(path);
 	struct on_cb_list *p_cb, *tmp, **prev;
 	int removed = 0;
@@ -313,7 +350,7 @@ int on_registry_remove(wc_context_t *ctx, wc_ds_path_t *path, int type_mask, on_
 			prev = &sub->cb_list[i];
 			p_cb = *prev;
 			while (p_cb) {
-				if (cb == NULL || p_cb->cb == cb) {
+				if (h == NULL || p_cb == h) {
 					(*prev) = p_cb->next;
 					tmp = p_cb;
 					p_cb = p_cb->next;
@@ -355,7 +392,9 @@ static void on_val_trig(struct on_sub *sub, data_cache_t *cache) {
 			treenode_to_json(cached_data, data_snapshot);
 			p_cb = sub->cb_list[ON_VALUE];
 			do {
-				p_cb->cb(sub->ctx, p_cb, data_snapshot, NULL, NULL);
+				if (!p_cb->cb(sub->ctx, p_cb, data_snapshot, NULL, NULL)) {
+					mark_cb_for_deletion(p_cb);
+				}
 				p_cb = p_cb->next;
 			} while (p_cb != NULL);
 			if (cached_hash != NULL) {
@@ -392,7 +431,7 @@ void on_registry_dispatch_on_event_ex(struct on_registry* reg, data_cache_t *cac
 
 	/* try to trigger the subscriptions starting from the cache root
 	 * e.g.:
-	 *     on_registry_dispatch_on_value("/foo/bar/baz");
+	 *     on_registry_dispatch_on_event_ex("/foo/bar/baz");
 	 *   will look for subscriptions for the following paths:
 	 *     /
 	 *     /foo/
@@ -410,7 +449,7 @@ void on_registry_dispatch_on_event_ex(struct on_registry* reg, data_cache_t *cac
 
 	/* then try to trigger any subscription "higher or equal" to the current path:
 	 * e.g.:
-	 *     on_registry_dispatch_on_value("/foo/bar/baz");
+	 *     on_registry_dispatch_on_event_ex("/foo/bar/baz");
 	 *   will look for subscriptions for the following paths:
 	 *     /foo/bar/baz/
 	 *     /foo/bar/baz/buzz/
@@ -428,6 +467,8 @@ void on_registry_dispatch_on_event_ex(struct on_registry* reg, data_cache_t *cac
 	while ((sub = avl_it_next(&it)) != NULL && wc_datasync_path_starts_with(&sub->path, &key->path)) {
 		trig(sub, cache);
 	}
+
+	deleted_cb_gc();
 }
 
 void on_registry_dispatch_on_event(struct on_registry* reg, data_cache_t *cache, char *path) {

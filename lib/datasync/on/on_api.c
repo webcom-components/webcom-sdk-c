@@ -41,6 +41,11 @@ char *wc_datasync_on_handle_get_path(on_handle_t h) {
 	return wc_datasync_path_to_str(&p_cb->sub->path);
 }
 
+wc_context_t *wc_datasync_on_handle_get_ctx(on_handle_t h) {
+	struct on_cb_list *p_cb = h;
+	return p_cb->sub->ctx;
+}
+
 
 on_handle_t wc_datasync_on_child_added(wc_context_t *ctx, char *path, on_callback_f callback) {
 	on_handle_t ret = on_registry_add(ctx, ON_CHILD_ADDED, path, callback);
@@ -60,7 +65,7 @@ on_handle_t wc_datasync_on_child_removed(wc_context_t *ctx, char *path, on_callb
 	return ret;
 }
 
-static void wc_datasync_off_w(wc_context_t *ctx, char *path, int event_mask, on_callback_f cb) {
+static void wc_datasync_off_w(wc_context_t *ctx, char *path, int event_mask, struct on_cb_list *cb) {
 	int removed;
 	wc_ds_path_t *parsed_path = wc_datasync_path_new(path);
 	removed = on_registry_remove(ctx, parsed_path, event_mask, cb);
@@ -69,14 +74,16 @@ static void wc_datasync_off_w(wc_context_t *ctx, char *path, int event_mask, on_
 	(void)removed;
 }
 
+void wc_datasync_off(on_handle_t h) {
+	char *path = wc_datasync_on_handle_get_path(h);
+	wc_context_t *ctx = wc_datasync_on_handle_get_ctx(h);
+	wc_datasync_off_w(ctx, path, -1, (struct on_cb_list *)h);
+}
+
 void wc_datasync_off_path(wc_context_t *ctx, char *path) {
 	wc_datasync_off_w(ctx, path, -1, NULL);
 }
 
 void wc_datasync_off_path_type(wc_context_t *ctx, char *path, enum on_event_type type) {
 	wc_datasync_off_w(ctx, path, 1 << type, NULL);
-}
-
-void wc_datasync_off_path_type_cb(wc_context_t *ctx, char *path, enum on_event_type type, on_callback_f cb) {
-	wc_datasync_off_w(ctx, path, 1 << type, cb);
 }
