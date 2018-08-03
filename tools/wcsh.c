@@ -653,14 +653,23 @@ void wcsh_exec(int argc, char **argv) {
 	if (cmd == NULL) {
 		printf("Unknown command \"%s\", see \"help\"\n", argv[0]);
 	} else {
-		if (argc -1 > cmd->max_args) {
+		if (argc -1 > cmd->max_args || argc - 1 < cmd->min_args) {
 			fprintf(stderr,
-					"%s: too many arguments\nusage: %s\n",
-					cmd->name, cmd->usage);
-		} else if (argc - 1 < cmd->min_args) {
-			fprintf(stderr,
-					"%s: not enough arguments\nusage: %s\n",
-					cmd->name, cmd->usage);
+					"%s   __\n"\
+					"  /  \\        _______________________\n"\
+					 "  |  |       /                       \\\n"\
+					 "  @  @       |   It looks like you   |\n"\
+					 "  || ||      | are trying to use the |\n"\
+					 "  || ||   <--|  %s%-11s%s command  |\n"\
+					"  |\\_/|      |    >[yes]    [no]     |\n"\
+					"  \\___/      \\_______________________/%s\n\n"\
+					"  Usage: %s\n\n",
+					VT(fg_cyan),
+					VT(fg_yellow),
+					cmd->name,
+					VT(fg_cyan),
+					VT(reset),
+					cmd->usage);
 		} else {
 			cmd->execute(--argc, ++argv);
 		}
