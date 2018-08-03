@@ -29,12 +29,14 @@
 
 #include "stfu.h"
 
-void callback1(wc_context_t *ctx, char *data, char *_, char *__) {
+int callback1(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	STFU_INFO("callback1: %s", data);
+	return 1;
 }
 
-void callback2(wc_context_t *ctx, char *data, char *_, char *__) {
+int callback2(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	STFU_INFO("callback2: %s", data);
+	return 1;
 }
 
 static void on_connected(wc_context_t *ctx) {

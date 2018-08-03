@@ -43,10 +43,11 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 	return 0;
 }
 
-void on_data(wc_context_t *ctx, char * data, char *current_key, char *previous_key) {
+int on_data(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	STFU_TRUE("Successfully received the test data", 1);
 	printf("\t%s\n", data);
 	ev_break(EV_DEFAULT, EVBREAK_ALL);
+	return 0;
 }
 
 void wc_on_ws_auth_response(wc_context_t *ctx, int64_t id, wc_action_type_t type, wc_req_pending_result_t status, char *reason, char *data, void *_) {

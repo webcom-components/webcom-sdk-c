@@ -29,16 +29,19 @@
 
 #include "stfu.h"
 
-void on_child_added(wc_context_t *ctx, char *data, char *cur, char *prev) {
+int on_child_added(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	STFU_INFO("added [cur:%s prev:%s]: %s", cur, prev, data);
+	return 1;
 }
 
-void on_child_removed(wc_context_t *ctx, char *data, char *cur, char *prev) {
+int on_child_removed(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	STFU_INFO("removed [cur:%s prev:%s]: %s", cur, prev, data);
+	return 1;
 }
 
-void on_child_changed(wc_context_t *ctx, char *data, char *cur, char *prev) {
+int on_child_changed(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	STFU_INFO("changed [cur:%s prev:%s]: %s", cur, prev, data);
+	return 1;
 }
 
 static void on_connected(wc_context_t *ctx) {
