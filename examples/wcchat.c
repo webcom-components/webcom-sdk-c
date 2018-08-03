@@ -37,7 +37,7 @@ static void on_connected(wc_context_t *ctx);
 static int on_disconnected(wc_context_t *ctx);
 static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int error_len);
 void stdin_cb (EV_P_ ev_io *w, int revents);
-void on_child_added_cb(wc_context_t *ctx, char *data, char *cur, char *prev);
+int on_child_added_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev);
 void print_new_message(json_object *message);
 static void printf_async(char *fmt, ...);
 static void rlhandler(char* line);
@@ -136,10 +136,11 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 	return 1;
 }
 
-void on_child_added_cb(wc_context_t *ctx, char *data, char *cur, char *prev) {
+int on_child_added_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	json_object *json = json_tokener_parse(data);
 	print_new_message(json);
 	json_object_put(json);
+	return 1;
 }
 
 void print_new_message(json_object *message) {

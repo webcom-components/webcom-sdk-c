@@ -48,7 +48,7 @@ static void draw_rgb_brick(int x, int y, int r, int g, int b);
 static void move_to(int x, int y);
 static void clear_screen();
 void stdin_cb (EV_P_ ev_io *w, int revents);
-void on_child_event(wc_context_t *ctx, char *data, char *cur, char *prev);
+int on_child_event(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev);
 static void on_brick_update(char *key, json_object *data);
 /*
  * end of boredom
@@ -170,11 +170,12 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 	return 1;
 }
 
-void on_child_event(wc_context_t *ctx, char *data, char *cur, char *prev) {
+int on_child_event(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	json_object *json_data;
 	json_data = json_tokener_parse(data);
 	on_brick_update(cur, json_data);
 	json_object_put(json_data);
+	return 1;
 }
 
 /*
