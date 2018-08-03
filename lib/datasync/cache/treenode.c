@@ -498,7 +498,7 @@ int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2) {
 
 void treenode_hash_copy(treenode_hash_t *from, treenode_hash_t *to) {
 	if (from == NULL) {
-		*to = (treenode_hash_t) {};
+		*to = (treenode_hash_t) {.bytes = {0}};
 	} else {
 		*to = *from;
 	}
