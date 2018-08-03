@@ -251,6 +251,7 @@ static void deleted_cb_gc() {
 		ctx = sub->ctx;
 		wc_datasync_unwatch_ex(ctx, &sub->path, 1);
 		on_registry_remove(ctx, &sub->path, -1, p_cb);
+		free(deleted_cb_list);
 		deleted_cb_list = next;
 	}
 }
