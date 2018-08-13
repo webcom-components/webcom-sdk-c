@@ -119,14 +119,14 @@ int main(void) {
 	printf("\t%s\n", wc_datasync_parser_get_error(parser));
 	wc_datasync_parser_free(parser);
 
-	wc_datasync_free(&msg1);
-	wc_datasync_free(&msg2);
-	wc_datasync_free(&msg3);
-	wc_datasync_free(&msg4);
-	wc_datasync_free(&msg5);
-	wc_datasync_free(&msg6);
-	wc_datasync_free(&msg7);
-	wc_datasync_free(&msg8);
+	wc_datasync_msg_free(&msg1);
+	wc_datasync_msg_free(&msg2);
+	wc_datasync_msg_free(&msg3);
+	wc_datasync_msg_free(&msg4);
+	wc_datasync_msg_free(&msg5);
+	wc_datasync_msg_free(&msg6);
+	wc_datasync_msg_free(&msg7);
+	wc_datasync_msg_free(&msg8);
 
 	STFU_SUMMARY();
 

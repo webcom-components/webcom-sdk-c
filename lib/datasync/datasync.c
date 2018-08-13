@@ -92,7 +92,7 @@ void _wc_datasync_process_data(wc_context_t *ctx, char *buf, size_t len) {
 		_wc_datasync_process_message(ctx, &msg);
 		wc_datasync_parser_free(ctx->datasync.parser);
 		ctx->datasync.parser = NULL;
-		wc_datasync_free(&msg);
+		wc_datasync_msg_free(&msg);
 		break;
 	case WC_PARSER_CONTINUE:
 		break;

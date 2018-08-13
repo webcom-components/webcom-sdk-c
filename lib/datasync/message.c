@@ -115,7 +115,7 @@ static inline void _wc_free_ctrl_msg(wc_ctrl_msg_t *msg) {
 	}
 }
 
-void wc_datasync_free(wc_msg_t *msg) {
+void wc_datasync_msg_free(wc_msg_t *msg) {
 	switch (msg->type) {
 	case WC_MSG_DATA:
 		_wc_free_data_msg(&msg->u.data);

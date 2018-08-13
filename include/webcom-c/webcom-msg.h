@@ -209,7 +209,7 @@ void wc_datasync_msg_init(wc_msg_t *msg);
  *
  * @param msg the message structure to be freed
  */
-void wc_datasync_free(wc_msg_t *msg);
+void wc_datasync_msg_free(wc_msg_t *msg);
 
 
 /**

@@ -48,7 +48,7 @@ int main(void) {
 	STFU_STR_EQ	("JSON document conforms to reference", str1, res);
 	printf("\tgot: %s\n\tref: %s", res, str1);
 
-	wc_datasync_free(&msg1);
+	wc_datasync_msg_free(&msg1);
 	free(res);
 
 	STFU_SUMMARY();
