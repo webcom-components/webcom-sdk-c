@@ -34,6 +34,22 @@
 /**
  * @ingroup webcom-libev
  * @{
+ * This SDK is designed using an asynchronous, event-based approach, and is
+ * perfectly suited to be used in a mono-threaded application.
+ *
+ * To greatly relieve the burden of registering to, and handling all the I/O and
+ * timer events the SDK must be aware of, and if you don't mind making your
+ * application rely on **libev**, we've already taken care of everything.
+ *
+ * The key idea is to call the corresponding `wc_context_new_with_libev()`
+ * function, and pass :
+ *
+ * - the reference to your event loop
+ * - a couple of callbacks to be notified when the connection is
+ * established/closed
+ */
+
+/**
  * Create a webcom context using libev.
  *
  * This function creates a new Webcom context, an initiates the connection

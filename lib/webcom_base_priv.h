@@ -32,6 +32,10 @@
 #include "auth/auth_priv.h"
 #include "datasync/datasync_priv.h"
 
+
+wc_datasync_context_t *wc_get_datasync(wc_context_t *);
+wc_auth_context_t *wc_get_auth(wc_context_t *);
+
 struct wc_context {
 	wc_on_event_cb_t callback;
 	void *user;

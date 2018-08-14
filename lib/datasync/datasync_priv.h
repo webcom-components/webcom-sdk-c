@@ -100,5 +100,23 @@ void wc_datasync_dispatch_data(wc_context_t *dsctx, wc_push_t *push);
 void wc_datasync_cleanup_data_routes(wc_datasync_data_route_t **table);
 void wc_auth_service(wc_context_t *ctx, int fd);
 void _wc_datasync_connect(wc_context_t *ctx);
+void wc_datasync_service_socket(wc_context_t *ctx, struct wc_pollargs *pa);
+
+/**
+ * de-initializes the datasync service for a Webcom context
+ *
+ * @param ctx the Webcom context
+ */
+void wc_datasync_context_cleanup(struct wc_datasync_context *ds_ctx);
+
+/**
+ * Sends a datasync message to the webcom server.
+ *
+ * @param ctx the context
+ * @param msg the webcom message to send
+ * @return the number of bytes written, otherwise < 0 is returned in case of
+ * failure.
+ */
+int wc_datasync_send_msg(wc_context_t *ctx, wc_msg_t *msg);
 
 #endif /* SRC_WEBCOM_PRIV_H_ */

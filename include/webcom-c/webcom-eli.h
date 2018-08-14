@@ -27,6 +27,11 @@
 #include "webcom-datasync.h"
 
 /**
+ * @ingroup webcom-libev
+ * @{
+ */
+
+/**
  * Callbacks to pass to the event loop integration. You can set one callback to
  * NULL if you are not interested in the event.
  */
@@ -67,5 +72,9 @@ struct wc_eli_callbacks {
 	 */
 	void (*on_auth_error)(wc_context_t *ctx, char* error);
 };
+
+/**
+ * @}
+ */
 
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_ELI_H_ */

@@ -25,6 +25,11 @@
 
 #include "webcom-base.h"
 
+/**
+ * @ingroup webcom-on
+ * @{
+ */
+
 typedef void *on_handle_t;
 
 typedef int (*on_callback_f)(wc_context_t *ctx, on_handle_t handle, char * data, char *current_key, char *previous_key);
@@ -35,6 +40,7 @@ enum on_event_type {
 	ON_CHILD_REMOVED,
 	ON_CHILD_CHANGED,
 	ON_VALUE,
+	/* update the ON_EVENT_TYPE_COUNT macro if you add new events */
 };
 
 
@@ -49,5 +55,9 @@ wc_context_t *wc_datasync_on_handle_get_ctx(on_handle_t h);
 void wc_datasync_off(on_handle_t h);
 void wc_datasync_off_path(wc_context_t *ctx, char *path);
 void wc_datasync_off_path_type(wc_context_t *ctx, char *path, enum on_event_type type);
+
+/**
+ * @}
+ */
 
 #endif /* INCLUDE_WEBCOM_C_WEBCOM_ON_H_ */
