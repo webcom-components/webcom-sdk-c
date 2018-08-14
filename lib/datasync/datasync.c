@@ -320,6 +320,9 @@ void _wc_datasync_connect(wc_context_t *ctx) {
 }
 
 void wc_datasync_connect(wc_context_t *ctx) {
+	if (ctx->datasync_init == 0) {
+		wc_datasync_init(ctx);
+	}
 	_wc_datasync_schedule_reconnect(ctx);
 }
 
