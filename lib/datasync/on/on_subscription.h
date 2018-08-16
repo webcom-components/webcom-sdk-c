@@ -30,6 +30,7 @@
 #include "../cache/treenode.h"
 #include "../../collection/avl.h"
 
+#define ON_EVENT_TYPE_COUNT (4)
 
 struct on_cb_list {
 	on_callback_f cb;

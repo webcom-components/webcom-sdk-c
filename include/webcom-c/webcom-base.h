@@ -32,8 +32,6 @@ typedef struct wc_auth_context wc_auth_context_t;
 #include <stddef.h>
 #include <stdint.h>
 
-//#include "webcom-auth.h"
-
 /**
  * @addtogroup webcom-base
  * @{

@@ -62,10 +62,7 @@
  * @note this function is partly synchronous and returns once the DNS lookup
  * and TCP handshake have succeeded or failed.
  *
- * @param host the webcom server host name
- * @param port the webcom server port
- * @param application the name of the webcom application to tie to (e.g.
- * "legorange", "chat", ...)
+ * @param options a pointer to a structure bearing the connection informations
  * @param loop a pointer to a libev loop object
  * @param callbacks a structure containing the callbacks to trigger for various
  * events

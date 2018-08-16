@@ -57,6 +57,7 @@ typedef void (*wc_on_req_result_t) (wc_context_t *cnx, int64_t id, wc_action_typ
  * @param path a string representing the path of the data
  * @param json a string containing the JSON-encoded data to store on the server
  * 	             at the given path
+ * @param user a custom pointer that will be passed to the callback
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
 int64_t wc_datasync_put(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback, void *user);
@@ -73,6 +74,7 @@ int64_t wc_datasync_put(wc_context_t *cnx, char *path, char *json, wc_on_req_res
  * @param path a string representing the path of the data
  * @param json a string containing the JSON-encoded data to merge on the server
  * 	             at the given path
+ * @param user a custom pointer that will be passed to the callback
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
 int64_t wc_datasync_merge(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback, void *user);
@@ -90,6 +92,7 @@ int64_t wc_datasync_merge(wc_context_t *cnx, char *path, char *json, wc_on_req_r
  * is sent back from the server
  * @param path a string representing the path of the data
  * @param json a string containing the JSON-encoded data to push
+ * @param user a custom pointer that will be passed to the callback
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
@@ -104,6 +107,7 @@ int64_t wc_datasync_push(wc_context_t *cnx, char *path, char *json, wc_on_req_re
  * @param callback callback that will be called when the status of the request
  * is sent back from the server
  * @param path a string representing the path to listen to
+ * @param user a custom pointer that will be passed to the callback
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
@@ -119,6 +123,7 @@ int64_t wc_datasync_listen(wc_context_t *cnx, char *path, wc_on_req_result_t cal
  * @param callback callback that will be called when the status of the request
  * is sent back from the server
  * @param path a string representing the path
+ * @param user a custom pointer that will be passed to the callback
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
@@ -132,6 +137,7 @@ int64_t wc_datasync_unlisten(wc_context_t *cnx, char *path, wc_on_req_result_t c
  * @param callback callback that will be called when the status of the request
  * is sent back from the server
  * @param cred a string containing the secret token
+ * @param user a custom pointer that will be passed to the callback
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  *
@@ -146,6 +152,7 @@ int64_t wc_datasync_auth(wc_context_t *cnx, char *cred, wc_on_req_result_t callb
  * @param cnx the webcom connection
  * @param callback callback that will be called when the status of the request
  * is sent back from the server
+ * @param user a custom pointer that will be passed to the callback
  *
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
@@ -161,6 +168,7 @@ int64_t wc_datasync_unauth(wc_context_t *cnx, wc_on_req_result_t callback, void 
  * @param path a string representing the path of the data
  * @param json a string containing the JSON-encoded data to store on the server
  * 	             at the given path on disconnection
+ * @param user a custom pointer that will be passed to the callback
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
 int64_t wc_datasync_on_disc_put(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback, void *user);
@@ -175,6 +183,7 @@ int64_t wc_datasync_on_disc_put(wc_context_t *cnx, char *path, char *json, wc_on
  * @param path a string representing the path of the data
  * @param json a string containing the JSON-encoded data to merge on the server
  * 	             at the given path on disconnection
+ * @param user a custom pointer that will be passed to the callback
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
 int64_t wc_datasync_on_disc_merge(wc_context_t *cnx, char *path, char *json, wc_on_req_result_t callback, void *user);
@@ -187,6 +196,7 @@ int64_t wc_datasync_on_disc_merge(wc_context_t *cnx, char *path, char *json, wc_
  * @param callback callback that will be called when the status of the request
  * is sent back from the server
  * @param path a string representing the path of the data
+ * @param user a custom pointer that will be passed to the callback
  * @return the put request id (>0) if it was sent successfully, -1 otherwise
  */
 int64_t wc_datasync_on_disc_cancel(wc_context_t *cnx, char *path, wc_on_req_result_t callback, void *user);

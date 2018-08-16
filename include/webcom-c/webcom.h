@@ -126,6 +126,7 @@
  * 	@defgroup datasync				Interact with a Webcom datasync server
  * 	@{
  * 		@defgroup webcom-datasync-cnx	Control the websocket connection to the datasync server
+ * 		@defgroup webcom-on				Access to the Webcom database and be notified of data changes
  * 		@defgroup webcom-requests		Send requests: send data, subscribe to data change, ...
  * 	@}
  * 	@defgroup auth					Interact with a Webcom auth service
@@ -163,7 +164,6 @@
 #endif
 
 #include "webcom-base.h"
-//#include "webcom-callback.h"
 #include "webcom-log.h"
 #include "webcom-utils.h"
 

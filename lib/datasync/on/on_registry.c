@@ -31,6 +31,7 @@
 #include "../../collection/avl.h"
 #include "../listen/listen_registry.h"
 
+
 struct on_registry {
 	avl_t *sub_list;
 };

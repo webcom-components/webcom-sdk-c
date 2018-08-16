@@ -31,6 +31,7 @@ if(BUILD_HTML_DOCUMENTATION OR BUILD_MAN_PAGES)
 			doxygen.stamp
 		DEPENDS
 			"${CMAKE_CURRENT_BINARY_DIR}/doxygen.conf"
+			"${webcom-sdk-c-doc_SOURCE_DIR}/../include/webcom-c/webcom-libev.h"
 		IMPLICIT_DEPENDS C
 			"${webcom-sdk-c-doc_SOURCE_DIR}/../include/webcom-c/webcom.h"
 		COMMAND
