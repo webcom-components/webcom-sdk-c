@@ -52,11 +52,16 @@ if(BUILD_HTML_DOCUMENTATION OR BUILD_MAN_PAGES)
 	if(BUILD_MAN_PAGES)
 		install(
 			FILES
-				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-connection.3"
-				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-general.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-base.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-libev.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-log.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-datasync-cnx.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-on.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-requests.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-auth.3"
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-messages.3"
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-parser.3"
-				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-requests.3"
+				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-general.3"
 				"${CMAKE_CURRENT_BINARY_DIR}/man/man3/webcom-utils.3"
 			DESTINATION
 				man/man3
