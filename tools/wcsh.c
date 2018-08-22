@@ -431,6 +431,7 @@ static void exec_cache_load(int argc, char **argv) {
 	if (argc == 1) {
 		if ((json = json_object_from_file(*argv)) != NULL) {
 			data_cache_set_ex(ctx->datasync.cache, &root_path, json);
+			json_object_put(json);
 		} else {
 			fprintf(stderr, "error opening \"%s\"", *argv);
 		}
