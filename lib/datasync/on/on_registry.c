@@ -48,6 +48,10 @@ struct deleted_cb {
 };
 static struct deleted_cb *deleted_cb_list = NULL;
 
+static void on_val_trig(struct on_sub *sub, data_cache_t *cache);
+static void on_child_trig(struct on_sub *sub, data_cache_t *cache);
+
+
 
 static int compare_internal_hash_data(void *a, void *b) {
 	struct internal_hash *node_a = a, *node_b = b;
@@ -149,6 +153,10 @@ static void refresh_on_child_sub_hashes(struct on_sub *sub, struct treenode *cac
 on_handle_t on_registry_add(wc_context_t *ctx, enum on_event_type type, char *path, on_callback_f cb) {
 	struct on_sub *sub, *tmp;
 	struct on_cb_list *p_cb;
+	struct treenode *snapshot;
+	char *json_snapshot;
+	int json_len;
+	treenode_hash_t *hash;
 
 	sub = alloca(ON_SUB_STRUCT_MAX_SIZE);
 
@@ -172,16 +180,52 @@ on_handle_t on_registry_add(wc_context_t *ctx, enum on_event_type type, char *pa
 							(avl_data_copy_f) copy_internal_hash_data,
 							(avl_data_size_f) internal_hash_data_size,
 							(avl_data_cleanup_f) clean_internal_hash_data);
-
-		if (type == ON_VALUE || type == ON_CHILD_ADDED) {
-			// TODO call the callback for the first time?
-		}
-
 		p_cb->sub = avl_insert(ctx->datasync.on_reg->sub_list, sub);
 	} else {
 		p_cb->sub = tmp;
 		p_cb->next = tmp->cb_list[type];
 		tmp->cb_list[type] = p_cb;
+	}
+
+	/* test whether the callbacks should be initially called */
+	if ((snapshot = data_cache_get_parsed(ctx->datasync.cache, &p_cb->sub->path)) != NULL
+			|| wc_is_listening(ctx, &p_cb->sub->path)
+			|| ctx->datasync.state == WC_CNX_STATE_DISCONNECTED)
+	{
+		if (type == ON_VALUE) {
+			json_len = treenode_to_json_len(snapshot);
+			json_snapshot = malloc(json_len + 1);
+			treenode_to_json(snapshot, json_snapshot);
+			cb(ctx, p_cb, json_snapshot, NULL, NULL);
+
+			free(json_snapshot);
+
+			hash = treenode_hash_get(snapshot);
+			if (hash != NULL) {
+				p_cb->sub->hash = *hash;
+			} else {
+				p_cb->sub->hash = (treenode_hash_t ) { .bytes = { 0 } };
+			}
+		} else if (type == ON_CHILD_ADDED) {
+			struct avl_it it;
+			struct internal_node_element *cur;
+			char *prev = NULL;
+
+			if (snapshot != NULL && snapshot->type == TREENODE_TYPE_INTERNAL) {
+				avl_it_start(&it, snapshot->uval.children);
+				while (avl_it_has_next(&it)) {
+					cur = avl_it_next(&it);
+					json_len = treenode_to_json_len(&cur->node);
+					json_snapshot = malloc(json_len + 1);
+					treenode_to_json(&cur->node, json_snapshot);
+					cb(ctx, p_cb, json_snapshot, cur->key, prev);
+					free(json_snapshot);
+					prev = cur->key;
+				}
+				refresh_on_child_sub_hashes(p_cb->sub, snapshot);
+			}
+
+		}
 	}
 
 	wc_datasync_path_cleanup(&sub->path);

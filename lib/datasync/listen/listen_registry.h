@@ -68,4 +68,6 @@ void wc_listen_suspend_all(wc_context_t *ctx);
 void wc_listen_resume_all(wc_context_t *ctx);
 void dump_listen_registry(struct listen_registry* lr, FILE *f) ;
 
+int wc_is_listening(wc_context_t *ctx, wc_ds_path_t *parsed_path);
+
 #endif /* LIB_DATASYNC_LISTEN_REGISTRY_H_ */

@@ -101,6 +101,10 @@ static int is_masked(struct listen_registry* lr, wc_ds_path_t *parsed_path) {
 	return ret;
 }
 
+int wc_is_listening(wc_context_t *ctx, wc_ds_path_t *parsed_path) {
+	return is_masked(ctx->datasync.listen_reg, parsed_path);
+}
+
 void wc_listen_suspend_all(wc_context_t *ctx) {
 	struct listen_item *li;
 	struct avl_it it;

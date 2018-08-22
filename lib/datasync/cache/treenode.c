@@ -267,6 +267,8 @@ static treenode_hash_t bool_hash[] = {
 		},
 };
 
+static treenode_hash_t null_hash = {.bytes = {0}};
+
 #define _U (const unsigned char *)
 
 void treenode_hash(struct treenode *n) {
@@ -484,8 +486,16 @@ void ftreenode_to_json(struct treenode *n, FILE *stream) {
 	}
 }
 
+int treenode_hash_is_null(treenode_hash_t *h) {
+	return h == NULL || memcmp(h, &null_hash, sizeof(*h)) == 0;
+}
+
 int treenode_hash_eq(treenode_hash_t *h1, treenode_hash_t *h2) {
 	if (h1 == h2) {
+		return 1;
+	}
+
+	if (treenode_hash_is_null(h1) && treenode_hash_is_null(h2)) {
 		return 1;
 	}
 
