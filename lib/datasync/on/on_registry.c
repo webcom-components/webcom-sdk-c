@@ -233,36 +233,6 @@ on_handle_t on_registry_add(wc_context_t *ctx, enum on_event_type type, char *pa
 	return p_cb;
 }
 
-#if 0
-static void on_value_trigger_maybe(struct on_sub *sub, data_cache_t *cache) {
-	struct treenode *cached_value;
-	treenode_hash_t *hash;
-	struct on_cb_list *p_cb;
-	char *data_snapshot;
-	int data_len;
-
-	if (sub == NULL) return;
-
-	cached_value = data_cache_get_parsed(cache, &sub->path);
-	hash = treenode_hash_get(cached_value);
-
-	if(!treenode_hash_eq(&sub->hash, hash)) {
-		data_len = treenode_to_json_len(cached_value);
-		data_snapshot = malloc(data_len + 1);
-		treenode_to_json(cached_value, data_snapshot);
-		for (p_cb = sub->cb_list ; p_cb != NULL ; p_cb = p_cb->next) {
-			p_cb->cb(sub->ctx, data_snapshot, NULL, NULL);
-		}
-		if (hash != NULL) {
-			sub->hash = *hash;
-		} else {
-			sub->hash = (treenode_hash_t){.bytes={0}};
-		}
-		free(data_snapshot);
-	}
-}
-#endif
-
 static int datasync_key_cmp_null(struct internal_node_element *a, struct internal_hash *b) {
 	if (a == NULL && b == NULL) {
 		return 0;
