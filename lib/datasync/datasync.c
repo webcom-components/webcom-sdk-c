@@ -58,7 +58,7 @@ static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 		ta.ms = 50000;
 		ta.repeat = 1;
 		ta.timer = WC_TIMER_DATASYNC_KEEPALIVE;
-		ctx->datasync.ws_next_reconnect_timer = 0;
+		ctx->datasync.ws_next_reconnect_timer = 1;
 		ctx->callback(WC_EVENT_SET_TIMER, ctx, &ta, 0);
 	} else if (msg->type == WC_MSG_DATA
 			&& msg->u.data.type == WC_DATA_MSG_PUSH)
@@ -87,6 +87,9 @@ void _wc_datasync_process_data(wc_context_t *ctx, char *buf, size_t len) {
 			return;
 		}
 	}
+
+	WL_DBG("%zu bytes received:\n<<<\t%.*s", len, (int)len, buf);
+
 	switch (wc_datasync_parse_msg_ex(ctx->datasync.parser, buf, (size_t)len, &msg)) {
 	case WC_PARSER_OK:
 		_wc_datasync_process_message(ctx, &msg);
@@ -223,7 +226,7 @@ int wc_datasync_send_msg(wc_context_t *ctx, wc_msg_t *msg) {
 	memcpy(buf + LWS_SEND_BUFFER_PRE_PADDING, jsonstr, len);
 
 	sent = lws_write(ctx->datasync.lws_conn, buf + LWS_SEND_BUFFER_PRE_PADDING, len, LWS_WRITE_TEXT);
-	WL_DBG("%d bytes sent:\n\t%s", sent, jsonstr);
+	WL_DBG("%d bytes sent:\n>>>\t%s", sent, jsonstr);
 	free(jsonstr);
 	free(buf);
 	return sent;
