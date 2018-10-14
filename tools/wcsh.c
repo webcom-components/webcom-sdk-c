@@ -349,9 +349,6 @@ static int on_error(wc_context_t *ctx, unsigned next_try, const char *error, int
 
 int on_value_cb(wc_context_t *ctx, on_handle_t handle, char *data, char *cur, char *prev) {
 	char *path = wc_datasync_on_handle_get_path(handle);
-	if (path[1] == 0) {
-		path++;
-	}
 	printf_async("(%p) Value at %s%s%s: %s%s%s\n", handle, VT(fg_yellow), path, VT(reset), VT(fg_green), data, VT(reset));
 	return 1;
 }
