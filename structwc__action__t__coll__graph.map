@@ -1,0 +1,10 @@
+<map id="wc_action_t" name="wc_action_t">
+<area shape="rect" id="node2" href="$structwc__action__on__disc__put__t.html" title="wc_action_on_disc_put_t" alt="" coords="15,5,185,32"/>
+<area shape="rect" id="node3" href="$structwc__action__listen__t.html" title="wc_action_listen_t" alt="" coords="35,56,165,83"/>
+<area shape="rect" id="node4" href="$structwc__action__put__t.html" title="wc_action_put_t" alt="" coords="41,107,159,133"/>
+<area shape="rect" id="node5" href="$structwc__action__on__disc__cancel__t.html" title="wc_action_on_disc_cancel_t" alt="" coords="5,157,195,184"/>
+<area shape="rect" id="node6" href="$structwc__action__on__disc__merge__t.html" title="wc_action_on_disc_merge_t" alt="" coords="7,208,193,235"/>
+<area shape="rect" id="node7" href="$structwc__action__unlisten__t.html" title="wc_action_unlisten_t" alt="" coords="28,259,172,285"/>
+<area shape="rect" id="node8" href="$structwc__action__auth__t.html" title="wc_action_auth_t" alt="" coords="38,309,162,336"/>
+<area shape="rect" id="node9" href="$structwc__action__merge__t.html" title="wc_action_merge_t" alt="" coords="33,360,167,387"/>
+</map>

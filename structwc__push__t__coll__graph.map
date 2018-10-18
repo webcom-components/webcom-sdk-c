@@ -1,0 +1,6 @@
+<map id="wc_push_t" name="wc_push_t">
+<area shape="rect" id="node2" href="$structwc__push__data__update__merge__t.html" title="wc_push_data_update\l_merge_t" alt="" coords="17,5,169,47"/>
+<area shape="rect" id="node3" href="$structwc__push__data__update__put__t.html" title="wc_push_data_update\l_put_t" alt="" coords="17,71,169,112"/>
+<area shape="rect" id="node4" href="$structwc__push__auth__revoked__t.html" title="wc_push_auth_revoked_t" alt="" coords="8,137,179,163"/>
+<area shape="rect" id="node5" href="$structwc__push__listen__revoked__t.html" title="wc_push_listen_revoked_t" alt="" coords="5,187,181,214"/>
+</map>
