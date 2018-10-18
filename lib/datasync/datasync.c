@@ -283,7 +283,7 @@ wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 	ctx->datasync.lws_cci.address = ctx->host;
 	ctx->datasync.lws_cci.host = ctx->host;
 	ctx->datasync.lws_cci.port = (int)ctx->port;
-	ctx->datasync.lws_cci.ssl_connection = 1;
+	ctx->datasync.lws_cci.ssl_connection = !ctx->no_tls;
 	ws_path_l = (
 			sizeof(WEBCOM_WS_PATH) - 1
 			+ 3
