@@ -198,7 +198,7 @@ int main(int argc, char *argv[]) {
 	out = stderr;
 
 
-	while ((opt = getopt(argc, argv, "s:p:n:o:h")) != -1) {
+	while ((opt = getopt(argc, argv, "s:p:n:o:hd")) != -1) {
 		switch((char)opt) {
 		case 's':
 			options.host = optarg;
@@ -223,11 +223,15 @@ int main(int argc, char *argv[]) {
 					"Options:\n"
 					"-s HOST      : Connect to the specified host (current \"%s\")\n"
 					"-p PORT      : Connect on the specified port (current %" PRIu16 ")\n"
+					"-d           : Disable TLS, connect using HTTP rather than HTTPS (current %s)\n"
 					"-n NAMESPACE : Connect to the specified namespace (current \"%s\")\n"
 					"-o FILE      : Print the notifications to the given file instead of stderr)\n"
 					"-h           : Displays help\n",
-					*argv, options.host, options.port, options.app_name);
+					*argv, options.host, options.port, options.no_tls ? "HTTP":"HTTPS", options.app_name);
 			exit(0);
+			break;
+		case 'd':
+			options.no_tls = 1;
 			break;
 		}
 	}
