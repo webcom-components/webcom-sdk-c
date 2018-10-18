@@ -1,7 +1,7 @@
 cmake_minimum_required(VERSION 3.0)
 project("webcom-sdk-c"
 	LANGUAGES C
-	VERSION 2.0.0
+	VERSION 2.0.1
 )
 
 # Extra version information appearing after "Major.minor.patch" in the library
