@@ -42,7 +42,7 @@
 #include "listen/listen_registry.h"
 
 #define WEBCOM_PROTOCOL_VERSION "5"
-#define WEBCOM_WS_PATH "/_wss/.ws"
+#define WEBCOM_WS_PATH "/datasync/v2"
 
 static int _wc_datasync_process_message(wc_context_t *ctx, wc_msg_t *msg) {
 	struct wc_timerargs ta;
@@ -286,16 +286,17 @@ wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 	ctx->datasync.lws_cci.ssl_connection = !ctx->no_tls;
 	ws_path_l = (
 			sizeof(WEBCOM_WS_PATH) - 1
-			+ 3
+			+ 1
+      + strlen(ctx->app_name)
+      + 6
 			+ sizeof(WEBCOM_PROTOCOL_VERSION) - 1
-			+ 4
-			+ strlen(ctx->app_name)
 			+ 1 );
 	ctx->datasync.lws_cci.path = malloc(ws_path_l);
 	if (ctx->datasync.lws_cci.path == NULL) {
 		return NULL;
 	}
-	snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, ctx->app_name);
+  snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s/%s/ws?v=%s", WEBCOM_WS_PATH, ctx->app_name, WEBCOM_PROTOCOL_VERSION);
+	//snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, ctx->app_name);
 	ctx->datasync.lws_cci.protocol = protocols[0].name;
 	ctx->datasync.lws_cci.ietf_version_or_minus_one = -1;
 	ctx->datasync.lws_cci.userdata = (void *)ctx;
