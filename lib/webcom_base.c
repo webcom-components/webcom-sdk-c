@@ -67,7 +67,9 @@ void wc_dispatch_fd_event(wc_context_t *ctx, struct wc_pollargs *pa) {
 	}
 }
 
-void wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer) {
+int wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer) {
+	int release_timer = 0;
+	
 	switch (timer) {
 	case WC_TIMER_DATASYNC_KEEPALIVE:
 		wc_datasync_keepalive(ctx);
@@ -76,11 +78,13 @@ void wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer) {
 		_wc_datasync_connect(ctx);
 		break;
 	case WC_TIMER_AUTH:
-		wc_auth_service(ctx, -1);
+		release_timer = wc_auth_service(ctx, CURL_SOCKET_TIMEOUT);
 		break;
 	default:
 		break;
 	}
+	
+	return release_timer;
 }
 
 

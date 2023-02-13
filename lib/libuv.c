@@ -156,6 +156,7 @@ wc_context_t *wc_context_new_with_libuv(char *host, uint16_t port, char *applica
 	integration_data->next_try = 0;
 
 	ret = wc_datasync_init(host, port, application, _wc_libuv_cb, integration_data);
+	ret->event_loop = LWS_SERVER_OPTION_LIBUV;
 
 	if (ret == NULL) {
 		free(integration_data);

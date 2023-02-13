@@ -79,8 +79,8 @@ int main(void) {
 			);
 	if (ctx == NULL) goto end;
 
-	wc_datasync_init(ctx);
-	wc_datasync_connect(ctx);
+	wc_datasync_init(ctx, loop);
+	wc_datasync_connect(ctx, loop);
 
 	puts("\tprocessing the event loop...");
 

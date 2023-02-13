@@ -255,9 +255,8 @@ static struct lws_protocols protocols[] = {
 	{.name=NULL}
 };
 
-wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
+wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx, void *foreign_loop) {
 	size_t ws_path_l;
-
 	struct lws_context_creation_info lws_ctx_creation_nfo;
 	memset(&lws_ctx_creation_nfo, 0, sizeof(lws_ctx_creation_nfo));
 
@@ -265,38 +264,45 @@ wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 	lws_ctx_creation_nfo.protocols = protocols;
 #if defined(LWS_LIBRARY_VERSION_MAJOR) && LWS_LIBRARY_VERSION_MAJOR >= 2
 	lws_ctx_creation_nfo.options |= LWS_SERVER_OPTION_DO_SSL_GLOBAL_INIT;
+	lws_ctx_creation_nfo.options |= ctx->event_loop;
 #endif
 	lws_ctx_creation_nfo.gid = -1;
 	lws_ctx_creation_nfo.uid = -1;
-
-#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER < 2002000
-	char *proxy;
+	
+	void *foreign_loops[1];
+	foreign_loops[0] = foreign_loop;
+	lws_ctx_creation_nfo.foreign_loops = foreign_loops;
+	
+	char *proxy = getenv("http_proxy");
+#if defined(LWS_LIBRARY_VERSION_NUMBER) && LWS_LIBRARY_VERSION_NUMBER < 2002000	
 	/* hack to make LWS support the http_proxy variable beginning with "http://" */
-	proxy = getenv("http_proxy");
 	if (proxy != NULL && strncmp("http://", proxy, 7) == 0) {
 		proxy += 7;
 	}
-	lws_ctx_creation_nfo.http_proxy_address = proxy;
 #endif
 
+	lws_ctx_creation_nfo.http_proxy_address = proxy;
+	
 	ctx->datasync.lws_cci.context = lws_create_context(&lws_ctx_creation_nfo);
 	ctx->datasync.lws_cci.address = ctx->host;
 	ctx->datasync.lws_cci.host = ctx->host;
 	ctx->datasync.lws_cci.port = (int)ctx->port;
 	ctx->datasync.lws_cci.ssl_connection = !ctx->no_tls;
+	
 	ws_path_l = (
-			sizeof(WEBCOM_WS_PATH) - 1
-			+ 1
-      + strlen(ctx->app_name)
-      + 6
-			+ sizeof(WEBCOM_PROTOCOL_VERSION) - 1
-			+ 1 );
+		sizeof(WEBCOM_WS_PATH) - 1
+		+ 1
+		+ strlen(ctx->app_name)
+		+ 6
+		+ sizeof(WEBCOM_PROTOCOL_VERSION) - 1
+		+ 1 );
+	
 	ctx->datasync.lws_cci.path = malloc(ws_path_l);
 	if (ctx->datasync.lws_cci.path == NULL) {
 		return NULL;
 	}
-  snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s/%s/ws?v=%s", WEBCOM_WS_PATH, ctx->app_name, WEBCOM_PROTOCOL_VERSION);
-	//snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s?v=%s&ns=%s", WEBCOM_WS_PATH, WEBCOM_PROTOCOL_VERSION, ctx->app_name);
+	
+	snprintf((char*)ctx->datasync.lws_cci.path, ws_path_l, "%s/%s/ws?v=%s", WEBCOM_WS_PATH, ctx->app_name, WEBCOM_PROTOCOL_VERSION);
 	ctx->datasync.lws_cci.protocol = protocols[0].name;
 	ctx->datasync.lws_cci.ietf_version_or_minus_one = -1;
 	ctx->datasync.lws_cci.userdata = (void *)ctx;
@@ -313,19 +319,56 @@ wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx) {
 	return &ctx->datasync;
 }
 
+/*
+ * This represents your object that "contains" the client connection and has
+ * the client connection bound to it
+ */
+static struct _wc_client_conn {
+	lws_sorted_usec_list_t	sul;
+	wc_context_t			*ctx;
+	uint16_t				retry_count;
+} mco;
+
+static const uint32_t backoff_ms[] = { 1000, 2000, 3000, 4000, 5000 };
+
+static const lws_retry_bo_t retry = {
+	.retry_ms_table			= backoff_ms,
+	.retry_ms_table_count	= LWS_ARRAY_SIZE(backoff_ms),
+	.conceal_count			= LWS_ARRAY_SIZE(backoff_ms),
+
+	.secs_since_valid_ping		= 3, 
+	.secs_since_valid_hangup	= 10, 
+	.jitter_percent				= 20,
+};
+
+static void _wc_datasync_connect_client(lws_sorted_usec_list_t *sul) 
+{
+	struct _wc_client_conn *m = lws_container_of(sul, struct _wc_client_conn, sul);
+	
+	/* Connect if we are not connected to the server. */
+	m->ctx->datasync.lws_conn = lws_client_connect_via_info(&m->ctx->datasync.lws_cci);
+		
+	if (!m->ctx->datasync.lws_conn) {
+		if (lws_retry_sul_schedule(m->ctx->datasync.lws_cci.context, 0, sul, &retry, _wc_datasync_connect_client, &m->retry_count)) {
+			m->ctx->datasync.state = WC_CNX_STATE_DISCONNECTED;
+			WL_ERR("%s: connection attempts exhausted\n", __func__);
+		}
+	}
+}
+	
 void _wc_datasync_connect(wc_context_t *ctx) {
 	if (ctx->datasync.state == WC_CNX_STATE_DISCONNECTED) {
 		ctx->datasync.state = WC_CNX_STATE_CONNECTING;
-		ctx->datasync.lws_conn = lws_client_connect_via_info(&ctx->datasync.lws_cci);
-		lws_service(ctx->datasync.lws_cci.context, 0);
+		mco.ctx = ctx;
+		lws_sul_schedule(ctx->datasync.lws_cci.context, 0, &mco.sul, _wc_datasync_connect_client, 1);
 	} else {
 		WL_WARN("bad state for _wc_datasync_connect() in context %p, expected %d, got %d", ctx, WC_CNX_STATE_DISCONNECTED, ctx->datasync.state);
 	}
 }
 
-void wc_datasync_connect(wc_context_t *ctx) {
+void wc_datasync_connect(wc_context_t *ctx, void *loop) {
 	if (ctx->datasync_init == 0) {
-		wc_datasync_init(ctx);
+		wc_datasync_init(ctx, loop);
 	}
 	_wc_datasync_schedule_reconnect(ctx);
 }
@@ -357,3 +400,4 @@ int wc_datasync_keepalive(wc_context_t *ctx) {
 
 	return sent;
 }
+

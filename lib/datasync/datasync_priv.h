@@ -98,7 +98,7 @@ void wc_datasync_req_response_dispatch(wc_context_t *dsctx, wc_response_t *respo
 void wc_datasync_push_id(struct pushid_state *s, int64_t time, char* buf) ;
 void wc_datasync_dispatch_data(wc_context_t *dsctx, wc_push_t *push);
 void wc_datasync_cleanup_data_routes(wc_datasync_data_route_t **table);
-void wc_auth_service(wc_context_t *ctx, int fd);
+int wc_auth_service(wc_context_t *ctx, int fd);
 void _wc_datasync_connect(wc_context_t *ctx);
 void wc_datasync_service_socket(wc_context_t *ctx, struct wc_pollargs *pa);
 

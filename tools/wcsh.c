@@ -258,7 +258,7 @@ int main(int argc, char *argv[]) {
 
 	wc_log_use_custom(wcsh_log);
 
-	wc_datasync_init(ctx);
+	wc_datasync_init(ctx, loop);
 
 
 	if (is_interactive) {
@@ -544,7 +544,7 @@ static void exec_log(int argc, char **argv) {
 
 static void exec_connect(int argc, char **argv) {
 	disconnect = 0;
-	wc_datasync_connect(ctx);
+	wc_datasync_connect(ctx, EV_DEFAULT);
 }
 
 static void exec_disconnect(int argc, char **argv) {
