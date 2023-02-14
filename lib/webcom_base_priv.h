@@ -37,6 +37,7 @@ wc_datasync_context_t *wc_get_datasync(wc_context_t *);
 wc_auth_context_t *wc_get_auth(wc_context_t *);
 
 struct wc_context {
+	int event_loop;
 	wc_on_event_cb_t callback;
 	void *user;
 	char *app_name;

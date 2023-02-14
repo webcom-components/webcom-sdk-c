@@ -284,3 +284,20 @@ target_link_libraries(
 	webcom-c
 )
 
+
+## tests for websockets
+add_executable(
+	webcom-test-ws
+	test-ws.c
+)
+
+target_include_directories(
+	webcom-test-ws
+	PRIVATE
+	${webcom-sdk-c-tests_SOURCE_DIR}/../include
+)
+
+target_link_libraries(
+	webcom-test-ws
+	webcom-c
+)

@@ -36,7 +36,7 @@ static void on_connected(wc_context_t *ctx) {
 	STFU_TRUE("The sever sent the handshake", 1);
 
 	wc_datasync_close_cnx(ctx);
-
+	ev_break(EV_DEFAULT, EVBREAK_ALL);
 }
 static int on_disconnected(wc_context_t *ctx) {
 	STFU_TRUE("The connection was closed", 1);
@@ -70,14 +70,13 @@ int main(void) {
 			.port = 443,
 			.app_name = "legorange"
 	};
-
 	STFU_TRUE	("Establish a new Connection",
 			cnx1 = wc_context_create_with_libev(&options, loop, &cb)
 			);
 	if (cnx1 == NULL) goto end;
 
-	wc_datasync_init(cnx1);
-	wc_datasync_connect(cnx1);
+	wc_datasync_init(cnx1, loop);
+	wc_datasync_connect(cnx1, loop);
 
 	puts("\tprocessing the event loop...");
 

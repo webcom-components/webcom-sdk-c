@@ -214,13 +214,10 @@ static int curl_sock_cb(CURL *e, curl_socket_t s, int what, void *data, void *so
 
 static int curl_timer_cb(CURLM *multi, long timeout_ms, void *userp) {
 	WL_DBG("timer request on %p: %ld ms", multi, timeout_ms);
-	int handles;
 	struct wc_timerargs wcta;
 	wc_context_t *ctx = userp;
 
-	if (timeout_ms == 0) {
-		curl_multi_socket_action(multi, CURL_SOCKET_TIMEOUT, 0, &handles);
-	} else if (timeout_ms > 0) {
+	if (timeout_ms >= 0) {
 		wcta.ms = timeout_ms;
 		wcta.repeat = 0;
 		wcta.timer = WC_TIMER_AUTH;
@@ -296,12 +293,14 @@ int wc_auth_with_password(wc_context_t *ctx, const char *email, const char *pass
 	return 1;
 }
 
-void wc_auth_service(wc_context_t *ctx, int fd) {
-	int curl_still_running;
+int wc_auth_service(wc_context_t *ctx, int fd) {
+	int release_timer = 0, curl_still_running;
 
 	curl_multi_socket_action(ctx->auth.auth_curl_multi_handle, fd, 0, &curl_still_running);
 	if (curl_still_running == 0) {
 		curl_multi_remove_handle(ctx->auth.auth_curl_multi_handle, ctx->auth.auth_curl_handle);
 		curl_easy_cleanup(ctx->auth.auth_curl_handle);
+		release_timer = 1;
 	}
+	return release_timer;
 }

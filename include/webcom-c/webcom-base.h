@@ -242,8 +242,9 @@ void wc_dispatch_fd_event(wc_context_t *ctx, struct wc_pollargs *pa);
  * **WC_EVENT_SET_TIMER** event has fired.
  * @param ctx the context
  * @param timer the timer identifier
+ * @return a flag to tell if timer should be released
  */
-void wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer);
+int wc_dispatch_timer_event(wc_context_t *ctx, enum wc_timersrc timer);
 
 /**
  * gets the user data associated to this context

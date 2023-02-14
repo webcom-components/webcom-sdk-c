@@ -29,6 +29,7 @@
 #include "webcom-c/webcom-utils.h"
 #include "webcom-c/webcom-log.h"
 
+#include "webcom_base_priv.h"
 #include "event_libs_priv.h"
 
 struct wc_libev_integration_data {
@@ -64,7 +65,10 @@ static inline void _wc_on_timer_libev_cb (
 	struct wc_libev_integration_data *lid = wc_context_get_user_data(ctx);
 	enum wc_timersrc timer = w - lid->timer_events;
 
-	wc_dispatch_timer_event(ctx, timer);
+	// stop timer if curl request done
+	if (wc_dispatch_timer_event(ctx, timer)) {
+		ev_timer_stop(lid->loop, w);
+	}
 }
 
 int _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, size_t len) {
@@ -130,6 +134,11 @@ int _wc_libev_cb (wc_event_t event, wc_context_t *ctx, void *data, size_t len) {
 		timer = &lid->timer_events[timerargs->timer];
 		in = ((ev_tstamp)timerargs->ms) / 1000.;
 		repeat = timerargs->repeat ? in : 0.;
+		
+		// this event may be called multiple times to update timeout value, we must stop
+		// previously started timer (overwise DEL_TIMER event may delete the wrong timer!)
+		ev_timer_stop(lid->loop, timer);
+		
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstrict-aliasing"
 		ev_timer_init(timer, _wc_on_timer_libev_cb, in, repeat);
@@ -177,8 +186,8 @@ wc_context_t *wc_context_create_with_libev(struct wc_context_options *options, s
 	ev_options.callback = _wc_libev_cb;
 	ev_options.user_data = integration_data;
 
-
 	ret = wc_context_create(&ev_options);
+	ret->event_loop = LWS_SERVER_OPTION_LIBEV;
 
 	if (ret == NULL) {
 		free(integration_data);

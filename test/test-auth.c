@@ -85,8 +85,8 @@ void on_auth_success(wc_context_t *ctx, struct wc_auth_info* ai) {
 
 	token = strdup(ai->token);
 
-	wc_datasync_init(ctx);
-	wc_datasync_connect(ctx);
+	wc_datasync_init(ctx, EV_DEFAULT);
+	wc_datasync_connect(ctx, EV_DEFAULT);
 }
 
 void on_auth_error(wc_context_t *ctx, char* error) {

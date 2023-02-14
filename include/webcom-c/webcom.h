@@ -83,7 +83,7 @@
  * 			&cb);
  *
  *     // we are going to use the datasync service
- * 	wc_datasync_init(ctx);
+ * 	wc_datasync_init(ctx, loop);
  *
  * 	// ask the SDK to establish the connection to the server
  * 	wc_datasync_connect(ctx);

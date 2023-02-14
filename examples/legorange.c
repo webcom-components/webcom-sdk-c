@@ -124,8 +124,8 @@ int main(int argc, char *argv[]) {
 			loop,
 			&cb);
 
-	wc_datasync_init(ctx);
-	wc_datasync_connect(ctx);
+	wc_datasync_init(ctx, loop);
+	wc_datasync_connect(ctx, loop);
 
 	/* if stdin has data to read, call stdin_watcher() */
 	ev_io_init(&stdin_watcher, stdin_cb, STDIN_FILENO, EV_READ);

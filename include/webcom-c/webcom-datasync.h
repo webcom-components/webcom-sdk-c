@@ -43,7 +43,7 @@
  * @param ctx the Webcom context
  * @return a pointer to an opaque structure representing the datasync service
  */
-wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx);
+wc_datasync_context_t *wc_datasync_init(wc_context_t *ctx, void *foreign_loop);
 
 /**
  * Function that keeps the connection to the webcom server alive.
@@ -71,7 +71,7 @@ int wc_datasync_keepalive(wc_context_t *ctx);
  *
  * @param ctx the context
  */
-void wc_datasync_connect(wc_context_t *ctx);
+void wc_datasync_connect(wc_context_t *ctx, void *foreign_loop);
 
 /**
  * Gracefully closes the connection to the Webcom datasync server.
